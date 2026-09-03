@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "nanoPlayer",
+  "version": "0.1.0",
+  "identifier": "app.nanoplayer.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "nanoPlayer",
+        "width": 1200,
+        "height": 760,
+        "minWidth": 720,
+        "minHeight": 560,
+        "resizable": true,
+        "fullscreen": false,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: data: blob:; media-src 'self' asset: blob:; connect-src 'self' https://lrclib.net; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Music",
+    "shortDescription": "Local-first desktop music player",
+    "longDescription": "A read-only local music library and desktop player for macOS, Windows, and Linux.",
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "entitlements": "../packaging/macos/Entitlements.plist"
+    },
+    "windows": {
+      "wix": {
+        "language": ["zh-CN", "en-US"]
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
+  }
+}

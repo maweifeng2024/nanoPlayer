@@ -1,0 +1,46 @@
+{
+  "name": "nanoplayer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "oxlint src tests",
+    "format": "oxfmt --write src tests",
+    "check": "pnpm lint && pnpm test && pnpm build",
+    "website:dev": "npm --prefix website run dev",
+    "website:build": "npm --prefix website run build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-dialog": "2.7.3",
+    "lucide-react": "1.31.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "zustand": "5.0.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.0",
+    "@tauri-apps/cli": "2.11.4",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.1.1",
+    "esbuild": "0.25.12",
+    "oxfmt": "0.61.0",
+    "oxlint": "1.76.0",
+    "typescript": "5.9.3",
+    "vite": "8.0.13",
+    "vitest": "4.1.11"
+  },
+  "packageManager": "pnpm@11.24.0"
+}

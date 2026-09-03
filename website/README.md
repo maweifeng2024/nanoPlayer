@@ -1,0 +1,11 @@
+# nanoPlayer website
+
+This Next.js project contains the product introduction and download status pages. It intentionally does not expose placeholder binary links. When a release passes the repository release process, update `public/downloads/latest.json`, add verified download URLs to the download page, build, deploy to Vercel, and verify each live artifact.
+
+```bash
+npm install
+npm run dev
+npm run build
+```
+
+The site is configured as a static Next.js export for Vercel. Publishing is a separate release action and must not happen merely because the local site builds.

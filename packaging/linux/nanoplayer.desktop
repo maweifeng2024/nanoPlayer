@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=nanoPlayer
+Comment=Local-first desktop music player
+Exec=nanoplayer %U
+Icon=nanoplayer
+Categories=AudioVideo;Audio;Player;
+Terminal=false
+StartupWMClass=nanoplayer
+

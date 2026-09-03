@@ -1,0 +1,7 @@
+{
+  "description": "Schema example only; add a matching redistributable audio fixture before enabling it in tests.",
+  "title": "Example Track",
+  "artists": ["Example Artist"],
+  "album": "Example Album",
+  "durationMs": 0
+}

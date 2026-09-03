@@ -1,0 +1,2 @@
+# Add one SHA-256 line for every committed audio fixture.
+
