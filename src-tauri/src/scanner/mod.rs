@@ -201,11 +201,11 @@ fn scan_file(
     })
 }
 
-fn file_identity(metadata: &fs::Metadata, _path: &Path) -> String {
+fn file_identity(_metadata: &fs::Metadata, _path: &Path) -> String {
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
-        format!("{}:{}", metadata.dev(), metadata.ino())
+        format!("{}:{}", _metadata.dev(), _metadata.ino())
     }
     #[cfg(not(unix))]
     {
