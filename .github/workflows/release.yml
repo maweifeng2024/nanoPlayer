@@ -40,7 +40,7 @@ jobs:
       matrix:
         include:
           - platform: macOS universal
-            os: macos-latest
+            os: macos-15
             args: --target universal-apple-darwin
             artifact: macos
             paths: |

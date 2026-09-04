@@ -15,6 +15,32 @@ function output(command, commandArgs) {
   return execFileSync(command, commandArgs, { cwd: root, encoding: 'utf8' }).trim();
 }
 
+function succeeds(command, commandArgs) {
+  try {
+    execFileSync(command, commandArgs, { cwd: root, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function runGitNetwork(commandArgs) {
+  try {
+    return run('git', commandArgs);
+  } catch {
+    console.warn('\nGitHub connection over HTTP/2 failed. Retrying this command with HTTP/1.1...');
+    return run('git', [
+      '-c',
+      'http.version=HTTP/1.1',
+      '-c',
+      'http.lowSpeedLimit=1',
+      '-c',
+      'http.lowSpeedTime=30',
+      ...commandArgs,
+    ]);
+  }
+}
+
 const branch = output('git', ['branch', '--show-current']);
 if (branch !== 'main') throw new Error(`Release must start from main; current branch is ${branch || '(detached)'}.`);
 
@@ -22,21 +48,18 @@ const remote = output('git', ['remote', 'get-url', 'origin']);
 if (!/github\.com[/:]/.test(remote)) throw new Error(`origin is not a GitHub remote: ${remote}`);
 run('gh', ['auth', 'status']);
 
-const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
-const current = pkg.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
-if (!current && !explicitVersion) throw new Error(`Cannot infer the next patch version from ${pkg.version}; pass an explicit version.`);
+const headPackage = JSON.parse(output('git', ['show', 'HEAD:package.json']));
+const current = headPackage.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+if (!current && !explicitVersion) throw new Error(`Cannot infer the next patch version from HEAD version ${headPackage.version}; pass an explicit version.`);
 const version = explicitVersion ?? `${current[1]}.${current[2]}.${Number(current[3]) + 1}`;
 const tag = `v${version}`;
 
-run('git', ['fetch', 'origin', 'main', '--tags']);
+runGitNetwork(['fetch', 'origin', 'main', '--tags']);
 if (output('git', ['rev-list', '--left-right', '--count', 'HEAD...origin/main']) !== '0\t0') {
   throw new Error('Local main and origin/main differ. Pull/rebase or push outstanding commits first.');
 }
-try {
-  output('git', ['rev-parse', '--verify', `refs/tags/${tag}`]);
+if (succeeds('git', ['show-ref', '--verify', '--quiet', `refs/tags/${tag}`])) {
   throw new Error(`Tag ${tag} already exists locally.`);
-} catch (error) {
-  if (error.message?.startsWith('Tag ')) throw error;
 }
 
 run('node', ['scripts/release/set-version.mjs', version]);
@@ -55,7 +78,7 @@ run('git', ['add', '--all']);
 if (!output('git', ['status', '--porcelain'])) throw new Error('There are no changes to commit.');
 run('git', ['commit', '-m', `release: ${tag}`]);
 run('git', ['tag', '-a', tag, '-m', `nanoPlayer ${tag}`]);
-run('git', ['push', 'origin', 'main', tag]);
+runGitNetwork(['push', 'origin', 'main', tag]);
 
 console.log(`\n${tag} is pushed. GitHub Actions will build all three platforms, publish the Release, update the website, and deploy it to Vercel.`);
 console.log('Track it with: gh run watch');
