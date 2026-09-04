@@ -48,16 +48,37 @@ const remote = output('git', ['remote', 'get-url', 'origin']);
 if (!/github\.com[/:]/.test(remote)) throw new Error(`origin is not a GitHub remote: ${remote}`);
 run('gh', ['auth', 'status']);
 
+runGitNetwork(['fetch', 'origin', 'main', '--tags']);
+let [ahead, behind] = output('git', ['rev-list', '--left-right', '--count', 'HEAD...origin/main'])
+  .split(/\s+/)
+  .map(Number);
+if (behind > 0) {
+  console.log(`\nLocal main is ${behind} commit(s) behind origin/main. Rebasing while preserving current changes...`);
+  runGitNetwork(['pull', '--rebase', '--autostash', 'origin', 'main']);
+  [ahead, behind] = output('git', ['rev-list', '--left-right', '--count', 'HEAD...origin/main'])
+    .split(/\s+/)
+    .map(Number);
+}
+
 const headPackage = JSON.parse(output('git', ['show', 'HEAD:package.json']));
+const pendingTag = `v${headPackage.version}`;
+const pendingTagCommit = `${pendingTag}^{}`;
+const pendingTagIsHead = succeeds('git', ['merge-base', '--is-ancestor', pendingTagCommit, 'HEAD'])
+  && output('git', ['rev-parse', pendingTagCommit]) === output('git', ['rev-parse', 'HEAD']);
+const worktreeIsClean = output('git', ['status', '--porcelain']) === '';
+if (ahead > 0 && behind === 0 && pendingTagIsHead && worktreeIsClean) {
+  console.log(`\nResuming interrupted push for ${pendingTag}...`);
+  runGitNetwork(['push', '--atomic', 'origin', 'main', pendingTag]);
+  console.log(`\n${pendingTag} is pushed. GitHub Actions will continue the release.`);
+  process.exit(0);
+}
+
 const current = headPackage.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
 if (!current && !explicitVersion) throw new Error(`Cannot infer the next patch version from HEAD version ${headPackage.version}; pass an explicit version.`);
 const version = explicitVersion ?? `${current[1]}.${current[2]}.${Number(current[3]) + 1}`;
 const tag = `v${version}`;
 
-runGitNetwork(['fetch', 'origin', 'main', '--tags']);
-if (output('git', ['rev-list', '--left-right', '--count', 'HEAD...origin/main']) !== '0\t0') {
-  throw new Error('Local main and origin/main differ. Pull/rebase or push outstanding commits first.');
-}
+if (ahead > 0 && behind === 0) console.log(`\nIncluding ${ahead} existing local commit(s) in this release.`);
 if (succeeds('git', ['show-ref', '--verify', '--quiet', `refs/tags/${tag}`])) {
   throw new Error(`Tag ${tag} already exists locally.`);
 }
@@ -78,7 +99,7 @@ run('git', ['add', '--all']);
 if (!output('git', ['status', '--porcelain'])) throw new Error('There are no changes to commit.');
 run('git', ['commit', '-m', `release: ${tag}`]);
 run('git', ['tag', '-a', tag, '-m', `nanoPlayer ${tag}`]);
-runGitNetwork(['push', 'origin', 'main', tag]);
+runGitNetwork(['push', '--atomic', 'origin', 'main', tag]);
 
 console.log(`\n${tag} is pushed. GitHub Actions will build all three platforms, publish the Release, update the website, and deploy it to Vercel.`);
 console.log('Track it with: gh run watch');

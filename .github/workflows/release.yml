@@ -92,6 +92,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          tauriScript: node scripts/release/tauri-build.mjs
           args: ${{ matrix.args }}
       - uses: actions/upload-artifact@v4
         with:
