@@ -2,16 +2,21 @@
   "version": "0.1.0",
   "available": true,
   "publishedAt": "2026-09-03",
+  "releaseUrl": "https://github.com/maweifeng2024/nanoPlayer/releases/tag/v0.1.0",
+  "checksumsUrl": "/downloads/v0.1.0/SHA256SUMS.txt",
+  "signed": false,
   "platforms": {
-    "macos": {
-      "architecture": "aarch64",
-      "format": "dmg",
-      "url": "/downloads/v0.1.0/nanoPlayer_0.1.0_aarch64.dmg",
-      "sha256": "c377eda64322aee0bd6ea0bf16e9659ed2b8c361fb4d9585cab9b36141079787",
-      "signed": false,
-      "notarized": false
-    },
-    "windows": null,
-    "linux": null
+    "macos": [
+      {
+        "name": "nanoPlayer_0.1.0_aarch64.dmg",
+        "architecture": "aarch64",
+        "format": "dmg",
+        "url": "/downloads/v0.1.0/nanoPlayer_0.1.0_aarch64.dmg",
+        "sha256": "c377eda64322aee0bd6ea0bf16e9659ed2b8c361fb4d9585cab9b36141079787",
+        "size": 10678239
+      }
+    ],
+    "windows": [],
+    "linux": []
   }
 }

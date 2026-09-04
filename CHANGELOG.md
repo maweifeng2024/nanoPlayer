@@ -4,8 +4,11 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-04
+
 ### Added
 
+- Persistent main-window size and position restoration using an app-managed placement file.
 - Read-only multi-root library scanning with cancellation, startup differential scans, progress events, debounced filesystem reconciliation, scan history, and categorized issues.
 - SQLite/WAL migrations, FTS5 trigram search, normalized track/album artist relationships, application-state persistence, playback sessions, caches, backup/restore, and privacy-safe diagnostics export.
 - Native playback, seeking, persistent volume indication, independent sequence/shuffle and off/all/one repeat controls, queue and playlist drag ordering, unavailable-file fallback, output-device enumeration/switching, native menus, and keyboard shortcuts.
@@ -19,6 +22,8 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ### Changed
 
+- Reworked the application icon to retain only the flatter black rounded-square and red nanoPlayer mark, with true transparent outer pixels and no gray metallic bezel.
+- On macOS, the red close button and `Command+W` now hide the window while playback continues; Dock reopen restores the window, while the application menu and `Command+Q` still quit.
 - Restored the approved dark red/black visual baseline as the default while retaining explicit system and light theme choices.
 - Removed the application icon from the sidebar wordmark and reserved a 64 px macOS title-bar safe area for traffic-light controls.
 - Removed the Genre primary navigation page while retaining genre metadata in search and song details.

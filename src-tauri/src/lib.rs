@@ -16,7 +16,7 @@ use std::{
     },
 };
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent, WindowEvent};
 
 struct AppState {
     database: Mutex<LibraryDatabase>,
@@ -24,6 +24,27 @@ struct AppState {
     watcher: Mutex<notify::RecommendedWatcher>,
     scan_cancel: Arc<AtomicBool>,
     app_data_dir: PathBuf,
+    window_placement: Mutex<WindowPlacement>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WindowPlacement {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+}
+
+impl Default for WindowPlacement {
+    fn default() -> Self {
+        Self {
+            x: 80,
+            y: 80,
+            width: 1200,
+            height: 760,
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -784,7 +805,7 @@ fn clear_playlist_cover(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .menu(|app| {
             let add_folder = MenuItemBuilder::with_id("add-library", "添加音乐文件夹…")
@@ -852,9 +873,30 @@ pub fn run() {
         .on_menu_event(|app, event| {
             let _ = app.emit("native-menu", event.id().as_ref());
         })
+        .on_window_event(|window, event| {
+            if window.label() != "main" {
+                return;
+            }
+            match event {
+                WindowEvent::Moved(position) => update_window_position(window, *position),
+                WindowEvent::Resized(size) => update_window_size(window, *size),
+                WindowEvent::CloseRequested { api, .. } => {
+                    persist_window_placement(window.app_handle());
+                    #[cfg(target_os = "macos")]
+                    {
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                    #[cfg(not(target_os = "macos"))]
+                    let _ = api;
+                }
+                _ => {}
+            }
+        })
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
+            let window_placement = load_window_placement(&data_dir);
             let database = LibraryDatabase::open(&data_dir.join("library.sqlite3"))
                 .map_err(std::io::Error::other)?;
             let app_handle = app.handle().clone();
@@ -873,7 +915,18 @@ pub fn run() {
                 watcher: Mutex::new(watcher),
                 scan_cancel: Arc::new(AtomicBool::new(false)),
                 app_data_dir: data_dir,
+                window_placement: Mutex::new(window_placement),
             });
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_size(PhysicalSize::new(
+                    window_placement.width.max(720),
+                    window_placement.height.max(560),
+                ));
+                let _ = window.set_position(PhysicalPosition::new(
+                    window_placement.x,
+                    window_placement.y,
+                ));
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -915,8 +968,76 @@ pub fn run() {
             get_playlist_cover,
             clear_playlist_cover
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run nanoPlayer");
+        .build(tauri::generate_context!())
+        .expect("failed to build nanoPlayer");
+    app.run(|app_handle, event| match event {
+        RunEvent::ExitRequested { .. } => persist_window_placement(app_handle),
+        #[cfg(target_os = "macos")]
+        RunEvent::Reopen { .. } => {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }
+        _ => {}
+    });
+}
+
+fn window_placement_path(app_data_dir: &Path) -> PathBuf {
+    app_data_dir.join("window-placement.json")
+}
+
+fn load_window_placement(app_data_dir: &Path) -> WindowPlacement {
+    std::fs::read(window_placement_path(app_data_dir))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+        .filter(|placement: &WindowPlacement| placement.width >= 720 && placement.height >= 560)
+        .unwrap_or_default()
+}
+
+fn update_window_position(window: &tauri::Window, position: PhysicalPosition<i32>) {
+    if let Some(state) = window.app_handle().try_state::<AppState>() {
+        if let Ok(mut placement) = state.window_placement.lock() {
+            placement.x = position.x;
+            placement.y = position.y;
+        }
+    }
+}
+
+fn update_window_size(window: &tauri::Window, size: PhysicalSize<u32>) {
+    if let Some(state) = window.app_handle().try_state::<AppState>() {
+        if let Ok(mut placement) = state.window_placement.lock() {
+            placement.width = size.width.max(720);
+            placement.height = size.height.max(560);
+        }
+    }
+}
+
+fn persist_window_placement(app_handle: &tauri::AppHandle) {
+    let Some(state) = app_handle.try_state::<AppState>() else {
+        return;
+    };
+    let Ok(mut placement) = state.window_placement.lock() else {
+        return;
+    };
+    if let Some(window) = app_handle.get_webview_window("main") {
+        if let Ok(position) = window.outer_position() {
+            placement.x = position.x;
+            placement.y = position.y;
+        }
+        if let Ok(size) = window.outer_size() {
+            placement.width = size.width.max(720);
+            placement.height = size.height.max(560);
+        }
+    }
+    let Ok(bytes) = serde_json::to_vec_pretty(&*placement) else {
+        return;
+    };
+    let path = window_placement_path(&state.app_data_dir);
+    let temporary = path.with_extension("json.tmp");
+    if std::fs::write(&temporary, bytes).is_ok() {
+        let _ = std::fs::rename(temporary, path);
+    }
 }
 
 fn unix_now() -> u64 {

@@ -18,6 +18,7 @@ This document separates implemented behavior from release qualification. “Impl
 - The home page presents recent, most-played, and highly rated tracks in three compact title-only columns with at most 20 entries each. Recent Played is no longer a primary navigation item, and rating is the second data column in full song tables.
 - The home hero no longer shows aggregate count cards. On each application launch it chooses one stable, contextual welcome from recent listening, most-played/highest-rated music, a familiar artist, or a short music reflection, with playback tied to the referenced track.
 - The packaged application uses the generated nanoPlayer icon on supported platforms. The in-window sidebar uses a text-only wordmark and a 64 px macOS title-bar safe area so it does not compete with traffic-light controls.
+- The current icon master is a flatter black/red rounded square with true transparent margins and no gray bezel. The main window restores its last saved size and position. On macOS, closing the window hides it without stopping playback; Dock reopen shows it again, and only the application Quit command or `Command+Q` terminates the process.
 - Browser demo data is used only outside Tauri so interface tests and product review do not require personal music.
 
 ## Automated evidence

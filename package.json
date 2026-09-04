@@ -1,6 +1,6 @@
 {
   "name": "nanoplayer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -18,7 +18,8 @@
     "format": "oxfmt --write src tests",
     "check": "pnpm lint && pnpm test && pnpm build",
     "website:dev": "npm --prefix website run dev",
-    "website:build": "npm --prefix website run build"
+    "website:build": "npm --prefix website run build",
+    "release": "node scripts/release/release.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.1",
