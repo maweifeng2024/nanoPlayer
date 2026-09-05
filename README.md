@@ -2,27 +2,33 @@
 
 [English](#english) · [中文](#中文)
 
-![nanoPlayer desktop interface](docs/design/nanoplayer-netease-inspired-home-v2.png)
+[Website / 官网](https://nanoplayer-wei-feng.vercel.app) · [Downloads / 下载](https://nanoplayer-wei-feng.vercel.app/download)
+
+![nanoPlayer actual desktop interface / 实际桌面界面](website/public/product-home-current.png)
+
+Actual application screenshot captured on 2026-09-06. / 2026-09-06 拍摄的实际应用界面。
 
 ## English
 
-nanoPlayer is a local-first desktop music player for browsing and playing your own music library. Add approved folders, then explore tracks by song, album, artist, or genre—with playlists, ratings, a playback queue, lyrics, and output-device selection.
+nanoPlayer is a desktop music player focused on your local music collection. Add music folders, browse songs, albums and artists, and listen with playlists, ratings, a playback queue, lyrics and output-device selection. The home screen brings together recently added, most-played and highly rated songs.
 
 - Local playback with no account required
 - Read-only source audio: nanoPlayer never edits or deletes your music files
 - Local SQLite library for indexes, playlists, ratings, and listening history
 - MP3, FLAC, M4A/AAC, ALAC, WAV, Ogg Vorbis, Opus, and AIFF support
-- macOS available first; Windows and Linux builds are planned
+- macOS universal and Windows x64 downloads are available; Linux downloads are pending
+- Current packages are unsigned; macOS packages are not Apple-notarized
 
 ## 中文
 
-nanoPlayer 是一款本地优先的桌面音乐播放器。添加经过授权的音乐文件夹后，即可按歌曲、专辑、艺术家或流派浏览本地收藏，并使用歌单、评分、播放队列、歌词和输出设备切换等功能。
+nanoPlayer 是一款专注本地歌曲播放的桌面音乐播放器。添加音乐文件夹后，可以按歌曲、专辑和艺术家浏览收藏，使用歌单、评分、播放队列、歌词和输出设备切换。首页集中展示最近添加、播放最多和高评分歌曲。
 
 - 本地播放，无需账号
 - 源音频只读：不修改或删除音乐文件
 - 使用本机 SQLite 保存索引、歌单、评分与收听记录
 - 支持 MP3、FLAC、M4A/AAC、ALAC、WAV、Ogg Vorbis、Opus 和 AIFF
-- 首发支持 macOS，Windows 与 Linux 版本在规划中
+- 已提供 macOS 通用版及 Windows x64 安装包；Linux 下载待开放
+- 当前安装包未签名，macOS 版尚未完成 Apple 公证
 
 ## Project status / 项目状态
 

@@ -18,6 +18,10 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function architectureLabel(architecture: string) {
+  return ({ universal: 'Intel + Apple Silicon', aarch64: 'Apple Silicon', x86_64: '64 位' } as Record<string, string>)[architecture] ?? architecture;
+}
+
 export default function DownloadPage() {
   return (
     <main className="download-shell">
@@ -36,20 +40,20 @@ export default function DownloadPage() {
           <article key={name} className={release.platforms[key].length > 0 ? 'active' : 'planned'}>
             <div className="platform-icon"><Icon aria-hidden="true" size={24} /></div>
             <div className="platform-title"><h2>{name}</h2><span>{release.platforms[key].length > 0 ? '可下载' : '等待构建'}</span></div>
-            <p>{release.platforms[key].map((asset) => asset.format).join(' / ') || '尚无已验证安装包'}</p>
+            <p>{release.platforms[key].map((asset) => `${asset.format.toUpperCase()} · ${architectureLabel(asset.architecture)}`).join(' / ') || '尚无已验证安装包'}</p>
             <small>{requirement}</small>
-            {release.platforms[key].map((asset) => <a className="download-button" href={asset.url} key={asset.name}>{asset.format} · {formatSize(asset.size)}</a>)}
+            {release.platforms[key].map((asset) => <a className="download-button" href={asset.url} key={asset.name}>下载 {asset.format.toUpperCase()} · {formatSize(asset.size)}</a>)}
             {release.platforms[key].length === 0 && <button aria-disabled="true" disabled type="button">暂未开放下载</button>}
           </article>
         ))}
       </section>
       <section className="release-trust">
-        <h2>每个公开版本都需要经过</h2>
+        <h2>本次发布信息</h2>
         <ul>
-          <li><CheckCircle2 size={17} />安装包签名与平台验证</li>
+          <li><CheckCircle2 size={17} />macOS、Windows 与 Linux 自动构建</li>
           <li><CheckCircle2 size={17} />SHA-256 校验文件</li>
-          <li><CheckCircle2 size={17} />真实系统安装、升级和卸载测试</li>
-          <li><CheckCircle2 size={17} />源音乐目录只读回归检查</li>
+          <li><CheckCircle2 size={17} />前端与 Rust 自动测试</li>
+          <li><CheckCircle2 size={17} />源音乐目录只读设计</li>
         </ul>
       </section>
       <section className="download-safety"><ShieldCheck /><p><strong>核对安装包完整性</strong><span>每个文件的 SHA-256 均记录在 <a href={release.checksumsUrl}>SHA256SUMS.txt</a> 中；完整发布说明见 <a href={release.releaseUrl}>GitHub Release</a>。</span></p></section>

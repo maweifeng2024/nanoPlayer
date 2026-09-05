@@ -18,13 +18,13 @@ export const metadata: Metadata = {
     title: 'nanoPlayer — 本地音乐播放器',
     description: '用于播放和管理电脑本地歌曲的桌面应用。',
     type: 'website',
-    images: [{ url: '/product-home.png', width: 1280, height: 720, alt: 'nanoPlayer 当前应用界面' }],
+    images: [{ url: '/product-home-current.png', width: 1132, height: 756, alt: 'nanoPlayer 当前应用界面' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'nanoPlayer — 本地音乐播放器',
     description: '用于播放和管理电脑本地歌曲的桌面应用。',
-    images: ['/product-home.png'],
+    images: ['/product-home-current.png'],
   },
   icons: { icon: '/nanoplayer.svg' },
 };

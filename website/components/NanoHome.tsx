@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, AudioLines, Check, Database, Disc3, FolderOpen, Gauge, Headphones, ListMusic, LockKeyhole, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowDownToLine, ArrowRight, AudioLines, Check, Database, Disc3, FolderOpen, Gauge, Headphones, ListMusic, LockKeyhole, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import release from '../public/downloads/latest.json';
 
 const features = [
   { icon: FolderOpen, title: '添加本地音乐目录', text: '选择电脑或外接存储中的音乐文件夹，nanoPlayer 会扫描并更新曲库。' },
@@ -14,6 +15,10 @@ const features = [
 const formats = ['MP3', 'FLAC', 'M4A / AAC', 'ALAC', 'WAV', 'Ogg Vorbis', 'Opus', 'AIFF'];
 
 export default function NanoHome() {
+  const availablePlatforms = Object.entries(release.platforms)
+    .filter(([, assets]) => assets.length > 0)
+    .map(([platform]) => ({ macos: 'macOS', windows: 'Windows', linux: 'Linux' })[platform]);
+
   return (
     <main className="site-shell">
       <header className="site-header">
@@ -28,11 +33,11 @@ export default function NanoHome() {
 
       <section className="hero">
         <div className="hero-copy">
-          <p className="kicker"><Disc3 size={14} /> LOCAL MUSIC PLAYER</p>
+          <p className="kicker"><Disc3 size={14} /> LOCAL MUSIC PLAYER <span className="version-chip">v{release.version}</span></p>
           <h1>播放你电脑里的<br />本地音乐。</h1>
           <p className="hero-text">nanoPlayer 是一款桌面本地音乐播放器。添加音乐文件夹后，可以按歌曲、专辑和艺术家浏览，并使用歌单、评分、播放队列和歌词。</p>
           <div className="hero-actions">
-            <Link className="primary-link" href="/download">查看下载状态 <ArrowRight size={16} /></Link>
+            <Link className="primary-link" href="/download">下载最新版 <ArrowDownToLine size={16} /></Link>
             <a className="secondary-link" href="#experience">看看界面</a>
           </div>
           <div className="hero-trust"><span><Check size={14} /> 本地播放</span><span><Check size={14} /> 源文件只读</span><span><Check size={14} /> 无需账号</span></div>
@@ -41,10 +46,15 @@ export default function NanoHome() {
         <div className="hero-visual" id="experience">
           <div className="app-frame">
             <div className="frame-bar"><i /><i /><i /><span>nanoPlayer</span></div>
-            <Image src="/product-home.png" alt="nanoPlayer 当前应用首页，展示本地曲库、最近添加和播放控件" width={1280} height={720} priority />
+            <Image src="/product-home-current.png" alt="nanoPlayer 实际应用首页，展示最近添加、播放最多、高评分歌曲和播放控件" width={1132} height={756} priority />
           </div>
           <div className="visual-caption"><Sparkles size={15} /> 当前应用实际界面</div>
         </div>
+      </section>
+
+      <section className="release-bar" aria-label="当前版本">
+        <div><span className="release-dot" /><p><strong>v{release.version} 已发布</strong><span>{availablePlatforms.filter(Boolean).join('、')} 安装包现已开放下载</span></p></div>
+        <Link href="/download">查看版本与校验信息 <ArrowRight size={15} /></Link>
       </section>
 
       <section className="principles" aria-label="产品原则">
@@ -74,7 +84,7 @@ export default function NanoHome() {
       </section>
 
       <section className="closing-cta">
-        <div><p className="kicker">NANOPLAYER PREVIEW</p><h2>下载当前 macOS 测试版。</h2><p>现提供 Apple Silicon v0.1.0 测试安装包；Windows 版本仍在准备中。</p></div>
+        <div><p className="kicker">NANOPLAYER {release.version}</p><h2>把本地音乐，留在自己的电脑里。</h2><p>v{release.version} 已提供 {availablePlatforms.filter(Boolean).join('、')} 安装包。当前版本尚未完成平台签名，请先阅读下载页的安装说明。</p></div>
         <Link className="primary-link light" href="/download">前往下载 <ArrowRight size={16} /></Link>
       </section>
       <footer className="site-footer"><span className="site-brand"><span>nano</span>Player</span><span>本地音乐播放器 · 源文件只读</span><span>© 2026 nanoPlayer</span></footer>
