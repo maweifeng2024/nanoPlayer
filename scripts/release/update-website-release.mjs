@@ -8,10 +8,16 @@ if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? '') || !repository ||
   process.exit(1);
 }
 
-const files = fs.readdirSync(artifactDirectory, { withFileTypes: true })
-  .filter((entry) => entry.isFile() && entry.name !== 'SHA256SUMS.txt')
-  .map((entry) => entry.name)
-  .sort();
+function collectFiles(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return collectFiles(fullPath);
+    if (!entry.isFile() || entry.name === 'SHA256SUMS.txt') return [];
+    return [fullPath];
+  });
+}
+
+const files = collectFiles(artifactDirectory).sort();
 
 function platformFor(name) {
   if (/\.(dmg|app\.tar\.gz)$/i.test(name)) return 'macos';
@@ -27,23 +33,29 @@ function architectureFor(name) {
   return 'platform-default';
 }
 
+function formatFor(name) {
+  if (/\.app\.tar\.gz$/i.test(name)) return 'app archive';
+  return path.extname(name).slice(1);
+}
+
 const platforms = { macos: [], windows: [], linux: [] };
-for (const name of files) {
+for (const filePath of files) {
+  const name = path.basename(filePath);
   const platform = platformFor(name);
   if (!platform) continue;
-  const bytes = fs.readFileSync(path.join(artifactDirectory, name));
+  const bytes = fs.readFileSync(filePath);
   platforms[platform].push({
     name,
     architecture: architectureFor(name),
-    format: name.split('.').pop(),
+    format: formatFor(name),
     url: `https://github.com/${repository}/releases/download/v${version}/${encodeURIComponent(name)}`,
     sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
     size: bytes.length,
   });
 }
 
-for (const [platform, assets] of Object.entries(platforms)) {
-  if (assets.length === 0) throw new Error(`No ${platform} release artifact was found.`);
+for (const platform of ['macos', 'windows']) {
+  if (platforms[platform].length === 0) throw new Error(`No ${platform} release artifact was found.`);
 }
 
 const manifest = {

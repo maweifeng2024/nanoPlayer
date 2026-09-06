@@ -803,73 +803,90 @@ fn clear_playlist_cover(
     Ok(())
 }
 
+fn localized_menu(
+    app: &tauri::AppHandle,
+    english: bool,
+) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    let tr = |zh, en| if english { en } else { zh };
+
+    let add_folder =
+        MenuItemBuilder::with_id("add-library", tr("添加音乐文件夹…", "Add Music Folder…"))
+            .accelerator("CmdOrCtrl+O")
+            .build(app)?;
+    let new_playlist = MenuItemBuilder::with_id("new-playlist", tr("新建歌单…", "New Playlist…"))
+        .accelerator("CmdOrCtrl+N")
+        .build(app)?;
+    let search = MenuItemBuilder::with_id("search", tr("全局搜索", "Search Library"))
+        .accelerator("CmdOrCtrl+K")
+        .build(app)?;
+    let settings = MenuItemBuilder::with_id("settings", tr("设置…", "Settings…"))
+        .accelerator("CmdOrCtrl+Comma")
+        .build(app)?;
+    let play_pause = MenuItemBuilder::with_id("play-pause", tr("播放/暂停", "Play/Pause"))
+        .accelerator("Space")
+        .build(app)?;
+    let lyrics = MenuItemBuilder::with_id("toggle-lyrics", tr("显示/隐藏歌词", "Show/Hide Lyrics"))
+        .accelerator("CmdOrCtrl+L")
+        .build(app)?;
+    let queue = MenuItemBuilder::with_id("toggle-queue", tr("显示/隐藏队列", "Show/Hide Queue"))
+        .accelerator("CmdOrCtrl+Shift+Q")
+        .build(app)?;
+    let app_menu = SubmenuBuilder::new(app, "nanoPlayer")
+        .about_with_text(tr("关于 nanoPlayer", "About nanoPlayer"), None)
+        .separator()
+        .item(&settings)
+        .separator()
+        .hide_with_text(tr("隐藏 nanoPlayer", "Hide nanoPlayer"))
+        .hide_others_with_text(tr("隐藏其他", "Hide Others"))
+        .show_all_with_text(tr("显示全部", "Show All"))
+        .separator()
+        .quit_with_text(tr("退出 nanoPlayer", "Quit nanoPlayer"))
+        .build()?;
+    let file_menu = SubmenuBuilder::new(app, tr("文件", "File"))
+        .items(&[&add_folder, &new_playlist])
+        .separator()
+        .close_window_with_text(tr("关闭窗口", "Close Window"))
+        .build()?;
+    let edit_menu = SubmenuBuilder::new(app, tr("编辑", "Edit"))
+        .undo_with_text(tr("撤销", "Undo"))
+        .redo_with_text(tr("重做", "Redo"))
+        .separator()
+        .cut_with_text(tr("剪切", "Cut"))
+        .copy_with_text(tr("复制", "Copy"))
+        .paste_with_text(tr("粘贴", "Paste"))
+        .select_all_with_text(tr("全选", "Select All"))
+        .separator()
+        .item(&search)
+        .build()?;
+    let playback_menu = SubmenuBuilder::new(app, tr("播放", "Playback"))
+        .items(&[&play_pause, &lyrics, &queue])
+        .build()?;
+    let view_menu = SubmenuBuilder::new(app, tr("显示", "View"))
+        .fullscreen_with_text(tr("切换全屏", "Toggle Full Screen"))
+        .build()?;
+    MenuBuilder::new(app)
+        .items(&[
+            &app_menu,
+            &file_menu,
+            &edit_menu,
+            &playback_menu,
+            &view_menu,
+        ])
+        .build()
+}
+
+#[tauri::command]
+fn set_interface_language(app: tauri::AppHandle, language: String) -> Result<(), String> {
+    app.set_menu(localized_menu(&app, language == "en").map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .menu(|app| {
-            let add_folder = MenuItemBuilder::with_id("add-library", "添加音乐文件夹…")
-                .accelerator("CmdOrCtrl+O")
-                .build(app)?;
-            let new_playlist = MenuItemBuilder::with_id("new-playlist", "新建歌单…")
-                .accelerator("CmdOrCtrl+N")
-                .build(app)?;
-            let search = MenuItemBuilder::with_id("search", "全局搜索")
-                .accelerator("CmdOrCtrl+K")
-                .build(app)?;
-            let settings = MenuItemBuilder::with_id("settings", "设置…")
-                .accelerator("CmdOrCtrl+Comma")
-                .build(app)?;
-            let play_pause = MenuItemBuilder::with_id("play-pause", "播放/暂停")
-                .accelerator("Space")
-                .build(app)?;
-            let lyrics = MenuItemBuilder::with_id("toggle-lyrics", "显示/隐藏歌词")
-                .accelerator("CmdOrCtrl+L")
-                .build(app)?;
-            let queue = MenuItemBuilder::with_id("toggle-queue", "显示/隐藏队列")
-                .accelerator("CmdOrCtrl+Shift+Q")
-                .build(app)?;
-            let app_menu = SubmenuBuilder::new(app, "nanoPlayer")
-                .about(None)
-                .separator()
-                .item(&settings)
-                .separator()
-                .hide()
-                .hide_others()
-                .show_all()
-                .separator()
-                .quit()
-                .build()?;
-            let file_menu = SubmenuBuilder::new(app, "文件")
-                .items(&[&add_folder, &new_playlist])
-                .separator()
-                .close_window()
-                .build()?;
-            let edit_menu = SubmenuBuilder::new(app, "编辑")
-                .undo()
-                .redo()
-                .separator()
-                .cut()
-                .copy()
-                .paste()
-                .select_all()
-                .separator()
-                .item(&search)
-                .build()?;
-            let playback_menu = SubmenuBuilder::new(app, "播放")
-                .items(&[&play_pause, &lyrics, &queue])
-                .build()?;
-            let view_menu = SubmenuBuilder::new(app, "显示").fullscreen().build()?;
-            MenuBuilder::new(app)
-                .items(&[
-                    &app_menu,
-                    &file_menu,
-                    &edit_menu,
-                    &playback_menu,
-                    &view_menu,
-                ])
-                .build()
-        })
+        .menu(|app| localized_menu(app, false))
         .on_menu_event(|app, event| {
             let _ = app.emit("native-menu", event.id().as_ref());
         })
@@ -931,6 +948,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             health_check,
+            set_interface_language,
             library_snapshot,
             artwork_data_url,
             add_library_roots,

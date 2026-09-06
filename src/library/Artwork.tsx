@@ -1,10 +1,11 @@
+import { t } from "../i18n";
 import { useEffect, useState } from "react";
 import type { Track } from "../domain";
 import { getArtworkDataUrl, isTauri } from "../tauriBridge";
 
 const artworkCache = new Map<string, Promise<string | null>>();
 
-function loadArtwork(track: Track) {
+export function loadArtwork(track: Track) {
   if (!track.hasArtwork || track.id < 0 || !isTauri()) return Promise.resolve(null);
   const key = `${track.id}:${track.artworkHash ?? ""}`;
   let request = artworkCache.get(key);
@@ -39,7 +40,7 @@ export function Artwork({
 
   return (
     <div className={className}>
-      {source ? <img src={source} alt={`${track?.album ?? "专辑"}封面`} /> : fallback}
+      {source ? <img src={source} alt={t("{0}封面", track?.album ?? t("专辑"))} /> : fallback}
     </div>
   );
 }

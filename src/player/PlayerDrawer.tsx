@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { FileText, GripVertical, ListMusic, Mic2, Play, Trash2, X } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useRef, useState } from "react";
@@ -34,16 +35,19 @@ export function PlayerDrawer() {
     .map((id) => state.tracks.find((item) => item.id === id))
     .filter(Boolean);
   return (
-    <aside className="player-drawer" aria-label={state.drawer === "queue" ? "播放队列" : "歌词"}>
+    <aside
+      className="player-drawer"
+      aria-label={state.drawer === "queue" ? t("播放队列") : t("歌词")}
+    >
       <header>
         <div>
           {state.drawer === "queue" ? <ListMusic size={18} /> : <Mic2 size={18} />}
-          <strong>{state.drawer === "queue" ? "播放队列" : "歌词"}</strong>
+          <strong>{state.drawer === "queue" ? t("播放队列") : t("歌词")}</strong>
         </div>
         <button
           className="icon-button"
           onClick={() => state.toggleDrawer(state.drawer!)}
-          aria-label="关闭"
+          aria-label={t("关闭")}
         >
           <X size={17} />
         </button>
@@ -51,10 +55,13 @@ export function PlayerDrawer() {
       {state.drawer === "queue" ? (
         <>
           <div className="drawer-subhead">
-            <span>{queueTracks.length} 首 · 可拖动排序</span>
+            <span>
+              {queueTracks.length}
+              {t("首 · 可拖动排序")}
+            </span>
             <button className="text-button" onClick={state.clearQueue}>
               <Trash2 size={13} />
-              清空待播
+              {t("清空待播")}
             </button>
           </div>
           <div className="queue-list">
@@ -96,7 +103,7 @@ export function PlayerDrawer() {
                     <button
                       className="icon-button remove-queue"
                       onClick={() => state.removeFromQueue(index)}
-                      aria-label={`移除 ${item.title}`}
+                      aria-label={t("移除 {0}", item.title)}
                     >
                       <X size={14} />
                     </button>
@@ -145,14 +152,14 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
   }, [track?.id, track?.title, track?.artist, track?.album]);
   const search = async () => {
     if (!track || track.id < 0 || !isTauri())
-      return setNotice("在线歌词匹配仅用于桌面版的真实曲目。");
+      return setNotice(t("在线歌词匹配仅用于桌面版的真实曲目。"));
     setSearching(true);
     try {
       const results = await searchOnlineLyrics(track.id, searchInput);
       setCandidates(results);
-      if (!results.length) setNotice("没有找到候选歌词，可以修改歌名或艺术家后重试。");
+      if (!results.length) setNotice(t("没有找到候选歌词，可以修改歌名或艺术家后重试。"));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     } finally {
       setSearching(false);
     }
@@ -163,9 +170,9 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
       const result = await chooseOnlineLyrics(track.id, candidate);
       replaceLibrary(result.roots, result.tracks, result.issues);
       setCandidates([]);
-      setNotice("歌词已缓存到应用数据库。");
+      setNotice(t("歌词已缓存到应用数据库。"));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const removeNetworkLyrics = async () => {
@@ -173,26 +180,26 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
     try {
       const result = await clearTrackOnlineLyrics(track.id);
       replaceLibrary(result.roots, result.tracks, result.issues);
-      setNotice("已移除这首歌的网络歌词匹配。");
+      setNotice(t("已移除这首歌的网络歌词匹配。"));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const chooseLocalLyrics = async () => {
     if (!track || track.id < 0 || !isTauri())
-      return setNotice("本地歌词选择仅用于桌面版真实曲目。");
+      return setNotice(t("本地歌词选择仅用于桌面版真实曲目。"));
     const chosen = await open({
       multiple: false,
-      title: `为“${track.title}”选择歌词`,
-      filters: [{ name: "歌词", extensions: ["lrc", "txt"] }],
+      title: t("为“{0}”选择歌词", track.title),
+      filters: [{ name: t("歌词"), extensions: ["lrc", "txt"] }],
     });
     if (typeof chosen !== "string") return;
     try {
       const result = await importManualLyrics(track.id, chosen);
       replaceLibrary(result.roots, result.tracks, result.issues);
-      setNotice("本地歌词已复制到应用数据库，原文件未修改。");
+      setNotice(t("本地歌词已复制到应用数据库，原文件未修改。"));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const removeManualLyrics = async () => {
@@ -200,16 +207,16 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
     try {
       const result = await clearTrackManualLyrics(track.id);
       replaceLibrary(result.roots, result.tracks, result.issues);
-      setNotice("已移除手动指定的歌词，本地原文件未修改。");
+      setNotice(t("已移除手动指定的歌词，本地原文件未修改。"));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   if (!track)
     return (
       <div className="drawer-empty">
         <Mic2 size={24} />
-        <p>播放一首歌曲后在这里查看歌词。</p>
+        <p>{t("播放一首歌曲后在这里查看歌词。")}</p>
       </div>
     );
   if (!lines.length)
@@ -218,14 +225,18 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
         <Mic2 size={24} />
         <strong>{track.title}</strong>
         <p>
-          未找到本地歌词。
-          {onlineLyrics ? "可以向 LRCLIB 查找候选结果。" : "在线歌词默认关闭，可在设置中选择开启。"}
+          {t("未找到本地歌词。")}
+          {onlineLyrics
+            ? t("可以向 LRCLIB 查找候选结果。")
+            : t("在线歌词默认关闭，可在设置中选择开启。")}
         </p>
         {onlineLyrics && (
           <div className="lyrics-search-editor">
             {(["title", "artist", "album"] as const).map((field) => (
               <label key={field}>
-                <span>{{ title: "歌名", artist: "艺术家", album: "专辑（可选）" }[field]}</span>
+                <span>
+                  {{ title: t("歌名"), artist: t("艺术家"), album: t("专辑（可选）") }[field]}
+                </span>
                 <input
                   value={searchInput[field]}
                   onChange={(event) =>
@@ -239,50 +250,50 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
               disabled={searching || !searchInput.title.trim()}
               onClick={search}
             >
-              {searching ? "正在多级匹配…" : "查找在线歌词"}
+              {searching ? t("正在多级匹配…") : t("查找在线歌词")}
             </button>
           </div>
         )}
         {isTauri() && track.id > 0 ? (
           <button className="secondary-button" onClick={chooseLocalLyrics}>
             <FileText size={14} />
-            选择本地歌词
+            {t("选择本地歌词")}
           </button>
         ) : null}
         <LyricsCandidates candidates={candidates} onChoose={choose} />
       </div>
     );
   const sourceLabel =
-    { manual: "手动指定", embedded: "内嵌", sidecar: "同目录", lrclib: "LRCLIB" }[
+    { manual: t("手动指定"), embedded: t("内嵌"), sidecar: t("同目录"), lrclib: "LRCLIB" }[
       track.lyricsSource ?? ""
-    ] ?? "本地";
+    ] ?? t("本地");
   return (
     <div className="lyrics-panel">
       <div className="lyrics-meta">
         <strong>{track.title}</strong>
         <span>
           {track.artist} · {sourceLabel}
-          {parsed.synchronized ? "同步歌词" : "纯文本歌词"}
+          {parsed.synchronized ? t("同步歌词") : t("纯文本歌词")}
         </span>
         <div className="lyrics-actions">
           {isTauri() && track.id > 0 ? (
             <button className="text-button" onClick={chooseLocalLyrics}>
-              {track.lyricsSource === "manual" ? "替换本地歌词" : "选择本地歌词"}
+              {track.lyricsSource === "manual" ? t("替换本地歌词") : t("选择本地歌词")}
             </button>
           ) : null}
           {onlineLyrics && track.id > 0 ? (
             <button className="text-button" onClick={search} disabled={searching}>
-              {searching ? "匹配中…" : "重新匹配"}
+              {searching ? t("匹配中…") : t("重新匹配")}
             </button>
           ) : null}
           {track.lyricsSource === "lrclib" ? (
             <button className="text-button" onClick={removeNetworkLyrics}>
-              移除此匹配
+              {t("移除此匹配")}
             </button>
           ) : null}
           {track.lyricsSource === "manual" ? (
             <button className="text-button" onClick={removeManualLyrics}>
-              移除手动歌词
+              {t("移除手动歌词")}
             </button>
           ) : null}
         </div>
@@ -326,15 +337,25 @@ function LyricsCandidates({
           <button key={candidate.id} onClick={() => onChoose(candidate)}>
             <strong>{candidate.trackName}</strong>
             <span>
-              {candidate.artistName} · {candidate.albumName || "未知专辑"}
+              {candidate.artistName} · {candidate.albumName || t("未知专辑")}
             </span>
             <span>
               {Math.round(candidate.duration / 60)}:
               {String(Math.round(candidate.duration) % 60).padStart(2, "0")}
-              {` · 相差 ${candidate.durationDifference.toFixed(1)} 秒 · ${candidate.syncedLyrics ? "同步歌词" : "纯文本"}`}
+              {t(
+                " · 相差 {0} 秒 · {1}",
+                candidate.durationDifference.toFixed(1),
+                candidate.syncedLyrics ? t("同步歌词") : t("纯文本"),
+              )}
             </span>
             <span>
-              {candidate.matchReason ? `${candidate.matchReason} · ` : ""}匹配度
+              {candidate.matchReason
+                ? `${candidate.matchReason
+                    .split(" · ")
+                    .map((reason) => t(reason))
+                    .join(" · ")} · `
+                : ""}
+              {t("匹配度")}
               {Math.round(candidate.confidence * 100)}%
             </span>
             {preview ? <small>{preview}</small> : null}

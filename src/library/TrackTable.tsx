@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import {
   CheckSquare,
   ChevronDown,
@@ -16,12 +17,30 @@ import type { Track } from "../domain";
 import { formatDate, formatDuration } from "../domain";
 import { useNanoStore } from "../store";
 
-type SortKey = "title" | "artist" | "album" | "addedAt" | "rating" | "durationMs";
+type SortKey =
+  | "title"
+  | "artist"
+  | "album"
+  | "addedAt"
+  | "rating"
+  | "durationMs"
+  | "playCount"
+  | "lastPlayedAt";
 
-export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId?: string }) {
+export function TrackTable({
+  tracks,
+  playlistId,
+  popular = false,
+}: {
+  tracks: Track[];
+  playlistId?: string;
+  popular?: boolean;
+}) {
   const state = useNanoStore(
     useShallow((store) => ({
       ratings: store.ratings,
+      playCounts: store.playCounts,
+      lastPlayedAt: store.lastPlayedAt,
       playlists: store.playlists,
       currentTrackId: store.currentTrackId,
       playing: store.playing,
@@ -36,7 +55,9 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
       removeFromPlaylist: store.removeFromPlaylist,
     })),
   );
-  const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 } | null>(null);
+  const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 } | null>(
+    popular ? { key: "playCount", direction: -1 } : null,
+  );
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   const [contextMenu, setContextMenu] = useState<{ track: Track; x: number; y: number }>();
@@ -55,7 +76,13 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
       sort && !playlistId
         ? [...tracks].sort((left, right) => {
             let result = 0;
-            if (sort.key === "rating")
+            if (sort.key === "playCount")
+              result = (state.playCounts[left.id] ?? 0) - (state.playCounts[right.id] ?? 0);
+            else if (sort.key === "lastPlayedAt")
+              result = (state.lastPlayedAt[left.id] ?? "").localeCompare(
+                state.lastPlayedAt[right.id] ?? "",
+              );
+            else if (sort.key === "rating")
               result = (state.ratings[left.id] ?? 0) - (state.ratings[right.id] ?? 0);
             else if (sort.key === "durationMs") result = left.durationMs - right.durationMs;
             else
@@ -67,7 +94,7 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
             return result * sort.direction || left.id - right.id;
           })
         : tracks,
-    [playlistId, sort, state.ratings, tracks],
+    [playlistId, sort, state.ratings, state.playCounts, state.lastPlayedAt, tracks],
   );
   const range = useVirtualRows(tableRef, sorted.length, selecting);
   const queueContext = useMemo(() => sorted.map((track) => track.id), [sorted]);
@@ -91,8 +118,10 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
     return (
       <div className="table-empty">
         <ListPlus size={25} />
-        <strong>这里还没有歌曲</strong>
-        <span>从“歌曲”页面的更多菜单添加。</span>
+        <strong>{t("这里还没有歌曲")}</strong>
+        <span>
+          {popular ? t("完整播放一首歌后，它会出现在这里。") : t("从“歌曲”页面的更多菜单添加。")}
+        </span>
       </div>
     );
 
@@ -153,13 +182,13 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
   const menu = (track: Track) => (
     <>
       <button onClick={() => state.playTrack(track.id, queueContext)} type="button">
-        立即播放
+        {t("立即播放")}
       </button>
       <button onClick={() => state.playNext(track.id)} type="button">
-        下一首播放
+        {t("下一首播放")}
       </button>
       <button onClick={() => state.enqueue(track.id)} type="button">
-        添加到队列
+        {t("添加到队列")}
       </button>
       {state.playlists.map((playlist) => (
         <button
@@ -167,7 +196,8 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
           onClick={() => state.addToPlaylist(playlist.id, track.id)}
           type="button"
         >
-          添加到“{playlist.name}”
+          {t("添加到“")}
+          {playlist.name}”
         </button>
       ))}
     </>
@@ -185,21 +215,21 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
           type="button"
         >
           {selecting ? <CheckSquare size={14} /> : <Square size={14} />}
-          {selecting ? "取消选择" : "批量选择"}
+          {selecting ? t("取消选择") : t("批量选择")}
         </button>
         {selecting ? (
           <>
-            <span>已选择 {selected.size} 首</span>
+            <span>{t("已选择 {0} 首", selected.size)}</span>
             <button
               className="text-button"
               onClick={() => setSelected(new Set(sorted.map((track) => track.id)))}
               type="button"
             >
-              全选
+              {t("全选")}
             </button>
             <details className="batch-menu">
-              <summary className="text-button" aria-label="批量添加到歌单">
-                添加到歌单
+              <summary className="text-button" aria-label={t("批量添加到歌单")}>
+                {t("添加到歌单")}
               </summary>
               <div className="menu-popover">
                 {state.playlists.length ? (
@@ -214,7 +244,7 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
                     </button>
                   ))
                 ) : (
-                  <span>请先新建歌单</span>
+                  <span>{t("请先新建歌单")}</span>
                 )}
               </div>
             </details>
@@ -222,35 +252,60 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
         ) : (
           <span>
             {playlistId
-              ? `拖动左侧手柄自由排序 · ${tracks.length} 首`
+              ? t("拖动左侧手柄自由排序 · {0} 首", tracks.length)
               : tracks.length > 200
-                ? `窗口化渲染 · ${tracks.length} 首`
-                : `${tracks.length} 首`}
+                ? t("窗口化渲染 · {0} 首", tracks.length)
+                : t("{0} 首", tracks.length)}
           </span>
         )}
       </div>
-      <div ref={tableRef} className="track-table" role="table" aria-label="歌曲列表">
+      <div
+        ref={tableRef}
+        className={`track-table ${popular ? "popular-table" : ""}`}
+        role="table"
+        aria-label={t("歌曲列表")}
+      >
         <div className="track-row track-head" role="row">
           <span>#</span>
           <button disabled={Boolean(playlistId)} onClick={() => setSortKey("title")}>
-            标题{sort?.key === "title" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+            {t("标题")}
+            {sort?.key === "title" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
           </button>
           <button disabled={Boolean(playlistId)} onClick={() => setSortKey("rating")}>
-            评分{sort?.key === "rating" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+            {t("评分")}
+            {sort?.key === "rating" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
           </button>
           <button disabled={Boolean(playlistId)} onClick={() => setSortKey("artist")}>
-            艺术家{sort?.key === "artist" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+            {t("艺术家")}
+            {sort?.key === "artist" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
           </button>
           <button disabled={Boolean(playlistId)} onClick={() => setSortKey("album")}>
-            专辑{sort?.key === "album" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+            {t("专辑")}
+            {sort?.key === "album" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
           </button>
-          <button disabled={Boolean(playlistId)} onClick={() => setSortKey("addedAt")}>
-            添加日期{sort?.key === "addedAt" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+          <button
+            disabled={Boolean(playlistId)}
+            onClick={() => setSortKey(popular ? "lastPlayedAt" : "addedAt")}
+          >
+            {popular ? t("最后一次播放时间") : t("添加日期")}
+            {sort?.key === (popular ? "lastPlayedAt" : "addedAt")
+              ? sort.direction === 1
+                ? " ↑"
+                : " ↓"
+              : ""}
           </button>
           <button disabled={Boolean(playlistId)} onClick={() => setSortKey("durationMs")}>
-            时长{sort?.key === "durationMs" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+            {t("时长")}
+            {sort?.key === "durationMs" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
           </button>
-          <span>{playlistId ? "排序" : ""}</span>
+          {popular ? (
+            <button onClick={() => setSortKey("playCount")}>
+              {t("播放次数")}
+              {sort?.key === "playCount" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+            </button>
+          ) : (
+            <span>{playlistId ? t("排序") : ""}</span>
+          )}
           <span />
         </div>
         {range.start > 0 ? (
@@ -289,8 +344,8 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
                     draggable
                     role="button"
                     tabIndex={0}
-                    title="拖动调整歌单顺序"
-                    aria-label={`拖动排序 ${track.title}`}
+                    title={t("拖动调整歌单顺序")}
+                    aria-label={t("拖动排序 {0}", track.title)}
                     onPointerDown={(event) => {
                       event.preventDefault();
                       event.currentTarget.setPointerCapture(event.pointerId);
@@ -331,7 +386,7 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
                 {selecting ? (
                   <button
                     className="row-play"
-                    aria-label={`${selected.has(track.id) ? "取消选择" : "选择"} ${track.title}`}
+                    aria-label={`${selected.has(track.id) ? t("取消选择") : t("选择")} ${track.title}`}
                     onClick={() => toggleSelected(track.id)}
                     type="button"
                   >
@@ -340,7 +395,7 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
                 ) : (
                   <button
                     className="row-play"
-                    aria-label={`播放 ${track.title}`}
+                    aria-label={t("播放 {0}", track.title)}
                     onClick={() => state.playTrack(track.id, queueContext)}
                     type="button"
                   >
@@ -369,17 +424,20 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
                   type="button"
                 >
                   <strong>{track.title}</strong>
-                  <small>{track.format.toUpperCase()} · 查看详情</small>
+                  <small>
+                    {track.format.toUpperCase()}
+                    {t("· 查看详情")}
+                  </small>
                 </button>
               </div>
-              <div className="rating" aria-label={`${track.title} 评分`}>
+              <div className="rating" aria-label={t("{0} 评分", track.title)}>
                 {[1, 2, 3, 4, 5].map((value) => (
                   <button
                     key={value}
                     onClick={() =>
                       state.rate(track.id, state.ratings[track.id] === value ? 0 : value)
                     }
-                    aria-label={`${value} 星`}
+                    aria-label={t("{0} 星", value)}
                     type="button"
                   >
                     <Star
@@ -391,15 +449,21 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
               </div>
               <span className="artist-cell">{track.artist}</span>
               <span className="album-cell">{track.album}</span>
-              <span className="added-cell">{formatDate(track.addedAt)}</span>
+              <span className="added-cell">
+                {popular
+                  ? state.lastPlayedAt[track.id]
+                    ? formatDate(state.lastPlayedAt[track.id], true)
+                    : "—"
+                  : formatDate(track.addedAt)}
+              </span>
               <span className="duration-cell">{formatDuration(track.durationMs)}</span>
               {playlistId ? (
-                <div className="playlist-order-actions" aria-label={`${track.title} 排序`}>
+                <div className="playlist-order-actions" aria-label={t("{0} 排序", track.title)}>
                   <button
                     disabled={index === 0}
                     onClick={() => moveWithButton(track.id, "up", index)}
-                    aria-label={`上移 ${track.title}`}
-                    title="上移"
+                    aria-label={t("上移 {0}", track.title)}
+                    title={t("上移")}
                     type="button"
                   >
                     <ChevronUp size={14} />
@@ -407,27 +471,27 @@ export function TrackTable({ tracks, playlistId }: { tracks: Track[]; playlistId
                   <button
                     disabled={index === sorted.length - 1}
                     onClick={() => moveWithButton(track.id, "down", index)}
-                    aria-label={`下移 ${track.title}`}
-                    title="下移"
+                    aria-label={t("下移 {0}", track.title)}
+                    title={t("下移")}
                     type="button"
                   >
                     <ChevronDown size={14} />
                   </button>
                 </div>
               ) : (
-                <span />
+                <span>{popular ? (state.playCounts[track.id] ?? 0) : ""}</span>
               )}
               {playlistId ? (
                 <button
                   className="icon-button row-more"
                   onClick={() => state.removeFromPlaylist(playlistId, track.id)}
-                  aria-label="从歌单移除"
+                  aria-label={t("从歌单移除")}
                 >
                   <X size={16} />
                 </button>
               ) : (
                 <details className="more-menu">
-                  <summary aria-label={`${track.title} 更多操作`}>
+                  <summary aria-label={t("{0} 更多操作", track.title)}>
                     <MoreHorizontal size={17} />
                   </summary>
                   <div className="menu-popover">{menu(track)}</div>
@@ -466,7 +530,7 @@ function useVirtualRows(
   count: number,
   layoutKey: boolean,
 ) {
-  const [range, setRange] = useState({ start: 0, end: count });
+  const [range, setRange] = useState({ start: 0, end: Math.min(count, 40) });
   useLayoutEffect(() => {
     if (count <= 200) {
       setRange({ start: 0, end: count });

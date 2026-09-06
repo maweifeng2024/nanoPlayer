@@ -1,3 +1,4 @@
+import { locale } from "./i18n";
 export type Page =
   | "home"
   | "library"
@@ -237,18 +238,23 @@ export function formatBytes(bytes: number) {
   return `${(bytes / 1024 ** exponent).toFixed(exponent > 1 ? 1 : 0)} ${units[exponent]}`;
 }
 
-export function formatDate(value: string) {
+export function formatDate(value: string, includeTime = false) {
   if (/^\d{10,13}$/.test(value)) {
     const timestamp = Number(value) * (value.length === 10 ? 1000 : 1);
-    return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(timestamp);
+    return new Intl.DateTimeFormat(locale(), {
+      dateStyle: "medium",
+      ...(includeTime ? { timeStyle: "short" as const } : {}),
+    }).format(timestamp);
   }
   const date = new Date(value);
   return Number.isNaN(date.valueOf())
     ? value.slice(0, 10)
-    : new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(date);
+    : new Intl.DateTimeFormat(locale(), {
+        dateStyle: "medium",
+        ...(includeTime ? { timeStyle: "short" as const } : {}),
+      }).format(date);
 }
 
 export function playCountThreshold(durationMs: number) {
-  if (durationMs < 30_000) return Number.POSITIVE_INFINITY;
-  return Math.min(240_000, durationMs * 0.5);
+  return durationMs > 0 ? durationMs : Number.POSITIVE_INFINITY;
 }

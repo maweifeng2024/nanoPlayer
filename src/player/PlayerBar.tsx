@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import {
   Heart,
   ListOrdered,
@@ -40,15 +41,27 @@ export function PlayerBar() {
   }, [state.listenedSessionMs, state.sessionCounted]);
 
   useEffect(() => {
-    if (!isTauri() || !track || track.id < 0 || !state.playing) return;
+    if (!isTauri() || !track || track.id < 0) return;
     let disposed = false;
-    beginPlaybackSession(track.id)
-      .then((id) => {
-        if (disposed)
-          checkpointPlaybackSession(id, 0, false, "changed-before-start").catch(() => undefined);
-        else session.current = { id, trackId: track.id };
-      })
-      .catch((error) => state.setNotice(String(error)));
+    let starting = false;
+    const begin = () => {
+      if (starting || session.current || !useNanoStore.getState().playing) return;
+      starting = true;
+      beginPlaybackSession(track.id)
+        .then((id) => {
+          if (disposed)
+            checkpointPlaybackSession(id, 0, false, "changed-before-start").catch(() => undefined);
+          else session.current = { id, trackId: track.id };
+        })
+        .catch((error) => state.setNotice(t(String(error))))
+        .finally(() => {
+          starting = false;
+        });
+    };
+    begin();
+    const unsubscribe = useNanoStore.subscribe((next, previous) => {
+      if (next.playing && !previous.playing) begin();
+    });
     const checkpoint = window.setInterval(() => {
       if (session.current?.trackId === track.id)
         checkpointPlaybackSession(
@@ -59,6 +72,7 @@ export function PlayerBar() {
     }, 10_000);
     return () => {
       disposed = true;
+      unsubscribe();
       window.clearInterval(checkpoint);
       if (session.current?.trackId === track.id) {
         checkpointPlaybackSession(
@@ -70,35 +84,67 @@ export function PlayerBar() {
         session.current = undefined;
       }
     };
-  }, [state.playing, track?.id]);
+  }, [track?.id, state.playbackRevision]);
 
   useEffect(() => {
     if (!track || !state.playing) return;
     let polling = false;
+    const finish = () => {
+      const latest = useNanoStore.getState();
+      latest.completePlayback();
+      const completed = useNanoStore.getState();
+      sessionProgress.current = {
+        listenedMs: completed.listenedSessionMs,
+        counted: completed.sessionCounted,
+      };
+      if (session.current) {
+        void checkpointPlaybackSession(
+          session.current.id,
+          completed.listenedSessionMs,
+          completed.sessionCounted,
+          "completed",
+        ).catch(() => undefined);
+        session.current = undefined;
+      }
+      completed.next(true);
+    };
     const tick = async () => {
       const snapshot = useNanoStore.getState();
       const current = snapshot.tracks.find((item) => item.id === snapshot.currentTrackId);
       if (!current || !snapshot.playing) return;
       if (!isTauri() || current.id < 0) {
         snapshot.tickPlayback(250);
-        if (snapshot.progressMs + 250 >= current.durationMs) snapshot.next(true);
+        if (snapshot.progressMs + 250 >= current.durationMs) finish();
         else snapshot.setProgress(snapshot.progressMs + 250);
         return;
       }
-      if (polling) return;
+      if (polling || loadedRevision.current !== snapshot.playbackRevision) return;
       polling = true;
       try {
         const status = await getPlaybackStatus();
-        if (!status || loadedTrack.current !== current.id) return;
+        if (
+          !status ||
+          loadedTrack.current !== current.id ||
+          useNanoStore.getState().currentTrackId !== current.id ||
+          useNanoStore.getState().playbackRevision !== snapshot.playbackRevision ||
+          !useNanoStore.getState().playing
+        )
+          return;
         if (status.empty) {
-          snapshot.next(true);
+          // The sink may reset its position at EOF. Account for the final poll,
+          // including tracks shorter than 250 ms, without counting a seek.
+          snapshot.tickPlayback(
+            Math.min(250, Math.max(0, current.durationMs - snapshot.progressMs)),
+          );
+          finish();
           return;
         }
         snapshot.setProgress(Math.min(status.positionMs, current.durationMs));
-        if (!status.paused) snapshot.tickPlayback(250);
+        if (!status.paused)
+          snapshot.tickPlayback(Math.max(0, status.positionMs - snapshot.progressMs));
       } catch (error) {
         snapshot.setPlaying(false);
-        snapshot.setNotice(`读取播放状态失败：${String(error)}`);
+        snapshot.setNotice(t("读取播放状态失败：{0}", t(String(error))));
       } finally {
         polling = false;
       }
@@ -195,7 +241,7 @@ export function PlayerBar() {
       })
       .catch((error) => {
         state.setPlaying(false);
-        state.setNotice(`播放失败：${String(error)}`);
+        state.setNotice(t("播放失败：{0}", t(String(error))));
       });
   }, [state.playbackRevision, state.playing, track?.id]);
 
@@ -204,10 +250,10 @@ export function PlayerBar() {
   }, [state.playing, track?.id]);
 
   const seek = (value: number) => {
-    state.setProgress(value);
+    state.seekPlayback(value);
     if (isTauri() && track && track.id > 0)
       invoke("playback_seek", { positionMs: value }).catch((error) =>
-        state.setNotice(String(error)),
+        state.setNotice(t(String(error))),
       );
   };
   const setVolume = (value: number) => {
@@ -219,20 +265,24 @@ export function PlayerBar() {
     state.toggleMute();
     if (isTauri())
       invoke("playback_volume", { volume: nextMuted ? 0 : state.volume }).catch((error) =>
-        state.setNotice(String(error)),
+        state.setNotice(t(String(error))),
       );
   };
   const repeatLabel =
-    state.repeatMode === "one" ? "单曲循环" : state.repeatMode === "all" ? "全部循环" : "不循环";
+    state.repeatMode === "one"
+      ? t("单曲循环")
+      : state.repeatMode === "all"
+        ? t("全部循环")
+        : t("不循环");
 
   return (
-    <footer className="player-bar" aria-label="播放器">
+    <footer className="player-bar" aria-label={t("播放器")}>
       <div className="now-playing">
         <button
           className="artwork-button"
           disabled={!track}
           onClick={() => track && state.setPage("now-playing")}
-          aria-label="打开正在播放页"
+          aria-label={t("打开正在播放页")}
           type="button"
         >
           <Artwork
@@ -242,14 +292,14 @@ export function PlayerBar() {
           />
         </button>
         <div>
-          <strong>{track?.title ?? "尚未播放"}</strong>
-          <span>{track ? `${track.artist} · ${track.album}` : "从本地资料库选择歌曲"}</span>
+          <strong>{track?.title ?? t("尚未播放")}</strong>
+          <span>{track ? `${track.artist} · ${track.album}` : t("从本地资料库选择歌曲")}</span>
         </div>
         <button
           className={`now-favorite ${track && state.ratings[track.id] ? "active" : ""}`}
           disabled={!track}
           onClick={() => track && state.rate(track.id, state.ratings[track.id] ? 0 : 5)}
-          aria-label={track && state.ratings[track.id] ? "取消收藏" : "收藏"}
+          aria-label={track && state.ratings[track.id] ? t("取消收藏") : t("收藏")}
           type="button"
         >
           <Heart size={18} fill={track && state.ratings[track.id] ? "currentColor" : "none"} />
@@ -259,8 +309,11 @@ export function PlayerBar() {
         <div className="transport-buttons">
           <button
             className={state.orderMode === "shuffle" ? "active" : ""}
-            aria-label={`播放顺序：${state.orderMode === "shuffle" ? "随机播放" : "顺序播放"}`}
-            title={state.orderMode === "shuffle" ? "随机播放" : "顺序播放"}
+            aria-label={t(
+              "播放顺序：{0}",
+              state.orderMode === "shuffle" ? t("随机播放") : t("顺序播放"),
+            )}
+            title={state.orderMode === "shuffle" ? t("随机播放") : t("顺序播放")}
             onClick={state.toggleOrderMode}
             type="button"
           >
@@ -268,19 +321,19 @@ export function PlayerBar() {
           </button>
           <button
             className={state.repeatMode !== "off" ? "active" : ""}
-            aria-label={`循环方式：${repeatLabel}`}
+            aria-label={t("循环方式：{0}", repeatLabel)}
             title={repeatLabel}
             onClick={state.cycleRepeatMode}
             type="button"
           >
             {state.repeatMode === "one" ? <Repeat1 size={16} /> : <Repeat2 size={16} />}
           </button>
-          <button aria-label="上一首" onClick={state.previous} type="button">
+          <button aria-label={t("上一首")} onClick={state.previous} type="button">
             <SkipBack size={18} />
           </button>
           <button
             className="play-button"
-            aria-label={state.playing ? "暂停" : "播放"}
+            aria-label={state.playing ? t("暂停") : t("播放")}
             onClick={state.togglePlay}
             type="button"
           >
@@ -290,17 +343,18 @@ export function PlayerBar() {
               <Play size={18} fill="currentColor" />
             )}
           </button>
-          <button aria-label="下一首" onClick={() => state.next()} type="button">
+          <button aria-label={t("下一首")} onClick={() => state.next()} type="button">
             <SkipForward size={18} />
           </button>
           <button
             className={`lyrics-text-icon ${state.drawer === "lyrics" ? "active" : ""}`}
-            aria-label="歌词"
-            title="歌词 (⌘L)"
+            aria-label={t("歌词")}
+            aria-pressed={state.drawer === "lyrics"}
+            title={t("歌词 (⌘L)")}
             onClick={() => state.toggleDrawer("lyrics")}
             type="button"
           >
-            <span aria-hidden="true">词</span>
+            <span aria-hidden="true">{t("词")}</span>
           </button>
         </div>
         <div className="progress-row">
@@ -312,7 +366,9 @@ export function PlayerBar() {
                 "--range-progress": `${track?.durationMs ? Math.min(100, (state.progressMs / track.durationMs) * 100) : 0}%`,
               } as CSSProperties
             }
-            aria-label="播放进度"
+            aria-label={t("播放进度")}
+            disabled={!track}
+            aria-valuetext={`${formatDuration(state.progressMs)} / ${formatDuration(track?.durationMs ?? 0)}`}
             type="range"
             min="0"
             max={track?.durationMs ?? 1}
@@ -325,13 +381,19 @@ export function PlayerBar() {
       <div className="player-tools">
         <button
           className={state.drawer === "queue" ? "active" : ""}
-          aria-label="播放队列"
+          aria-label={t("播放队列")}
+          title={t("播放队列 (⌘⇧Q)")}
+          aria-pressed={state.drawer === "queue"}
           onClick={() => state.toggleDrawer("queue")}
           type="button"
         >
           <ListMusic size={17} />
         </button>
-        <button aria-label={state.muted ? "取消静音" : "静音"} onClick={toggleMute} type="button">
+        <button
+          aria-label={state.muted ? t("取消静音") : t("静音")}
+          onClick={toggleMute}
+          type="button"
+        >
           {state.muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
         </button>
         <input
@@ -341,7 +403,7 @@ export function PlayerBar() {
               "--range-progress": `${(state.muted ? 0 : state.volume) * 100}%`,
             } as CSSProperties
           }
-          aria-label="音量"
+          aria-label={t("音量")}
           type="range"
           min="0"
           max="1"
@@ -349,7 +411,7 @@ export function PlayerBar() {
           value={state.muted ? 0 : state.volume}
           onChange={(event) => setVolume(Number(event.target.value))}
         />
-        <span className="volume-value" aria-label="当前音量">
+        <span className="volume-value" aria-label={t("当前音量")}>
           {Math.round((state.muted ? 0 : state.volume) * 100)}%
         </span>
       </div>

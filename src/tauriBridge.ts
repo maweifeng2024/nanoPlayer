@@ -70,3 +70,6 @@ export const getPlaylistCover = (playlistId: string) =>
   invoke<string | null>("get_playlist_cover", { playlistId });
 export const clearPlaylistCover = (playlistId: string) =>
   invoke<void>("clear_playlist_cover", { playlistId });
+
+export const setNativeLanguage = (language: "zh-CN" | "en") =>
+  invoke<void>("set_interface_language", { language });

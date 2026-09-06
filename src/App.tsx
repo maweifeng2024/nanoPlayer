@@ -1,9 +1,10 @@
+import { AmbientBackground } from "./library/AmbientBackground";
+import { t } from "./i18n";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useShallow } from "zustand/react/shallow";
 import {
-  Album,
+  Disc3,
   ChevronLeft,
-  ChevronRight,
   Clock3,
   FolderCog,
   FolderSearch,
@@ -27,7 +28,13 @@ import { ContentPage } from "./library/ContentPage";
 import { PlayerDrawer } from "./player/PlayerDrawer";
 import { useNanoStore } from "./store";
 import { applyNativeUserState, getNativeUserState } from "./store";
-import { getLibrarySnapshot, isTauri, rescanLibraryRoot, saveUserState } from "./tauriBridge";
+import {
+  getLibrarySnapshot,
+  isTauri,
+  rescanLibraryRoot,
+  saveUserState,
+  setNativeLanguage,
+} from "./tauriBridge";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { TrackDetails } from "./library/TrackDetails";
@@ -37,7 +44,7 @@ const navigation = [
   { id: "home", label: "首页", icon: Home },
   { id: "library", label: "本地资料库", icon: FolderCog },
   { id: "songs", label: "歌曲", icon: ListMusic },
-  { id: "albums", label: "专辑", icon: Album },
+  { id: "albums", label: "专辑", icon: Disc3 },
   { id: "artists", label: "艺术家", icon: MicVocal },
   { id: "recent", label: "最近添加", icon: Clock3 },
   { id: "popular", label: "播放最多", icon: Sparkles },
@@ -100,6 +107,11 @@ export default function App() {
       selectedPlaylistId: state.selectedPlaylistId,
     })),
   );
+  const language = useNanoStore((state) => state.language);
+  useEffect(() => {
+    document.documentElement.lang = language;
+    if (isTauri()) void setNativeLanguage(language).catch((error) => setNotice(t(String(error))));
+  }, [language, setNotice]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newPlaylistOpen, setNewPlaylistOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -119,7 +131,11 @@ export default function App() {
         applyNativeUserState(userState);
         if (nativePlaylists?.length) replacePlaylists(nativePlaylists);
         unsubscribePlaylists = useNanoStore.subscribe((state, previous) => {
-          if (state.playlists !== previous.playlists)
+          if (
+            state.playlists !== previous.playlists ||
+            state.language !== previous.language ||
+            state.playCounts !== previous.playCounts
+          )
             saveUserState(getNativeUserState()).catch(() => undefined);
         });
         saveTimer = window.setInterval(
@@ -135,7 +151,7 @@ export default function App() {
                 snapshot = await rescanLibraryRoot(root.id);
               if (snapshot) replaceLibrary(snapshot.roots, snapshot.tracks, snapshot.issues);
             } catch (error) {
-              setNotice(`自动重新扫描失败：${String(error)}`);
+              setNotice(t("自动重新扫描失败：{0}", t(String(error))));
             }
           }, 900);
         }).then((dispose) => {
@@ -155,14 +171,14 @@ export default function App() {
               if (snapshot && active)
                 replaceLibrary(snapshot.roots, snapshot.tracks, snapshot.issues);
             } catch (error) {
-              if (active) setNotice(`启动差异扫描失败：${String(error)}`);
+              if (active) setNotice(t("启动差异扫描失败：{0}", t(String(error))));
             } finally {
               if (active) setScanning(false);
             }
           })();
         }
       })
-      .catch((error) => setNotice(String(error)));
+      .catch((error) => setNotice(t(String(error))));
     return () => {
       active = false;
       window.clearInterval(saveTimer);
@@ -182,7 +198,12 @@ export default function App() {
         event.preventDefault();
         searchRef.current?.focus();
       }
-      if (!typing && event.code === "Space") {
+      if (event.defaultPrevented || target.closest('[role="dialog"]')) return;
+      if (
+        !typing &&
+        !target.closest("button, summary, a, select, [role='button']") &&
+        event.code === "Space"
+      ) {
         event.preventDefault();
         useNanoStore.getState().togglePlay();
       }
@@ -260,7 +281,8 @@ export default function App() {
 
   return (
     <div className={`app-shell ${drawer ? "has-drawer" : ""}`}>
-      <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="主导航">
+      <AmbientBackground />
+      <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label={t("主导航")}>
         <div className="brand-row" data-tauri-drag-region onMouseDown={startWindowDrag}>
           <div className="brand">
             <span>
@@ -270,7 +292,7 @@ export default function App() {
           <button
             className="icon-button sidebar-close"
             onClick={() => setSidebarOpen(false)}
-            aria-label="关闭导航"
+            aria-label={t("关闭导航")}
           >
             <X size={17} />
           </button>
@@ -288,14 +310,14 @@ export default function App() {
               type="button"
             >
               <Icon aria-hidden="true" size={17} />
-              {label}
+              {t(label)}
             </button>
           ))}
         </nav>
-        <p className="section-label">歌单</p>
+        <p className="section-label">{t("歌单")}</p>
         <button className="nav-item" onClick={addPlaylist} type="button">
           <Plus aria-hidden="true" size={17} />
-          新建歌单
+          {t("新建歌单")}
         </button>
         {playlists.map((playlist) => (
           <button
@@ -304,7 +326,10 @@ export default function App() {
               page === "playlist" && selectedPlaylistId === playlist.id ? "page" : undefined
             }
             key={playlist.id}
-            onClick={() => setPage("playlist", playlist.id)}
+            onClick={() => {
+              setPage("playlist", playlist.id);
+              setSidebarOpen(false);
+            }}
             type="button"
           >
             <Heart aria-hidden="true" size={15} />
@@ -315,34 +340,42 @@ export default function App() {
         <button
           className="nav-item"
           aria-current={page === "settings" ? "page" : undefined}
-          onClick={() => setPage("settings")}
+          onClick={() => {
+            setPage("settings");
+            setSidebarOpen(false);
+          }}
           type="button"
         >
           <Settings aria-hidden="true" size={17} />
-          设置
+          {t("设置")}
         </button>
       </aside>
 
+      {sidebarOpen && (
+        <button
+          className="sidebar-backdrop"
+          aria-label={t("收起导航")}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <main className="content">
         <header className="topbar" data-tauri-drag-region onMouseDown={startWindowDrag}>
           <button
             className="icon-button menu-button"
             onClick={() => setSidebarOpen(true)}
-            aria-label="打开导航"
+            aria-label={t("打开导航")}
           >
             <Menu size={19} />
           </button>
-          <div className="history-controls" aria-label="页面导航">
+          <div className="history-controls" aria-label={t("页面导航")}>
             <button
               className="icon-button"
               disabled={page === "home"}
               onClick={() => setPage("home")}
-              aria-label="返回首页"
+              aria-label={t("返回首页")}
+              title={t("返回首页")}
             >
               <ChevronLeft size={22} />
-            </button>
-            <button className="icon-button" disabled aria-label="前进">
-              <ChevronRight size={22} />
             </button>
           </div>
           <label className="search-box">
@@ -350,11 +383,35 @@ export default function App() {
             <input
               ref={searchRef}
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索歌曲、艺术家或专辑"
-              aria-label="全局搜索"
+              onChange={(event) => {
+                if (event.target.value.trim() && page !== "songs") setPage("songs");
+                setQuery(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setQuery("");
+                  searchRef.current?.blur();
+                }
+              }}
+              placeholder={t("搜索歌曲、艺术家或专辑")}
+              aria-label={t("全局搜索")}
             />
-            <kbd>⌘K</kbd>
+            {query ? (
+              <button
+                className="icon-button search-clear"
+                aria-label={t("清除搜索")}
+                title={t("清除搜索")}
+                onClick={() => {
+                  setQuery("");
+                  searchRef.current?.focus();
+                }}
+                type="button"
+              >
+                <X size={14} />
+              </button>
+            ) : (
+              <kbd>⌘K</kbd>
+            )}
           </label>
         </header>
         <div className="page-scroll">
@@ -375,21 +432,21 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="onboarding-title"
           >
-            <p className="eyebrow">欢迎使用 nanoPlayer</p>
-            <h1 id="onboarding-title">你的音乐，只属于这台电脑</h1>
-            <p>选择本地音乐文件夹，nanoPlayer 会建立私有索引并保持源文件只读。</p>
+            <p className="eyebrow">{t("欢迎使用 nanoPlayer")}</p>
+            <h1 id="onboarding-title">{t("你的音乐，只属于这台电脑")}</h1>
+            <p>{t("选择本地音乐文件夹，nanoPlayer 会建立私有索引并保持源文件只读。")}</p>
             <div className="onboarding-points">
               <span>
                 <ShieldCheck />
-                不修改、移动或删除音乐
+                {t("不修改、移动或删除音乐")}
               </span>
               <span>
                 <FolderSearch />
-                支持多目录与增量扫描
+                {t("支持多目录与增量扫描")}
               </span>
               <span>
                 <WifiOff />
-                离线可完整使用
+                {t("离线可完整使用")}
               </span>
             </div>
             <div className="inline-actions">
@@ -404,10 +461,10 @@ export default function App() {
                   );
                 }}
               >
-                选择音乐文件夹
+                {t("选择音乐文件夹")}
               </button>
               <button className="secondary-button" onClick={dismissOnboarding}>
-                稍后再说
+                {t("稍后再说")}
               </button>
             </div>
           </section>
@@ -425,10 +482,26 @@ export default function App() {
       {selectedTrackId !== undefined ? <TrackDetails trackId={selectedTrackId} /> : null}
       {notice && (
         <div className="toast" role="status">
-          <span>{notice}</span>
-          {/(播放|音频|输出).*?(失败|错误|不可用)/.test(notice) ? (
-            <button className="text-button" onClick={() => setPage("settings")} type="button">
-              检查音频输出
+          <span>{t(notice)}</span>
+          <button
+            className="icon-button"
+            aria-label={t("关闭提示")}
+            onClick={() => setNotice(undefined)}
+          >
+            <X size={14} />
+          </button>
+          {/(播放|音频|输出).*?(失败|错误|不可用)|(?:playback|audio|output).*?(?:failed|error|unavailable)/i.test(
+            notice,
+          ) ? (
+            <button
+              className="text-button"
+              onClick={() => {
+                setPage("settings");
+                setSidebarOpen(false);
+              }}
+              type="button"
+            >
+              {t("检查音频输出")}
             </button>
           ) : null}
         </div>
@@ -444,7 +517,7 @@ function PlaylistNameDialog({
   onClose: () => void;
   onCreate: (name: string) => void;
 }) {
-  const [name, setName] = useState("新建歌单");
+  const [name, setName] = useState(t("新建歌单"));
   useModalBehavior(true, onClose);
   return (
     <div
@@ -463,13 +536,13 @@ function PlaylistNameDialog({
         }}
       >
         <header>
-          <h2 id="new-playlist-title">新建歌单</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭">
+          <h2 id="new-playlist-title">{t("新建歌单")}</h2>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")}>
             <X size={17} />
           </button>
         </header>
         <label>
-          歌单名称
+          {t("歌单名称")}
           <input
             autoFocus
             value={name}
@@ -479,10 +552,10 @@ function PlaylistNameDialog({
         </label>
         <footer>
           <button className="secondary-button" type="button" onClick={onClose}>
-            取消
+            {t("取消")}
           </button>
           <button className="primary-button" type="submit" disabled={!name.trim()}>
-            创建
+            {t("创建")}
           </button>
         </footer>
       </form>

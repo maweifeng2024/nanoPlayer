@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import {
   Album as AlbumIcon,
   Archive,
@@ -23,7 +24,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { useModalBehavior } from "../useModalBehavior";
@@ -153,8 +154,12 @@ export function ContentPage() {
   const copy = labels[state.page] ?? labels.songs;
   return (
     <section>
-      <PageHeader eyebrow={copy.eyebrow} title={copy.title} count={filtered.length} />
-      {state.query && !filtered.length ? <NoResults /> : <TrackTable tracks={filtered} />}
+      <PageHeader eyebrow={t(copy.eyebrow)} title={t(copy.title)} count={filtered.length} />
+      {state.query && !filtered.length ? (
+        <NoResults />
+      ) : (
+        <TrackTable key={state.page} tracks={filtered} popular={state.page === "popular"} />
+      )}
     </section>
   );
 }
@@ -166,7 +171,7 @@ function PageHeader({ eyebrow, title, count }: { eyebrow: string; title: string;
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h1>{title}</h1>
       </div>
-      {count !== undefined ? <span className="count-label">{count} 首</span> : null}
+      {count !== undefined ? <span className="count-label">{t("{0} 首", count)}</span> : null}
     </header>
   );
 }
@@ -209,28 +214,28 @@ function HomePage({ tracks }: { tracks: Track[] }) {
       .sort((a, b) => lastPlayedAt[b.id].localeCompare(lastPlayedAt[a.id]))[0];
     if (lastPlayed)
       moments.push({
-        eyebrow: "刚刚听过",
-        title: `再听一次《${lastPlayed.title}》？`,
-        copy: "熟悉的旋律还在这里，随时可以接着听。",
-        action: "继续播放",
+        eyebrow: t("刚刚听过"),
+        title: t("再听一次《{0}》？", lastPlayed.title),
+        copy: t("熟悉的旋律还在这里，随时可以接着听。"),
+        action: t("继续播放"),
         track: lastPlayed,
       });
     const mostPlayed = popular[0];
     if (mostPlayed)
       moments.push({
-        eyebrow: "你的常听",
-        title: `《${mostPlayed.title}》总会等你回来`,
-        copy: `它已经陪你播放了 ${playCounts[mostPlayed.id]} 次。`,
-        action: "再听一次",
+        eyebrow: t("你的常听"),
+        title: t("《{0}》总会等你回来", mostPlayed.title),
+        copy: t("它已经陪你播放了 {0} 次。", playCounts[mostPlayed.id]),
+        action: t("再听一次"),
         track: mostPlayed,
       });
     const highestRated = rated[0];
     if (highestRated)
       moments.push({
-        eyebrow: "珍藏的声音",
-        title: `为《${highestRated.title}》留一点时间`,
-        copy: `你给了它 ${ratings[highestRated.id]} 星，今天也值得重温。`,
-        action: "播放这首",
+        eyebrow: t("珍藏的声音"),
+        title: t("为《{0}》留一点时间", highestRated.title),
+        copy: t("你给了它 {0} 星，今天也值得重温。", ratings[highestRated.id]),
+        action: t("播放这首"),
         track: highestRated,
       });
     const artistScores = new Map<string, number>();
@@ -248,22 +253,30 @@ function HomePage({ tracks }: { tracks: Track[] }) {
       : undefined;
     if (favoriteArtist && favoriteArtist[1] > 0 && artistTrack)
       moments.push({
-        eyebrow: "常伴左右",
-        title: `${favoriteArtist[0]}，今天也在这里`,
-        copy: "从熟悉的声音开始，或许正合适。",
-        action: "听听看",
+        eyebrow: t("常伴左右"),
+        title: t("{0}，今天也在这里", favoriteArtist[0]),
+        copy: t("从熟悉的声音开始，或许正合适。"),
+        action: t("听听看"),
         track: artistTrack,
       });
     musicThoughts.forEach(([title, copy]) =>
-      moments.push({ eyebrow: "此刻想对你说", title, copy, action: "随便听听", track: defaultTrack }),
+      moments.push({
+        eyebrow: t("此刻想对你说"),
+        title: t(title),
+        copy: t(copy),
+        action: t("随便听听"),
+        track: defaultTrack,
+      }),
     );
-    return moments[Math.floor(homeMomentSeed * moments.length)] ?? {
-      eyebrow: "今天听点什么",
-      title: "回到你的音乐",
-      copy: "本地收藏，私密播放。",
-      action: "播放资料库",
-      track: defaultTrack,
-    };
+    return (
+      moments[Math.floor(homeMomentSeed * moments.length)] ?? {
+        eyebrow: t("今天听点什么"),
+        title: t("回到你的音乐"),
+        copy: t("本地收藏，私密播放。"),
+        action: t("播放资料库"),
+        track: defaultTrack,
+      }
+    );
   })();
   return (
     <section>
@@ -291,11 +304,11 @@ function HomePage({ tracks }: { tracks: Track[] }) {
           </button>
         </div>
       </div>
-      <div className="home-track-columns" aria-label="首页歌曲推荐">
+      <div className="home-track-columns" aria-label={t("首页歌曲推荐")}>
         <HomeTrackList
           icon={<Clock3 />}
           kicker="NEW IN LIBRARY"
-          title="最近添加"
+          title={t("最近添加")}
           page="recent"
           tracks={recent}
           tone="recent"
@@ -303,7 +316,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
         <HomeTrackList
           icon={<Headphones />}
           kicker="MOST PLAYED"
-          title="播放最多"
+          title={t("播放最多")}
           page="popular"
           tracks={popular}
           tone="popular"
@@ -311,7 +324,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
         <HomeTrackList
           icon={<Sparkles />}
           kicker="YOUR FAVORITES"
-          title="高评分"
+          title={t("高评分")}
           page="rated"
           tracks={rated}
           tone="rated"
@@ -348,7 +361,7 @@ function HomeTrackList({
           <small>{kicker}</small>
           <strong>{title}</strong>
         </span>
-        <span className="home-track-heading-link">查看全部&nbsp;›</span>
+        <span className="home-track-heading-link">{t("查看全部 ›")}</span>
       </button>
       <div className="home-track-list-body">
         {tracks.length ? (
@@ -363,7 +376,7 @@ function HomeTrackList({
             ))}
           </ol>
         ) : (
-          <p className="home-track-empty">暂无歌曲</p>
+          <p className="home-track-empty">{t("暂无歌曲")}</p>
         )}
       </div>
     </section>
@@ -377,10 +390,10 @@ function EmptyLibrary() {
       <span className="empty-icon">
         <FolderPlus size={28} />
       </span>
-      <h2>资料库还是空的</h2>
-      <p>添加一个本地音乐目录即可开始。</p>
+      <h2>{t("资料库还是空的")}</h2>
+      <p>{t("添加一个本地音乐目录即可开始。")}</p>
       <button className="primary-button" onClick={() => setPage("library")} type="button">
-        前往本地资料库
+        {t("前往本地资料库")}
       </button>
     </div>
   );
@@ -392,8 +405,8 @@ function NoResults() {
       <span className="empty-icon">
         <SearchX size={27} />
       </span>
-      <h2>没有匹配结果</h2>
-      <p>试试曲名、艺术家、专辑或流派。</p>
+      <h2>{t("没有匹配结果")}</h2>
+      <p>{t("试试曲名、艺术家、专辑或流派。")}</p>
     </div>
   );
 }
@@ -407,10 +420,10 @@ function NowPlayingPage() {
         <span className="empty-icon">
           <Headphones size={28} />
         </span>
-        <h2>尚未播放</h2>
-        <p>从资料库选择一首歌，封面和歌词会在这里展示。</p>
+        <h2>{t("尚未播放")}</h2>
+        <p>{t("从资料库选择一首歌，封面和歌词会在这里展示。")}</p>
         <button className="primary-button" onClick={() => state.setPage("songs")}>
-          浏览歌曲
+          {t("浏览歌曲")}
         </button>
       </div>
     );
@@ -426,7 +439,10 @@ function NowPlayingPage() {
         fallback={<img src="/nanoplayer-app-icon.png" alt="" />}
       />
       <div className="now-playing-copy">
-        <p className="eyebrow">正在播放 · {track.format}</p>
+        <p className="eyebrow">
+          {t("正在播放 ·")}
+          {track.format}
+        </p>
         <h1>{track.title}</h1>
         <h2>
           {track.artist} · {track.album}
@@ -447,12 +463,12 @@ function NowPlayingPage() {
               );
             })
           ) : (
-            <p>暂无歌词，可在右侧歌词抽屉查找本地或在线匹配。</p>
+            <p>{t("暂无歌词，可在右侧歌词抽屉查找本地或在线匹配。")}</p>
           )}
         </div>
         <button className="secondary-button" onClick={() => state.toggleDrawer("lyrics")}>
           <Mic2 size={15} />
-          打开歌词抽屉
+          {t("打开歌词抽屉")}
         </button>
       </div>
     </section>
@@ -462,9 +478,21 @@ function NowPlayingPage() {
 function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Track[] }) {
   const [selected, setSelected] = useState<string>();
   const fields = { album: "album", artist: "artist" } as const;
-  const fallback = kind === "album" ? "未知专辑" : "未知艺术家";
-  const values = [...new Set(tracks.map((track) => track[fields[kind]] || fallback))];
-  const title = { album: "专辑", artist: "艺术家" }[kind];
+  const fallback = kind === "album" ? t("未知专辑") : t("未知艺术家");
+  const groups = useMemo(() => {
+    const result = new Map<string, Track[]>();
+    for (const track of tracks) {
+      const key = track[kind] || fallback;
+      const group = result.get(key);
+      if (group) group.push(track);
+      else result.set(key, [track]);
+    }
+    return [...result.entries()];
+  }, [tracks, kind, fallback]);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridWindow = useCollectionWindow(gridRef, groups.length, selected);
+
+  const title = { album: t("专辑"), artist: t("艺术家") }[kind];
   if (selected) {
     const items = tracks
       .filter((track) => (track[fields[kind]] || fallback) === selected)
@@ -480,15 +508,20 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
     return (
       <section>
         <button className="text-button collection-back" onClick={() => setSelected(undefined)}>
-          ← 返回{title}
+          {t("← 返回")}
+          {title}
         </button>
         <header className={`collection-detail-hero ${kind === "artist" ? "artist-detail" : ""}`}>
           <CollectionPortrait kind={kind} items={items} label={selected} />
           <div>
             <p className="eyebrow">
               {kind === "album"
-                ? `${items[0]?.albumArtist || items[0]?.artist} · ${items[0]?.year ?? "未知年份"}`
-                : `${new Set(items.map((track) => track.album)).size} 张专辑 · ${items.length} 首歌曲`}
+                ? `${items[0]?.albumArtist || items[0]?.artist} · ${items[0]?.year ?? t("未知年份")}`
+                : t(
+                    "{0} 张专辑 · {1} 首歌曲",
+                    new Set(items.map((track) => track.album)).size,
+                    items.length,
+                  )}
             </p>
             <h1>{selected}</h1>
             <p>{formatDuration(items.reduce((sum, track) => sum + track.durationMs, 0))}</p>
@@ -500,7 +533,10 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
           ) : discs.length > 1 ? (
             discs.map((disc) => (
               <div className="disc-group" key={disc}>
-                <h2>碟 {disc}</h2>
+                <h2>
+                  {t("碟")}
+                  {disc}
+                </h2>
                 <TrackTable tracks={items.filter((track) => (track.discNumber ?? 1) === disc)} />
               </div>
             ))
@@ -514,13 +550,18 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
   return (
     <section>
       <PageHeader
-        eyebrow={labels[`${kind}s`]?.eyebrow ?? "资料库浏览"}
+        eyebrow={labels[`${kind}s`]?.eyebrow ?? t("资料库浏览")}
         title={title}
         count={tracks.length}
       />
-      <div className="collection-grid">
-        {values.map((value) => {
-          const items = tracks.filter((track) => (track[fields[kind]] || fallback) === value);
+      <div className="collection-grid" ref={gridRef}>
+        {gridWindow.before > 0 && (
+          <div
+            aria-hidden="true"
+            style={{ gridColumn: "1 / -1", height: gridWindow.before - 24 }}
+          />
+        )}
+        {groups.slice(gridWindow.start, gridWindow.end).map(([value, items]) => {
           return (
             <button className="collection-card" onClick={() => setSelected(value)} key={value}>
               {kind === "artist" ? (
@@ -535,15 +576,65 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
               <strong>{value}</strong>
               <span>
                 {kind === "album"
-                  ? `${items[0].albumArtist || items[0].artist} · ${items[0].year ?? "未知年份"}`
-                  : `${items.length} 首歌曲`}
+                  ? `${items[0].albumArtist || items[0].artist} · ${items[0].year ?? t("未知年份")}`
+                  : t("{0} 首歌曲", items.length)}
               </span>
             </button>
           );
         })}
+        {gridWindow.after > 0 && (
+          <div aria-hidden="true" style={{ gridColumn: "1 / -1", height: gridWindow.after - 24 }} />
+        )}
       </div>
     </section>
   );
+}
+
+function useCollectionWindow(
+  ref: React.RefObject<HTMLDivElement | null>,
+  count: number,
+  selected?: string,
+) {
+  const [window, setWindow] = useState({ start: 0, end: 30, before: 0, after: 0 });
+  useLayoutEffect(() => {
+    const grid = ref.current;
+    const scroller = grid?.closest<HTMLElement>(".page-scroll");
+    if (!grid || !scroller) return;
+    const update = () => {
+      const columns = Math.max(1, Math.floor((grid.clientWidth + 16) / 166));
+      const cardWidth = (grid.clientWidth - (columns - 1) * 16) / columns;
+      const rowHeight = cardWidth + 68;
+      const top = Math.max(
+        0,
+        scroller.getBoundingClientRect().top - grid.getBoundingClientRect().top,
+      );
+      const rows = Math.ceil(count / columns);
+      const first = Math.min(Math.max(0, rows - 1), Math.max(0, Math.floor(top / rowHeight) - 2));
+      const last = Math.min(rows, Math.ceil((top + scroller.clientHeight) / rowHeight) + 2);
+      const next = {
+        start: first * columns,
+        end: last * columns,
+        before: first * rowHeight,
+        after: (rows - last) * rowHeight,
+      };
+      setWindow((current) =>
+        Object.keys(next).every(
+          (key) => current[key as keyof typeof next] === next[key as keyof typeof next],
+        )
+          ? current
+          : next,
+      );
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(scroller);
+    scroller.addEventListener("scroll", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      scroller.removeEventListener("scroll", update);
+    };
+  }, [ref, count, selected]);
+  return window;
 }
 
 function CollectionPortrait({
@@ -557,13 +648,14 @@ function CollectionPortrait({
   label: string;
   grid?: boolean;
 }) {
-  const unique = items
-    .filter(
-      (track, index) =>
-        track.hasArtwork &&
-        items.findIndex((item) => item.album === track.album && item.hasArtwork) === index,
-    )
-    .slice(0, 4);
+  const unique: Track[] = [];
+  const albums = new Set<string>();
+  for (const track of items) {
+    if (!track.hasArtwork || albums.has(track.album)) continue;
+    albums.add(track.album);
+    unique.push(track);
+    if (unique.length === 4) break;
+  }
   const className = grid ? "collection-art artist-collage" : "collection-detail-art artist-collage";
   if (kind === "album")
     return (
@@ -628,21 +720,22 @@ function PlaylistPage() {
     .map((id) => tracks.find((track) => track.id === id))
     .filter(Boolean) as Track[];
   const chooseCover = async () => {
-    if (!isTauri()) return setNotice("自定义歌单图片可在 Tauri 桌面版中选择。");
+    if (!isTauri()) return setNotice(t("自定义歌单图片可在 Tauri 桌面版中选择。"));
     const chosen = await open({
       multiple: false,
-      filters: [{ name: "图片", extensions: ["jpg", "jpeg", "png", "webp", "gif"] }],
+      filters: [{ name: t("图片"), extensions: ["jpg", "jpeg", "png", "webp", "gif"] }],
     });
     if (typeof chosen !== "string") return;
     try {
       setCustomCover(await setPlaylistCover(playlist.id, chosen));
-      setNotice("歌单图片已复制到应用数据目录。");
+      setNotice(t("歌单图片已复制到应用数据目录。"));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const resetCover = async () => {
-    if (isTauri()) await clearPlaylistCover(playlist.id).catch((error) => setNotice(String(error)));
+    if (isTauri())
+      await clearPlaylistCover(playlist.id).catch((error) => setNotice(t(String(error))));
     setCustomCover(undefined);
   };
   const available = tracks.filter(
@@ -659,7 +752,7 @@ function PlaylistPage() {
         <div className="playlist-cover-wrap">
           <div className="playlist-art">
             {customCover ? (
-              <img src={customCover} alt="自定义歌单封面" />
+              <img src={customCover} alt={t("自定义歌单封面")} />
             ) : (
               <AutoPlaylistCover
                 key={`${playlist.id}:${playlist.trackIds.join(",")}`}
@@ -673,8 +766,8 @@ function PlaylistPage() {
             <button
               className="icon-button"
               onClick={chooseCover}
-              aria-label="修改歌单图片"
-              title="修改歌单图片"
+              aria-label={t("修改歌单图片")}
+              title={t("修改歌单图片")}
             >
               <ImagePlus size={16} />
             </button>
@@ -682,8 +775,8 @@ function PlaylistPage() {
               <button
                 className="icon-button"
                 onClick={resetCover}
-                aria-label="恢复自动封面"
-                title="恢复自动封面"
+                aria-label={t("恢复自动封面")}
+                title={t("恢复自动封面")}
               >
                 <RotateCcw size={15} />
               </button>
@@ -691,10 +784,11 @@ function PlaylistPage() {
           </div>
         </div>
         <div>
-          <p className="eyebrow">歌单 · {items.length} 首</p>
+          <p className="eyebrow">{t("歌单 · {0} 首", items.length)}</p>
           <h1>{playlist.name}</h1>
           <p>
-            {formatDuration(items.reduce((sum, track) => sum + track.durationMs, 0))} · 仅保存在本机
+            {formatDuration(items.reduce((sum, track) => sum + track.durationMs, 0))}
+            {t("· 仅保存在本机")}
           </p>
           <div className="inline-actions">
             <button
@@ -708,19 +802,19 @@ function PlaylistPage() {
               }
             >
               <Play size={16} fill="currentColor" />
-              播放
+              {t("播放")}
             </button>
             <button className="secondary-button" onClick={() => setAdding(true)}>
               <Plus size={15} />
-              添加歌曲
+              {t("添加歌曲")}
             </button>
             <button className="secondary-button" onClick={() => setRenaming(true)}>
-              重命名
+              {t("重命名")}
             </button>
             <button
               className="icon-button danger"
               onClick={() => setDeleting(true)}
-              aria-label="删除歌单"
+              aria-label={t("删除歌单")}
             >
               <Trash2 size={17} />
             </button>
@@ -730,7 +824,7 @@ function PlaylistPage() {
       <TrackTable tracks={items} playlistId={playlist.id} />
       {renaming ? (
         <NameDialog
-          title="重命名歌单"
+          title={t("重命名歌单")}
           initial={playlist.name}
           onClose={() => setRenaming(false)}
           onSave={(name) => {
@@ -748,15 +842,22 @@ function PlaylistPage() {
             aria-labelledby="add-songs-title"
           >
             <header>
-              <h2 id="add-songs-title">添加歌曲到“{playlist.name}”</h2>
-              <button className="icon-button" onClick={() => setAdding(false)} aria-label="关闭">
+              <h2 id="add-songs-title">
+                {t("添加歌曲到“")}
+                {playlist.name}”
+              </h2>
+              <button
+                className="icon-button"
+                onClick={() => setAdding(false)}
+                aria-label={t("关闭")}
+              >
                 <X size={17} />
               </button>
             </header>
             <input
               autoFocus
               className="dialog-search"
-              placeholder="搜索歌曲、艺术家或专辑"
+              placeholder={t("搜索歌曲、艺术家或专辑")}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -783,11 +884,11 @@ function PlaylistPage() {
                   </span>
                 </label>
               ))}
-              {!available.length ? <p>没有可添加的歌曲</p> : null}
+              {!available.length ? <p>{t("没有可添加的歌曲")}</p> : null}
             </div>
             <footer>
               <button className="secondary-button" onClick={() => setAdding(false)}>
-                取消
+                {t("取消")}
               </button>
               <button
                 className="primary-button"
@@ -798,7 +899,7 @@ function PlaylistPage() {
                   setAdding(false);
                 }}
               >
-                添加 {selected.size} 首
+                {t("添加 {0} 首", selected.size)}
               </button>
             </footer>
           </section>
@@ -806,9 +907,9 @@ function PlaylistPage() {
       ) : null}
       <ConfirmDialog
         open={deleting}
-        title="删除歌单"
-        message={`删除“${playlist.name}”？只会删除歌单记录，音乐文件不会受影响。`}
-        confirmLabel="删除歌单"
+        title={t("删除歌单")}
+        message={t("删除“{0}”？只会删除歌单记录，音乐文件不会受影响。", playlist.name)}
+        confirmLabel={t("删除歌单")}
         danger
         onClose={() => setDeleting(false)}
         onConfirm={() => {
@@ -865,20 +966,20 @@ function NameDialog({
       >
         <header>
           <h2>{title}</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭">
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")}>
             <X size={17} />
           </button>
         </header>
         <label>
-          歌单名称
+          {t("歌单名称")}
           <input autoFocus value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <footer>
           <button className="secondary-button" type="button" onClick={onClose}>
-            取消
+            {t("取消")}
           </button>
           <button className="primary-button" type="submit" disabled={!name.trim()}>
-            保存
+            {t("保存")}
           </button>
         </footer>
       </form>
@@ -887,6 +988,8 @@ function NameDialog({
 }
 
 function SettingsPage() {
+  const language = useNanoStore((state) => state.language);
+  const setLanguage = useNanoStore((state) => state.setLanguage);
   const {
     onlineLyrics,
     setOnlineLyrics,
@@ -936,48 +1039,48 @@ function SettingsPage() {
         .catch(() => undefined);
   }, []);
   const backup = async () => {
-    if (!isTauri()) return setNotice("数据库备份仅在桌面版可用。");
+    if (!isTauri()) return setNotice(t("数据库备份仅在桌面版可用。"));
     try {
       const result = await createDatabaseBackup();
-      setNotice(`备份已保存：${result.path}`);
+      setNotice(t("备份已保存：{0}", result.path));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const restore = async () => {
-    if (!isTauri()) return setNotice("数据库恢复仅在桌面版可用。");
+    if (!isTauri()) return setNotice(t("数据库恢复仅在桌面版可用。"));
     try {
       const result = await restoreLatestBackup();
       replaceLibrary(result.roots, result.tracks, result.issues);
-      setNotice("数据库已从最新备份恢复。");
+      setNotice(t("数据库已从最新备份恢复。"));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const clearCache = async () => {
-    if (!isTauri()) return setNotice("缓存管理仅在桌面版可用。");
+    if (!isTauri()) return setNotice(t("缓存管理仅在桌面版可用。"));
     try {
       const count = await clearOnlineLyricsCache();
       const result = await getLibrarySnapshot();
       replaceLibrary(result.roots, result.tracks, result.issues);
-      setNotice(`已清除 ${count} 条网络歌词缓存，手动与本地歌词未受影响。`);
+      setNotice(t("已清除 {0} 条网络歌词缓存，手动与本地歌词未受影响。", count));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const clearCovers = async () => {
-    if (!isTauri()) return setNotice("缓存管理仅在桌面版可用。");
+    if (!isTauri()) return setNotice(t("缓存管理仅在桌面版可用。"));
     try {
       const count = await clearArtworkCache();
       const result = await getLibrarySnapshot();
       replaceLibrary(result.roots, result.tracks, result.issues);
-      setNotice(`已清除 ${count} 张内嵌封面缓存；下次重新扫描会再次提取。`);
+      setNotice(t("已清除 {0} 张内嵌封面缓存；下次重新扫描会再次提取。", count));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const reconnectAudio = async () => {
-    if (!isTauri()) return setNotice("音频输出重连仅在桌面版可用。");
+    if (!isTauri()) return setNotice(t("音频输出重连仅在桌面版可用。"));
     try {
       await refreshAudioOutput(
         currentTrackId,
@@ -986,9 +1089,9 @@ function SettingsPage() {
         playing,
         outputDevice,
       );
-      setNotice(`已连接${outputDevice || "系统默认"}音频输出。`);
+      setNotice(t("已连接{0}音频输出。", outputDevice || t("系统默认")));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const chooseOutput = async (name: string) => {
@@ -997,42 +1100,75 @@ function SettingsPage() {
     if (!isTauri()) return;
     try {
       await refreshAudioOutput(currentTrackId, progressMs, muted ? 0 : volume, playing, output);
-      setNotice(`已切换到${output || "系统默认"}。`);
+      setNotice(t("已切换到{0}。", output || t("系统默认")));
     } catch (error) {
       setOutputDevice(outputDevice);
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   const diagnostics = async () => {
-    if (!isTauri()) return setNotice("诊断导出仅在桌面版可用。");
+    if (!isTauri()) return setNotice(t("诊断导出仅在桌面版可用。"));
     try {
       const result = await exportDiagnostics();
-      setNotice(`脱敏诊断已导出：${result.path}`);
+      setNotice(t("脱敏诊断已导出：{0}", result.path));
     } catch (error) {
-      setNotice(String(error));
+      setNotice(t(String(error)));
     }
   };
   return (
     <section>
-      <PageHeader eyebrow="本地优先" title="设置" />
+      <PageHeader eyebrow={t("本地优先")} title={t("设置")} />
       <div className="settings-list">
+        <article>
+          <span className="settings-icon">
+            <Settings2 />
+          </span>
+          <div>
+            <strong>{t("界面语言")}</strong>
+            <p>{t("选择中文或英文，立即应用并自动保存。")}</p>
+          </div>
+          <select
+            aria-label={t("界面语言")}
+            value={language}
+            onChange={(event) => setLanguage(event.target.value as "zh-CN" | "en")}
+          >
+            <option value="zh-CN">简体中文</option>
+            <option value="en">English</option>
+          </select>
+        </article>
+        <article>
+          <span className="settings-icon">
+            <Disc3 />
+          </span>
+          <div>
+            <strong>{t("播放计数")}</strong>
+            <p>{t("完整自然播放结束后计为一次；跳过或拖动进度不计次。")}</p>
+          </div>
+        </article>
         <article>
           <span className="settings-icon">
             <ShieldCheck />
           </span>
           <div>
-            <strong>源文件只读</strong>
-            <p>nanoPlayer 没有修改标签、移动或删除音乐的命令。{roots.length} 个目录已授权。</p>
+            <strong>{t("源文件只读")}</strong>
+            <p>
+              {t("nanoPlayer 没有修改标签、移动或删除音乐的命令。")}{" "}
+              {t("已授权目录：{0}", roots.length)}
+            </p>
           </div>
-          <span className="setting-status">已启用</span>
+          <span className="setting-status">{t("已启用")}</span>
         </article>
         <article>
           <span className="settings-icon">
             <Settings2 />
           </span>
           <div>
-            <strong>在线歌词</strong>
-            <p>开启后，匹配时会向 LRCLIB 发送标题、艺术家、专辑与时长。结果仅缓存到应用数据库。</p>
+            <strong>{t("在线歌词")}</strong>
+            <p>
+              {t(
+                "开启后，匹配时会向 LRCLIB 发送标题、艺术家、专辑与时长。结果仅缓存到应用数据库。",
+              )}
+            </p>
           </div>
           <button
             className={`switch ${onlineLyrics ? "on" : ""}`}
@@ -1048,15 +1184,15 @@ function SettingsPage() {
             <SunMoon />
           </span>
           <div>
-            <strong>外观</strong>
-            <p>可跟随系统，或固定使用浅色/深色主题。</p>
+            <strong>{t("外观")}</strong>
+            <p>{t("可跟随系统，或固定使用浅色/深色主题。")}</p>
           </div>
-          <div className="segmented" aria-label="外观主题">
+          <div className="segmented" aria-label={t("外观主题")}>
             {(
               [
-                ["system", "跟随系统"],
-                ["light", "浅色"],
-                ["dark", "深色"],
+                ["system", t("跟随系统")],
+                ["light", t("浅色")],
+                ["dark", t("深色")],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -1074,47 +1210,49 @@ function SettingsPage() {
             <Keyboard />
           </span>
           <div>
-            <strong>快捷键</strong>
+            <strong>{t("快捷键")}</strong>
             <p>
-              ⌘K 搜索 · Space 播放/暂停 · ⌘O 添加目录 · ⌘N 新建歌单 · ⌘L 歌词 · ⌘⇧Q 队列 · ⌘, 设置
+              {t(
+                "⌘K 搜索 · Space 播放/暂停 · ⌘O 添加目录 · ⌘N 新建歌单 · ⌘L 歌词 · ⌘⇧Q 队列 · ⌘, 设置",
+              )}
             </p>
           </div>
-          <span className="setting-status">已启用</span>
+          <span className="setting-status">{t("已启用")}</span>
         </article>
         <article>
           <span className="settings-icon">
             <Disc3 />
           </span>
           <div>
-            <strong>播放恢复</strong>
-            <p>队列、位置、评分和歌单同步到 SQLite；重启后恢复但不自动发声。</p>
+            <strong>{t("播放恢复")}</strong>
+            <p>{t("队列、位置、评分和歌单同步到 SQLite；重启后恢复但不自动发声。")}</p>
           </div>
-          <span className="setting-status">默认</span>
+          <span className="setting-status">{t("默认")}</span>
         </article>
         <article>
           <span className="settings-icon">
             <AudioLines />
           </span>
           <div>
-            <strong>音频输出</strong>
-            <p>切换设备时保留当前曲目、进度、音量和暂停状态。</p>
+            <strong>{t("音频输出")}</strong>
+            <p>{t("切换设备时保留当前曲目、进度、音量和暂停状态。")}</p>
           </div>
           <div className="output-picker">
             <select
-              aria-label="音频输出设备"
+              aria-label={t("音频输出设备")}
               value={outputDevice ?? ""}
               onChange={(event) => chooseOutput(event.target.value)}
             >
-              <option value="">系统默认</option>
+              <option value="">{t("系统默认")}</option>
               {outputs.map((output) => (
                 <option value={output.name} key={output.name}>
                   {output.name}
-                  {output.isDefault ? "（默认）" : ""}
+                  {output.isDefault ? t("（默认）") : ""}
                 </option>
               ))}
             </select>
             <button className="secondary-button" onClick={reconnectAudio} type="button">
-              重新连接
+              {t("重新连接")}
             </button>
           </div>
         </article>
@@ -1123,15 +1261,15 @@ function SettingsPage() {
             <Archive />
           </span>
           <div>
-            <strong>数据库备份</strong>
+            <strong>{t("数据库备份")}</strong>
             <p>
               {storage
                 ? `${formatBytes(storage.sizeBytes)} · ${storage.path}`
-                : "创建一份一致性 SQLite 备份，仅保存到应用数据目录。"}
+                : t("创建一份一致性 SQLite 备份，仅保存到应用数据目录。")}
             </p>
           </div>
           <button className="secondary-button" onClick={backup} type="button">
-            立即备份
+            {t("立即备份")}
           </button>
         </article>
         <article>
@@ -1139,15 +1277,15 @@ function SettingsPage() {
             <RotateCcw />
           </span>
           <div>
-            <strong>从最新备份恢复</strong>
-            <p>恢复前验证 SQLite 完整性；此操作不会访问或修改音乐目录。</p>
+            <strong>{t("从最新备份恢复")}</strong>
+            <p>{t("恢复前验证 SQLite 完整性；此操作不会访问或修改音乐目录。")}</p>
           </div>
           <button
             className="secondary-button"
             onClick={() => setRestoreConfirm(true)}
             type="button"
           >
-            恢复
+            {t("恢复")}
           </button>
         </article>
         <article>
@@ -1155,11 +1293,11 @@ function SettingsPage() {
             <Eraser />
           </span>
           <div>
-            <strong>清除网络歌词缓存</strong>
-            <p>仅清除 LRCLIB 结果，不会删除手动歌词、同目录 LRC 或任何音乐文件。</p>
+            <strong>{t("清除网络歌词缓存")}</strong>
+            <p>{t("仅清除 LRCLIB 结果，不会删除手动歌词、同目录 LRC 或任何音乐文件。")}</p>
           </div>
           <button className="secondary-button" onClick={clearCache} type="button">
-            清除缓存
+            {t("清除缓存")}
           </button>
         </article>
         <article>
@@ -1167,11 +1305,11 @@ function SettingsPage() {
             <Eraser />
           </span>
           <div>
-            <strong>清除封面缓存</strong>
-            <p>仅删除应用数据库中的封面副本，不会修改音乐文件。</p>
+            <strong>{t("清除封面缓存")}</strong>
+            <p>{t("仅删除应用数据库中的封面副本，不会修改音乐文件。")}</p>
           </div>
           <button className="secondary-button" onClick={clearCovers} type="button">
-            清除封面
+            {t("清除封面")}
           </button>
         </article>
         <article>
@@ -1179,21 +1317,23 @@ function SettingsPage() {
             <FileJson />
           </span>
           <div>
-            <strong>导出脱敏诊断</strong>
+            <strong>{t("导出脱敏诊断")}</strong>
             <p>
-              仅包含版本、平台、计数、问题分类和 SQLite 完整性；不包含路径、文件名、曲名或歌词。
+              {t(
+                "仅包含版本、平台、计数、问题分类和 SQLite 完整性；不包含路径、文件名、曲名或歌词。",
+              )}
             </p>
           </div>
           <button className="secondary-button" onClick={diagnostics} type="button">
-            导出诊断
+            {t("导出诊断")}
           </button>
         </article>
       </div>
       <ConfirmDialog
         open={restoreConfirm}
-        title="从最新备份恢复"
-        message="将用最新备份覆盖当前应用数据。音乐源文件不会受影响。"
-        confirmLabel="确认恢复"
+        title={t("从最新备份恢复")}
+        message={t("将用最新备份覆盖当前应用数据。音乐源文件不会受影响。")}
+        confirmLabel={t("确认恢复")}
         onClose={() => setRestoreConfirm(false)}
         onConfirm={async () => {
           setRestoreConfirm(false);

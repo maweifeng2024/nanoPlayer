@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { X } from "lucide-react";
 import { useModalBehavior } from "./useModalBehavior";
 
@@ -35,14 +36,14 @@ export function ConfirmDialog({
       >
         <header>
           <h2 id="confirm-dialog-title">{title}</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭">
+          <button className="icon-button" type="button" onClick={onClose} aria-label={t("关闭")}>
             <X size={17} />
           </button>
         </header>
         <p id="confirm-dialog-message">{message}</p>
         <footer>
           <button autoFocus className="secondary-button" type="button" onClick={onClose}>
-            取消
+            {t("取消")}
           </button>
           <button
             className={danger ? "danger-button" : "primary-button"}

@@ -57,9 +57,7 @@ test("opens collection details and keyboard queue", async ({ page }) => {
   ).toBe(true);
 });
 
-test("supports sorting, batch playlist actions and theme choice", async ({
-  page,
-}) => {
+test("supports sorting, batch playlist actions and theme choice", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".vite-error-overlay")).toHaveCount(0);
   await page.getByLabel("主导航").getByRole("button", { name: "歌曲", exact: true }).click();
@@ -86,9 +84,7 @@ test("shows three title-only home lists and keeps rating as the second song colu
   await expect(homeLists.getByRole("region", { name: "播放最多" })).toBeVisible();
   await expect(homeLists.getByRole("region", { name: "高评分" })).toBeVisible();
   await expect(homeLists.getByRole("table")).toHaveCount(0);
-  await expect(
-    page.getByLabel("主导航").getByRole("button", { name: "最近播放" }),
-  ).toHaveCount(0);
+  await expect(page.getByLabel("主导航").getByRole("button", { name: "最近播放" })).toHaveCount(0);
 
   await page.getByLabel("主导航").getByRole("button", { name: "歌曲", exact: true }).click();
   const headers = page.locator(".track-head > *");
@@ -171,6 +167,10 @@ test("creates, renames, and fills a playlist through app dialogs", async ({ page
 
 test("shows only played tracks in most-played and paints playback progress", async ({ page }) => {
   await page.goto("/");
+  await page.evaluate(async () => {
+    const { useNanoStore } = await import("/src/store.ts");
+    useNanoStore.setState({ playCounts: { [-1]: 14, [-3]: 8, [-6]: 21 } });
+  });
   await page.getByLabel("主导航").getByRole("button", { name: "播放最多", exact: true }).click();
   await expect(page.getByRole("row")).toHaveCount(4);
   await expect(page.getByRole("row", { name: /迟到的风/ })).toHaveCount(0);
@@ -273,4 +273,103 @@ test("updates playlist selection immediately and separates title clicks from row
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await row.locator(".track-title-button").click();
   await expect(page.getByRole("dialog", { name: "海平面以下" })).toBeVisible();
+});
+
+test("polished search clears results and focused buttons keep native Space behavior", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "设置", exact: true }).click();
+  await page.getByRole("textbox", { name: "全局搜索" }).fill("海平面");
+  await expect(page.getByRole("heading", { name: "歌曲", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "播放 海平面以下", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "清除搜索" }).click();
+  await expect(page.getByRole("textbox", { name: "全局搜索" })).toBeFocused();
+  await expect(page.getByRole("textbox", { name: "全局搜索" })).toHaveValue("");
+  await page.getByRole("textbox", { name: "全局搜索" }).fill("海平面");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("textbox", { name: "全局搜索" })).toHaveValue("");
+  await page.getByRole("button", { name: "播放 海平面以下", exact: true }).click();
+  await page.getByRole("button", { name: "播放队列", exact: true }).focus();
+  await page.keyboard.press("Space");
+  await expect(page.getByRole("complementary", { name: "播放队列" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "暂停", exact: true })).toBeVisible();
+});
+
+test("keeps queue reachable at 720px and renders both themes", async ({ page }) => {
+  await page.setViewportSize({ width: 720, height: 800 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "播放队列", exact: true }).click();
+  await expect(page.getByRole("complementary", { name: "播放队列" })).toBeVisible();
+  await page.getByRole("button", { name: "播放队列", exact: true }).click();
+  await page.getByRole("button", { name: "打开导航" }).click();
+  await page.getByRole("button", { name: "收起导航" }).click({ position: { x: 600, y: 200 } });
+  await expect(page.locator(".sidebar")).not.toHaveClass(/is-open/);
+  await page.screenshot({ path: "test-results/ui-polish-720.png" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({ path: "test-results/ui-polish-dark.png" });
+  await page.getByRole("button", { name: "设置", exact: true }).click();
+  await page.getByRole("button", { name: "浅色", exact: true }).click();
+  await page.screenshot({ path: "test-results/ui-polish-light-settings.png" });
+  await page.getByRole("button", { name: "首页", exact: true }).click();
+  await page.screenshot({ path: "test-results/ui-polish-light.png" });
+});
+
+test("large-library navigation mounts only visible songs and collection cards", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    // Vite exposes the actual app store; synthetic metadata never touches music files.
+    const { useNanoStore } = await import("/src/store.ts");
+    const template = useNanoStore.getState().tracks[0];
+    const tracks = Array.from({ length: 10000 }, (_, index) => ({
+      ...template,
+      id: index + 100,
+      title: `Track ${index}`,
+      album: `Album ${index}`,
+      artist: `Artist ${index}`,
+      hasArtwork: false,
+    }));
+    useNanoStore.setState({ tracks });
+    (window as any).__peakRows = 0;
+    new MutationObserver(() => {
+      (window as any).__peakRows = Math.max(
+        (window as any).__peakRows,
+        document.querySelectorAll("[data-track-id]").length,
+      );
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  const timings: Record<string, number> = {};
+  for (const name of ["歌曲", "专辑", "艺术家"]) {
+    const start = Date.now();
+    await page.getByLabel("主导航").getByRole("button", { name, exact: true }).click();
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+    timings[name] = Date.now() - start;
+    if (name === "歌曲") {
+      expect(await page.evaluate(() => (window as any).__peakRows)).toBeLessThan(100);
+    } else {
+      expect(await page.locator(".collection-card").count()).toBeLessThan(100);
+      await page.locator(".page-scroll").evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      await expect(
+        page.getByRole("button", { name: name === "专辑" ? /^Album 9999 / : /Artist 9999 / }),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: name === "专辑" ? /^Album 9999 / : /Artist 9999 / })
+        .click();
+      await expect(
+        page.getByRole("heading", {
+          name: name === "专辑" ? "Album 9999" : "Artist 9999",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: `← 返回${name}` }).click();
+      await page.locator(".page-scroll").evaluate((element) => {
+        element.scrollTop = 0;
+      });
+    }
+  }
+  console.log("10k library navigation milliseconds:", timings);
 });

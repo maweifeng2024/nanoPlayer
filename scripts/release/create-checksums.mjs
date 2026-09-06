@@ -9,10 +9,25 @@ if (!directory) {
 }
 
 const absolute = path.resolve(directory);
-const files = fs.readdirSync(absolute, { withFileTypes: true })
-  .filter((entry) => entry.isFile() && entry.name !== 'SHA256SUMS.txt')
-  .map((entry) => entry.name)
-  .sort();
+function collectFiles(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return collectFiles(fullPath);
+    if (!entry.isFile() || entry.name === 'SHA256SUMS.txt') return [];
+    return [fullPath];
+  });
+}
+
+const discovered = collectFiles(absolute).sort();
+const files = discovered.map((source) => {
+  const name = path.basename(source);
+  const destination = path.join(absolute, name);
+  if (source !== destination) {
+    if (fs.existsSync(destination)) throw new Error(`Duplicate artifact name: ${name}`);
+    fs.copyFileSync(source, destination);
+  }
+  return name;
+});
 
 if (files.length === 0) {
   console.error(`No artifacts found in ${absolute}`);
@@ -26,4 +41,3 @@ const lines = files.map((name) => {
 
 fs.writeFileSync(path.join(absolute, 'SHA256SUMS.txt'), `${lines.join('\n')}\n`);
 console.log(`Wrote ${files.length} checksums.`);
-

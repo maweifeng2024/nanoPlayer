@@ -1,3 +1,4 @@
+import { t, setActiveLanguage } from "./i18n";
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import type {
@@ -12,12 +13,12 @@ import type {
   TrackMetadataUpdate,
 } from "./domain";
 import { demoRoot, demoTracks } from "./domain";
-import { playCountThreshold } from "./domain";
 
 type Drawer = "queue" | "lyrics" | null;
 
 interface NanoState {
   visualDesignVersion: number;
+  statisticsVersion: number;
   page: Page;
   selectedPlaylistId?: string;
   roots: LibraryRoot[];
@@ -31,6 +32,9 @@ interface NanoState {
   progressMs: number;
   listenedSessionMs: number;
   sessionCounted: boolean;
+  sessionSeeked: boolean;
+  completePlayback: () => void;
+  seekPlayback: (value: number) => void;
   volume: number;
   muted: boolean;
   orderMode: PlaybackOrder;
@@ -44,6 +48,8 @@ interface NanoState {
   playlists: Playlist[];
   onlineLyrics: boolean;
   theme: ThemeMode;
+  language: "zh-CN" | "en";
+  setLanguage: (language: "zh-CN" | "en") => void;
   outputDevice?: string;
   scanning: boolean;
   scanProcessed: number;
@@ -91,8 +97,29 @@ interface NanoState {
 }
 
 const currentVisualDesignVersion = 2;
+export function migratePlaybackStatistics(source: Record<string, unknown>) {
+  if (source.statisticsVersion === 1) return source;
+  const playCounts = { ...(source.playCounts as Record<number, number>) };
+  for (const [id, seed] of [
+    [-1, 14],
+    [-3, 8],
+    [-6, 21],
+  ]) {
+    if (id in playCounts) playCounts[id] = Math.max(0, playCounts[id] - seed);
+  }
+  const lastPlayedAt = { ...(source.lastPlayedAt as Record<number, string>) };
+  for (const [id, date] of Object.entries({
+    [-1]: "2026-09-02T12:00:00Z",
+    [-3]: "2026-09-01T09:00:00Z",
+    [-6]: "2026-08-31T18:00:00Z",
+  })) {
+    if (lastPlayedAt[Number(id)] === date) delete lastPlayedAt[Number(id)];
+  }
+  return { ...source, playCounts, lastPlayedAt, statisticsVersion: 1 };
+}
 const nativeStateKeys = [
   "visualDesignVersion",
+  "statisticsVersion",
   "playlists",
   "ratings",
   "playCounts",
@@ -104,6 +131,7 @@ const nativeStateKeys = [
   "shuffleOrder",
   "onlineLyrics",
   "theme",
+  "language",
   "outputDevice",
   "queue",
   "currentTrackId",
@@ -113,7 +141,7 @@ const nativeStateKeys = [
 
 export function applyNativeUserState(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return;
-  const source = value as Record<string, unknown>;
+  const source = migratePlaybackStatistics(value as Record<string, unknown>);
   const allowed: Partial<NanoState> = {};
   for (const key of nativeStateKeys) {
     if (key in source) Object.assign(allowed, { [key]: source[key] });
@@ -129,7 +157,11 @@ export function applyNativeUserState(value: unknown) {
     allowed.visualDesignVersion = currentVisualDesignVersion;
     allowed.theme = "dark";
   }
+  if (allowed.language !== "en" && allowed.language !== "zh-CN") allowed.language = "zh-CN";
   allowed.playing = false;
+  allowed.listenedSessionMs = 0;
+  allowed.sessionCounted = false;
+  allowed.sessionSeeked = false;
   useNanoStore.setState(allowed);
 }
 
@@ -157,6 +189,7 @@ export const useNanoStore = create<NanoState>()(
   persist(
     (set, get) => ({
       visualDesignVersion: currentVisualDesignVersion,
+      statisticsVersion: 1,
       page: "home",
       roots: [demoRoot],
       tracks: demoTracks,
@@ -167,6 +200,7 @@ export const useNanoStore = create<NanoState>()(
       progressMs: 0,
       listenedSessionMs: 0,
       sessionCounted: false,
+      sessionSeeked: false,
       volume: 0.72,
       muted: false,
       orderMode: "sequence",
@@ -175,15 +209,13 @@ export const useNanoStore = create<NanoState>()(
       playbackRevision: 0,
       drawer: null,
       ratings: { [-1]: 5, [-4]: 4, [-6]: 5 },
-      playCounts: { [-1]: 14, [-3]: 8, [-6]: 21 },
-      lastPlayedAt: {
-        [-1]: "2026-09-02T12:00:00Z",
-        [-3]: "2026-09-01T09:00:00Z",
-        [-6]: "2026-08-31T18:00:00Z",
-      },
+      playCounts: {},
+      lastPlayedAt: {},
       playlists: [{ id: "quiet-night", name: "安静的晚上", trackIds: [-1, -4, -6] }],
       onlineLyrics: false,
       theme: "dark",
+      language: "zh-CN",
+      setLanguage: (language) => set({ language }),
       outputDevice: undefined,
       scanning: false,
       scanProcessed: 0,
@@ -206,9 +238,10 @@ export const useNanoStore = create<NanoState>()(
             progressMs: keepPlayback ? state.progressMs : 0,
             listenedSessionMs: keepPlayback ? state.listenedSessionMs : 0,
             sessionCounted: keepPlayback ? state.sessionCounted : false,
+            sessionSeeked: keepPlayback ? state.sessionSeeked : false,
             notice:
               state.currentTrackId !== undefined && !keepPlayback
-                ? "当前文件暂时不可用，已跳到队列中的下一首。"
+                ? t("当前文件暂时不可用，已跳到队列中的下一首。")
                 : state.notice,
           };
         }),
@@ -230,12 +263,14 @@ export const useNanoStore = create<NanoState>()(
           const queue = context?.length ? context : state.queue;
           return {
             currentTrackId,
+            playbackRevision: state.playbackRevision + 1,
             queue,
             shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue) : [],
             playing: true,
             progressMs: 0,
             listenedSessionMs: 0,
             sessionCounted: false,
+            sessionSeeked: false,
           };
         }),
       togglePlay: () => {
@@ -259,6 +294,7 @@ export const useNanoStore = create<NanoState>()(
             progressMs: 0,
             listenedSessionMs: 0,
             sessionCounted: false,
+            sessionSeeked: false,
             playbackRevision: state.playbackRevision + 1,
           });
         const order =
@@ -272,9 +308,11 @@ export const useNanoStore = create<NanoState>()(
         if (nextIndex >= order.length && state.repeatMode === "off")
           return set({
             playing: false,
+            playbackRevision: state.playbackRevision + 1,
             progressMs: 0,
             listenedSessionMs: 0,
             sessionCounted: false,
+            sessionSeeked: false,
           });
         const nextOrder =
           nextIndex >= order.length && state.orderMode === "shuffle"
@@ -283,47 +321,73 @@ export const useNanoStore = create<NanoState>()(
         const currentTrackId = nextOrder[nextIndex >= order.length ? 0 : nextIndex];
         set({
           currentTrackId,
+          playbackRevision: state.playbackRevision + 1,
           shuffleOrder: state.orderMode === "shuffle" ? nextOrder : [],
           progressMs: 0,
           listenedSessionMs: 0,
           sessionCounted: false,
+          sessionSeeked: false,
           playing: true,
         });
       },
       previous: () => {
         const state = get();
-        if (state.progressMs > 5000) return set({ progressMs: 0 });
+        if (state.progressMs > 5000)
+          return set({
+            progressMs: 0,
+            listenedSessionMs: 0,
+            sessionCounted: false,
+            sessionSeeked: false,
+            playbackRevision: state.playbackRevision + 1,
+          });
         const order =
           state.orderMode === "shuffle" && state.shuffleOrder.length === state.queue.length
             ? state.shuffleOrder
             : state.queue;
         const index = Math.max(0, order.indexOf(state.currentTrackId ?? order[0]));
         const previousIndex = index - 1;
-        if (previousIndex < 0 && state.repeatMode === "off") return set({ progressMs: 0 });
+        if (previousIndex < 0 && state.repeatMode === "off")
+          return set({
+            progressMs: 0,
+            listenedSessionMs: 0,
+            sessionCounted: false,
+            sessionSeeked: false,
+            playbackRevision: state.playbackRevision + 1,
+          });
         const currentTrackId = order[(previousIndex + order.length) % order.length];
         set({
           currentTrackId,
+          playbackRevision: state.playbackRevision + 1,
           progressMs: 0,
           listenedSessionMs: 0,
           sessionCounted: false,
+          sessionSeeked: false,
           playing: true,
         });
       },
       setProgress: (progressMs) => set({ progressMs }),
+      seekPlayback: (progressMs) => set({ progressMs, sessionSeeked: true }),
       tickPlayback: (elapsedMs) => {
         const state = get();
         if (!state.playing || state.currentTrackId === undefined) return;
+        set({ listenedSessionMs: state.listenedSessionMs + Math.max(0, elapsedMs) });
+      },
+      completePlayback: () => {
+        const state = get();
         const track = state.tracks.find((item) => item.id === state.currentTrackId);
-        if (!track) return;
-        const listenedSessionMs = state.listenedSessionMs + elapsedMs;
-        const newlyCounted =
-          !state.sessionCounted && listenedSessionMs >= playCountThreshold(track.durationMs);
+        // Only natural completion counts. Allow one polling interval at either end.
+        if (
+          !track ||
+          !state.playing ||
+          state.sessionCounted ||
+          state.sessionSeeked ||
+          track.durationMs <= 0 ||
+          state.listenedSessionMs < Math.max(1, track.durationMs - 750)
+        )
+          return;
         set({
-          listenedSessionMs,
-          sessionCounted: state.sessionCounted || newlyCounted,
-          playCounts: newlyCounted
-            ? { ...state.playCounts, [track.id]: (state.playCounts[track.id] ?? 0) + 1 }
-            : state.playCounts,
+          sessionCounted: true,
+          playCounts: { ...state.playCounts, [track.id]: (state.playCounts[track.id] ?? 0) + 1 },
         });
       },
       setVolume: (volume) => set({ volume, muted: false }),
@@ -347,7 +411,7 @@ export const useNanoStore = create<NanoState>()(
           return {
             queue,
             shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue) : [],
-            notice: "已添加到队列",
+            notice: t("已添加到队列"),
           };
         }),
       playNext: (id) => {
@@ -357,7 +421,7 @@ export const useNanoStore = create<NanoState>()(
         set({
           queue,
           shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue) : [],
-          notice: "已设为下一首",
+          notice: t("已设为下一首"),
         });
       },
       removeFromQueue: (index) =>
@@ -423,7 +487,7 @@ export const useNanoStore = create<NanoState>()(
               ? { ...playlist, trackIds: [...playlist.trackIds, trackId] }
               : playlist,
           ),
-          notice: "已添加到歌单",
+          notice: t("已添加到歌单"),
         }),
       addManyToPlaylist: (playlistId, trackIds) =>
         set({
@@ -435,7 +499,7 @@ export const useNanoStore = create<NanoState>()(
               trackIds: [...playlist.trackIds, ...trackIds.filter((id) => !existing.has(id))],
             };
           }),
-          notice: `已将 ${trackIds.length} 首歌曲添加到歌单`,
+          notice: t("已将 {0} 首歌曲添加到歌单", trackIds.length),
         }),
       removeFromPlaylist: (playlistId, trackId) =>
         set({
@@ -462,20 +526,21 @@ export const useNanoStore = create<NanoState>()(
     }),
     {
       name: "nanoplayer-state-v1",
-      version: currentVisualDesignVersion,
+      version: 3,
       migrate: (persisted, version) =>
         version < currentVisualDesignVersion
           ? {
-              ...(persisted as object),
+              ...migratePlaybackStatistics(persisted as Record<string, unknown>),
               visualDesignVersion: currentVisualDesignVersion,
               theme: "dark",
             }
-          : persisted,
+          : migratePlaybackStatistics(persisted as Record<string, unknown>),
       storage: createJSONStorage(() =>
         typeof window === "undefined" ? memoryStorage : window.localStorage,
       ),
       partialize: ({
         visualDesignVersion,
+        statisticsVersion,
         playlists,
         ratings,
         playCounts,
@@ -487,6 +552,7 @@ export const useNanoStore = create<NanoState>()(
         shuffleOrder,
         onlineLyrics,
         theme,
+        language,
         outputDevice,
         queue,
         currentTrackId,
@@ -494,6 +560,7 @@ export const useNanoStore = create<NanoState>()(
         onboardingDismissed,
       }) => ({
         visualDesignVersion,
+        statisticsVersion,
         playlists,
         ratings,
         playCounts,
@@ -505,6 +572,7 @@ export const useNanoStore = create<NanoState>()(
         shuffleOrder,
         onlineLyrics,
         theme,
+        language,
         outputDevice,
         queue,
         currentTrackId,
@@ -514,3 +582,8 @@ export const useNanoStore = create<NanoState>()(
     },
   ),
 );
+
+setActiveLanguage(useNanoStore.getState().language);
+useNanoStore.subscribe((state, previous) => {
+  if (state.language !== previous.language) setActiveLanguage(state.language);
+});

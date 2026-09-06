@@ -15,24 +15,30 @@ describe("first-version state rules", () => {
     expect(formatDuration(252_000)).toBe("4:12");
     expect(formatBytes(1024 ** 3)).toBe("1.0 GB");
     expect(formatDate("1704067200")).toContain("2024");
-    expect(playCountThreshold(600_000)).toBe(240_000);
-    expect(playCountThreshold(200_000)).toBe(100_000);
-    expect(playCountThreshold(20_000)).toBe(Number.POSITIVE_INFINITY);
+    expect(playCountThreshold(600_000)).toBe(600_000);
+    expect(playCountThreshold(200_000)).toBe(200_000);
+    expect(playCountThreshold(20_000)).toBe(20_000);
   });
 
   it("counts a qualifying session once and ignores seeking", () => {
     useNanoStore.setState({
       currentTrackId: -1,
       playing: true,
-      listenedSessionMs: 125_000,
+      listenedSessionMs: 0,
+      sessionSeeked: false,
       sessionCounted: false,
       playCounts: { [-1]: 0 },
     });
-    useNanoStore.getState().setProgress(240_000);
+    useNanoStore.getState().seekPlayback(240_000);
     expect(useNanoStore.getState().playCounts[-1]).toBe(0);
-    useNanoStore.getState().tickPlayback(1000);
-    expect(useNanoStore.getState().playCounts[-1]).toBe(1);
-    useNanoStore.getState().tickPlayback(200_000);
+    useNanoStore.getState().tickPlayback(12_000);
+    useNanoStore.getState().completePlayback();
+    expect(useNanoStore.getState().playCounts[-1]).toBe(0);
+    useNanoStore.getState().playTrack(-1);
+    useNanoStore.getState().tickPlayback(252_000);
+    expect(useNanoStore.getState().playCounts[-1]).toBe(0);
+    useNanoStore.getState().completePlayback();
+    useNanoStore.getState().completePlayback();
     expect(useNanoStore.getState().playCounts[-1]).toBe(1);
   });
 
