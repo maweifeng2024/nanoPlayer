@@ -13,6 +13,10 @@ Public announcements are a separate, explicitly approved step. A partially compl
 
 ## One-command release
 
+First configure CI deployment credentials with `node scripts/release/setup-vercel.mjs`. It reads the existing Vercel project link and prompts for a token using GitHub CLI's hidden input. A connector login does not provision GitHub Actions secrets.
+
+`pnpm release` now waits for the tag's GitHub workflow and exits nonzero if builds, asset publishing, or deployment fails. The emitted run URL and `gh run rerun <id> --failed` command allow retrying the failed stage. Old tags retain old workflow code; publish a new version to apply workflow fixes.
+
 Run `pnpm release` from `main`. It increments the patch version by default, runs the local quality gates, commits every tracked and untracked change, creates and pushes the version tag, and starts `.github/workflows/release.yml`. Pass an explicit version for a minor or major release, for example `pnpm release -- 0.2.0`.
 
 The GitHub workflow builds on macOS, Windows, and Linux, publishes one GitHub Release with checksums, updates `website/public/downloads/latest.json` from the actual uploaded artifacts, commits that manifest to `main`, and deploys the static website to Vercel. Configure these GitHub Actions repository secrets before the first run:

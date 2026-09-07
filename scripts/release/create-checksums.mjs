@@ -19,15 +19,16 @@ function collectFiles(directory) {
 }
 
 const discovered = collectFiles(absolute).sort();
-const files = discovered.map((source) => {
+const files = [...new Set(discovered.map((source) => {
   const name = path.basename(source);
   const destination = path.join(absolute, name);
   if (source !== destination) {
-    if (fs.existsSync(destination)) throw new Error(`Duplicate artifact name: ${name}`);
-    fs.copyFileSync(source, destination);
+    if (fs.existsSync(destination)) {
+      if (!fs.readFileSync(source).equals(fs.readFileSync(destination))) throw new Error(`Conflicting artifact name: ${name}`);
+    } else fs.copyFileSync(source, destination);
   }
   return name;
-});
+}))];
 
 if (files.length === 0) {
   console.error(`No artifacts found in ${absolute}`);

@@ -39,11 +39,18 @@ function formatFor(name) {
 }
 
 const platforms = { macos: [], windows: [], linux: [] };
+const seen = new Map();
 for (const filePath of files) {
   const name = path.basename(filePath);
   const platform = platformFor(name);
   if (!platform) continue;
   const bytes = fs.readFileSync(filePath);
+  const digest = crypto.createHash('sha256').update(bytes).digest('hex');
+  if (seen.has(name)) {
+    if (seen.get(name) !== digest) throw new Error(`Conflicting artifact: ${name}`);
+    continue;
+  }
+  seen.set(name, digest);
   platforms[platform].push({
     name,
     architecture: architectureFor(name),
@@ -54,7 +61,7 @@ for (const filePath of files) {
   });
 }
 
-for (const platform of ['macos', 'windows']) {
+for (const platform of ['macos', 'windows', 'linux']) {
   if (platforms[platform].length === 0) throw new Error(`No ${platform} release artifact was found.`);
 }
 

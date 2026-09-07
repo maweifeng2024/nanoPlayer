@@ -70,6 +70,7 @@ if (ahead > 0 && behind === 0 && pendingTagIsHead && worktreeIsClean) {
   console.log(`\nResuming interrupted push for ${pendingTag}...`);
   runGitNetwork(['push', '--atomic', 'origin', 'main', pendingTag]);
   console.log(`\n${pendingTag} is pushed. GitHub Actions will continue the release.`);
+  run('node', ['scripts/release/watch-release.mjs', pendingTag]);
   process.exit(0);
 }
 
@@ -103,3 +104,4 @@ runGitNetwork(['push', '--atomic', 'origin', 'main', tag]);
 
 console.log(`\n${tag} is pushed. GitHub Actions will build all three platforms, publish the Release, update the website, and deploy it to Vercel.`);
 console.log('Track it with: gh run watch');
+run('node', ['scripts/release/watch-release.mjs', tag]);
