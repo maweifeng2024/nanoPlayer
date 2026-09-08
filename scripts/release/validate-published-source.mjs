@@ -1,0 +1,10 @@
+import { execFileSync } from 'node:child_process';
+const [tag, runId] = process.argv.slice(2);
+const repository = process.env.GITHUB_REPOSITORY;
+if (!/^v\d+\.\d+\.\d+$/.test(tag ?? '') || !/^\d+$/.test(runId ?? '') || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? '')) throw new Error('Expected tag, run and repository');
+const api = endpoint => JSON.parse(execFileSync('gh', ['api', `repos/${repository}/actions/runs/${runId}${endpoint}`], { encoding: 'utf8' }));
+const run = api('');
+if (run.head_repository?.full_name !== repository || run.path !== '.github/workflows/publish-release.yml' || !run.display_title.startsWith(`Publish ${tag} from run `)) throw new Error('Published artifact source does not match this release');
+if (!api('/jobs?per_page=100').jobs.some(job => job.name === 'publish' && job.conclusion === 'success')) throw new Error('Previous publish job did not succeed');
+if (api('/artifacts?per_page=100').artifacts.filter(artifact => artifact.name === 'published-release' && !artifact.expired).length !== 1) throw new Error('Published artifacts are missing or expired');
+console.log(`Reusing already-published ${tag} artifacts from run ${runId}`);

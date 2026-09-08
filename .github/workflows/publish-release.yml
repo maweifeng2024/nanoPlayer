@@ -10,6 +10,10 @@ on:
       source_run_id:
         required: true
         type: string
+      published_run_id:
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       tag:
@@ -20,6 +24,11 @@ on:
         description: Original successful three-platform build run ID
         required: true
         type: string
+      published_run_id:
+        description: Optional prior publish run with verified published-release artifact; skip uploading again
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -34,6 +43,7 @@ env:
 
 jobs:
   publish:
+    if: ${{ !inputs.published_run_id }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -68,6 +78,7 @@ jobs:
           path: release-artifacts/*.*
 
   website:
+    if: ${{ always() && !cancelled() && (needs.publish.result == 'success' || inputs.published_run_id != '') }}
     needs: publish
     runs-on: ubuntu-latest
     steps:
@@ -87,8 +98,16 @@ jobs:
           package-manager-cache: false
           cache: npm
           cache-dependency-path: website/package-lock.json
+      - name: Validate previously published artifacts
+        if: ${{ inputs.published_run_id != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISHED_RUN_ID: ${{ inputs.published_run_id }}
+        run: node scripts/release/validate-published-source.mjs "$RELEASE_TAG" "$PUBLISHED_RUN_ID"
       - uses: actions/download-artifact@v5
         with:
+          run-id: ${{ inputs.published_run_id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           name: published-release
           path: release-artifacts
       - name: Update download manifest
@@ -107,14 +126,11 @@ jobs:
           DEPLOYMENT_URL="$(npx --yes vercel@59.10.0 deploy --prebuilt --prod --yes --cwd website)"
           echo "url=${DEPLOYMENT_URL}" >> "$GITHUB_OUTPUT"
       - name: Verify live pages and release metadata
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
         run: |
-          for SITE_URL in "${{ steps.deploy.outputs.url }}" "https://nanoplayer-wei-feng.vercel.app"; do
-            curl --fail --location --retry 5 --retry-delay 5 "$SITE_URL/" --output live-home.html
-            curl --fail --location --retry 5 --retry-delay 5 "$SITE_URL/download" --output live-download.html
-            node -e "const fs=require('fs');if(!fs.readFileSync('live-home.html','utf8').includes('播放你电脑里的'))throw new Error('Live homepage content missing');if(!fs.readFileSync('live-download.html','utf8').includes('macOS'))throw new Error('Live download content missing')"
-          done
-          curl --fail --location --retry 5 --retry-delay 5 "${{ steps.deploy.outputs.url }}/downloads/latest.json" --output live-latest.json
-          node -e "const fs=require('fs');const live=JSON.parse(fs.readFileSync('live-latest.json'));if(live.version!==process.env.RELEASE_TAG.slice(1))throw new Error('Live website version mismatch: '+live.version)"
+          node scripts/release/verify-website.mjs "$DEPLOYMENT_URL" "${RELEASE_TAG#v}"
+          node scripts/release/verify-website.mjs "https://nanoplayer-wei-feng.vercel.app" "${RELEASE_TAG#v}"
       - name: Persist verified download metadata
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -10,6 +10,14 @@ if (source.status !== 'completed') {
   execFileSync('node', ['scripts/release/watch-release.mjs', tag, '--run-id', String(source.databaseId)], { stdio: 'inherit' });
   process.exit(0);
 }
+// Once Release publication succeeded, recover only its website job using the
+// already-published artifact. Do not upload the same installers again.
+let publishedRun;
+const previous = json(['run', 'list', '--workflow', 'publish-release.yml', '--branch', 'main', '--limit', '20', '--json', 'databaseId,displayTitle']);
+for (const candidate of previous.filter(run => run.displayTitle.startsWith(`Publish ${tag} from run `))) {
+  const { jobs } = json(['run', 'view', String(candidate.databaseId), '--json', 'jobs']);
+  if (jobs.some(job => job.name === 'publish' && job.conclusion === 'success')) { publishedRun = candidate.databaseId; break; }
+}
 const started = new Date().toISOString();
-execFileSync('gh', ['workflow', 'run', 'publish-release.yml', '--ref', 'main', '-f', `tag=${tag}`, '-f', `source_run_id=${source.databaseId}`], { stdio: 'inherit' });
+execFileSync('gh', ['workflow', 'run', 'publish-release.yml', '--ref', 'main', '-f', `tag=${tag}`, '-f', `source_run_id=${source.databaseId}`, ...(publishedRun ? ['-f', `published_run_id=${publishedRun}`] : [])], { stdio: 'inherit' });
 execFileSync('node', ['scripts/release/watch-release.mjs', tag, '--workflow', 'publish-release.yml', '--after', started], { stdio: 'inherit' });
