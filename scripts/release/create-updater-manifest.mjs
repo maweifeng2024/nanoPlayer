@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { flattenArtifacts } from './artifact-files.mjs';
 
 const [version, repository, directory] = process.argv.slice(2);
 if (!/^\d+\.\d+\.\d+$/.test(version ?? '') || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? '') || !directory) throw new Error('Expected stable version, owner/repository and artifact directory');
-const files = fs.readdirSync(directory);
+const files = flattenArtifacts(directory);
 const asset = (suffix) => {
   const matches = files.filter(name => name.endsWith(suffix));
   if (matches.length !== 1) throw new Error(`Expected one ${suffix} updater artifact, found ${matches.length}`);

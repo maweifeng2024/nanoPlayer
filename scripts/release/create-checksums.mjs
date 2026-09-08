@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { flattenArtifacts } from './artifact-files.mjs';
 
 const directory = process.argv[2];
 if (!directory) {
@@ -9,26 +10,7 @@ if (!directory) {
 }
 
 const absolute = path.resolve(directory);
-function collectFiles(directory) {
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return collectFiles(fullPath);
-    if (!entry.isFile() || entry.name === 'SHA256SUMS.txt') return [];
-    return [fullPath];
-  });
-}
-
-const discovered = collectFiles(absolute).sort();
-const files = [...new Set(discovered.map((source) => {
-  const name = path.basename(source);
-  const destination = path.join(absolute, name);
-  if (source !== destination) {
-    if (fs.existsSync(destination)) {
-      if (!fs.readFileSync(source).equals(fs.readFileSync(destination))) throw new Error(`Conflicting artifact name: ${name}`);
-    } else fs.copyFileSync(source, destination);
-  }
-  return name;
-}))];
+const files = flattenArtifacts(absolute);
 
 if (files.length === 0) {
   console.error(`No artifacts found in ${absolute}`);

@@ -30,3 +30,11 @@ GitHub Actions 构建时，`scripts/release/tauri-build.mjs` 检查签名私钥�
 - `node --test scripts/release/create-updater-manifest.test.mjs` 验证清单平台映射、URL 编码与缺签名失败。
 - `pnpm tauri build --debug --bundles app` 已生成本地 macOS 应用包。
 - 原生应用实测：全部 4034 首 → 单文件夹 3119 首 → 恢复所有文件夹；首页能加载真实专辑封面，切回首页文案与图片随之更换；更新插件返回远端清单获取失败（尚未发布清单），未发生权限错误。
+
+## 发布恢复（2026-09-08）
+
+v0.1.6 的三个平台构建均成功，但 `publish` 在生成更新清单时报 `Expected one .app.tar.gz updater artifact, found 0`，官网作业随之被跳过。原因是 Actions 保留了 bundle 子目录，而清单生成器只扫描顶层，且原先整理目录的校验和脚本排在它之后。
+
+已将递归发现、同名冲突检查与顶层副本整理合并为共享函数，生成更新清单之前即运行；新增真实嵌套目录、重复运行及来源验证测试。正常标签构建与恢复共用 `publish-release.yml`，确保恢复也使用完整的上传、Vercel 部署和线上验证链路。
+
+恢复命令：`pnpm release --resume v0.1.6`。它不改版本、不打新标签，调用 main 上已提交的最新发布脚本，复用该标签原始构建的三平台产物；验证来源仓库、标签提交、成功作业及产物未过期。普通发布失败后，不要直接重跑旧提交的失败任务来验证新脚本；先提交修复，再使用恢复命令。官网清单在部署并验证后才回写 main，避免回写冲突阻断部署。

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-const tag = process.env.GITHUB_REF_NAME;
-if (!/^v\d+\.\d+\.\d+/.test(tag ?? '')) throw new Error('Expected release tag.');
+const tag = process.env.RELEASE_TAG ?? process.env.GITHUB_REF_NAME;
+if (!/^v\d+\.\d+\.\d+$/.test(tag ?? '')) throw new Error('Expected release tag.');
 const run = args => execFileSync('gh', args, { stdio: 'inherit' });
 // Query the list first: authentication/network errors must not be mistaken for absence.
 const releases = JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/releases`, '--paginate', '--slurp'], { encoding: 'utf8' })).flat();

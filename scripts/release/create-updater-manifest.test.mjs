@@ -23,3 +23,21 @@ test('release manifest maps signed bundles and refuses incomplete releases', () 
     assert.notEqual(run().status, 0);
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
+
+test('real Actions nested platform directories work before checksum generation', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'nano-nested-updater-'));
+  try {
+    for (const name of ['macos/nanoPlayer.app.tar.gz', 'nsis/nanoPlayer_0.1.6_x64-setup.exe', 'appimage/nanoPlayer_0.1.6_amd64.AppImage']) {
+      const file = path.join(directory, name);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, 'original bundle bytes');
+      fs.writeFileSync(`${file}.sig`, 'signature');
+    }
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = spawnSync(process.execPath, ['scripts/release/create-updater-manifest.mjs', '0.1.6', 'example/player', directory], { encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'latest.json'))).platforms['windows-x86_64'].signature, 'signature');
+    }
+    assert.equal(fs.readFileSync(path.join(directory, 'macos/nanoPlayer.app.tar.gz'), 'utf8'), 'original bundle bytes');
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});

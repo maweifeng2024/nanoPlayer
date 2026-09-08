@@ -4,6 +4,7 @@ import fs from 'node:fs';
 const root = new URL('../..', import.meta.url);
 const cliArgs = process.argv.slice(2);
 const explicitVersion = cliArgs.find((arg) => /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(arg));
+const resume = cliArgs.includes("--resume");
 const skipChecks = cliArgs.includes('--skip-checks');
 
 function run(command, commandArgs) {
@@ -60,6 +61,12 @@ if (behind > 0) {
     .map(Number);
 }
 
+if (resume) {
+  const resumeTag = cliArgs.find(arg => /^v?\d+\.\d+\.\d+$/.test(arg));
+  run('node', ['scripts/release/resume-release.mjs', ...(resumeTag ? [resumeTag.startsWith('v') ? resumeTag : `v${resumeTag}`] : [])]);
+  process.exit(0);
+}
+
 const headPackage = JSON.parse(output('git', ['show', 'HEAD:package.json']));
 const pendingTag = `v${headPackage.version}`;
 const pendingTagCommit = `${pendingTag}^{}`;
@@ -72,6 +79,14 @@ if (ahead > 0 && behind === 0 && pendingTagIsHead && worktreeIsClean) {
   console.log(`\n${pendingTag} is pushed. GitHub Actions will continue the release.`);
   run('node', ['scripts/release/watch-release.mjs', pendingTag]);
   process.exit(0);
+}
+
+// Re-running an incomplete release must not silently advance the patch version.
+if (!explicitVersion && worktreeIsClean && pendingTagIsHead && ahead === 0) {
+  const runs = JSON.parse(output('gh', ['run', 'list', '--workflow', 'release.yml', '--branch', pendingTag, '--limit', '1', '--json', 'conclusion,status']));
+  if (runs[0] && (runs[0].status !== 'completed' || runs[0].conclusion !== 'success')) {
+    throw new Error(`${pendingTag} is incomplete. Resume without changing versions: pnpm release --resume ${pendingTag}`);
+  }
 }
 
 const current = headPackage.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
