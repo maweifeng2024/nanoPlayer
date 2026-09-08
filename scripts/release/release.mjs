@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { parseReleaseArgs, releaseIsComplete } from './release-options.mjs';
+import { recoverPush } from './recover-push.mjs';
 
 const root = new URL('../..', import.meta.url);
 const cliArgs = process.argv.slice(2);
@@ -23,9 +24,10 @@ function succeeds(command, commandArgs) {
   }
 }
 
-function runGitNetwork(commandArgs) {
+function runGitNetwork(commandArgs, capture = false) {
+  const options = { cwd: root, stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit', encoding: 'utf8', timeout: 120000 };
   try {
-    return execFileSync('git', ['-c', 'http.lowSpeedLimit=1', '-c', 'http.lowSpeedTime=30', ...commandArgs], { cwd: root, stdio: 'inherit', timeout: 120000 });
+    return execFileSync('git', ['-c', 'http.lowSpeedLimit=1', '-c', 'http.lowSpeedTime=30', ...commandArgs], options);
   } catch {
     console.warn('\nGitHub operation failed or timed out. Retrying this command with HTTP/1.1...');
     return execFileSync('git', [
@@ -36,7 +38,7 @@ function runGitNetwork(commandArgs) {
       '-c',
       'http.lowSpeedTime=30',
       ...commandArgs,
-    ], { cwd: root, stdio: 'inherit', timeout: 120000 });
+    ], options);
   }
 }
 
@@ -50,6 +52,11 @@ function main() {
   run('gh', ['auth', 'status']);
 
   runGitNetwork(['fetch', 'origin', 'main', '--tags']);
+  const requestedTag = resumeTag ?? `v${explicitVersion ?? JSON.parse(output('git', ['show', 'HEAD:package.json'])).version}`;
+  if (recoverPush(requestedTag, {
+    output, succeeds, network: runGitNetwork,
+    watch: tag => run('node', ['scripts/release/watch-release.mjs', tag]),
+  })) return;
   let [ahead, behind] = output('git', ['rev-list', '--left-right', '--count', 'HEAD...origin/main'])
     .split(/\s+/)
     .map(Number);
@@ -128,6 +135,6 @@ function main() {
 }
 try { main(); } catch (error) {
   console.error(`\nRelease failed: ${error.message.split('\n')[0]}`);
-  console.error('If the tag was already pushed, recover with: pnpm release --resume [tag]');
+  console.error('Retry the same version (including an interrupted push): pnpm release --resume [tag]. GitHub connectivity is required.');
   process.exitCode = 1;
 }
