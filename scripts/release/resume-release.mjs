@@ -13,8 +13,18 @@ if (source.status !== 'completed') {
 // Once Release publication succeeded, recover only its website job using the
 // already-published artifact. Do not upload the same installers again.
 let publishedRun;
-const previous = json(['run', 'list', '--workflow', 'publish-release.yml', '--branch', 'main', '--limit', '20', '--json', 'databaseId,displayTitle']);
-for (const candidate of previous.filter(run => run.displayTitle.startsWith(`Publish ${tag} from run `))) {
+const previous = json(['run', 'list', '--workflow', 'publish-release.yml', '--branch', 'main', '--limit', '100', '--json', 'databaseId,displayTitle,status,conclusion,url']);
+const matching = previous.filter(run => run.displayTitle.startsWith(`Publish ${tag} from run `));
+const latest = matching[0];
+if (latest && latest.status !== 'completed') {
+  execFileSync('node', ['scripts/release/watch-release.mjs', tag, '--run-id', String(latest.databaseId)], { stdio: 'inherit' });
+  process.exit(0);
+}
+if (latest?.conclusion === 'success') {
+  console.log(`${tag} recovery already completed successfully: ${latest.url}`);
+  process.exit(0);
+}
+for (const candidate of matching) {
   const { jobs } = json(['run', 'view', String(candidate.databaseId), '--json', 'jobs']);
   if (jobs.some(job => job.name === 'publish' && job.conclusion === 'success')) { publishedRun = candidate.databaseId; break; }
 }
