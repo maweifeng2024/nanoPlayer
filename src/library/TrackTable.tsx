@@ -58,7 +58,7 @@ export function TrackTable({
     })),
   );
   const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 } | null>(
-    popular ? { key: "playCount", direction: -1 } : null,
+    popular ? { key: "lastPlayedAt", direction: -1 } : null,
   );
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(() => new Set());

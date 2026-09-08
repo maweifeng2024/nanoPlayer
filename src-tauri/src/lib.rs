@@ -811,17 +811,13 @@ fn localized_menu(
 
     let add_folder =
         MenuItemBuilder::with_id("add-library", tr("添加音乐文件夹…", "Add Music Folder…"))
-            .accelerator("CmdOrCtrl+O")
             .build(app)?;
-    let new_playlist = MenuItemBuilder::with_id("new-playlist", tr("新建歌单…", "New Playlist…"))
-        .accelerator("CmdOrCtrl+N")
-        .build(app)?;
+    let new_playlist =
+        MenuItemBuilder::with_id("new-playlist", tr("新建歌单…", "New Playlist…")).build(app)?;
     let search = MenuItemBuilder::with_id("search", tr("全局搜索", "Search Library"))
         .accelerator("CmdOrCtrl+K")
         .build(app)?;
-    let settings = MenuItemBuilder::with_id("settings", tr("设置…", "Settings…"))
-        .accelerator("CmdOrCtrl+Comma")
-        .build(app)?;
+    let settings = MenuItemBuilder::with_id("settings", tr("设置…", "Settings…")).build(app)?;
     let play_pause = MenuItemBuilder::with_id("play-pause", tr("播放/暂停", "Play/Pause"))
         .accelerator("Space")
         .build(app)?;
@@ -829,7 +825,6 @@ fn localized_menu(
         .accelerator("CmdOrCtrl+L")
         .build(app)?;
     let queue = MenuItemBuilder::with_id("toggle-queue", tr("显示/隐藏队列", "Show/Hide Queue"))
-        .accelerator("CmdOrCtrl+Shift+Q")
         .build(app)?;
     let app_menu = SubmenuBuilder::new(app, "nanoPlayer")
         .about_with_text(tr("关于 nanoPlayer", "About nanoPlayer"), None)

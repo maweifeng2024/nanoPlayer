@@ -42,13 +42,13 @@ test("filters tracks globally and exposes privacy settings", async ({ page }) =>
   await expect(page.getByRole("status")).toContainText("仅在桌面版可用");
 });
 
-test("opens collection details and keyboard queue", async ({ page }) => {
+test("opens collection details and queue button", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("主导航").getByRole("button", { name: "专辑", exact: true }).click();
   await page.getByRole("button", { name: /潮汐与回声/ }).click();
   await expect(page.getByRole("heading", { name: "潮汐与回声" })).toBeVisible();
   await expect(page.getByRole("table", { name: "歌曲列表" })).toBeVisible();
-  await page.keyboard.press("Meta+Shift+Q");
+  await page.getByRole("button", { name: "播放队列", exact: true }).click();
   await expect(page.getByRole("complementary", { name: "播放队列" })).toBeVisible();
   expect(
     await page

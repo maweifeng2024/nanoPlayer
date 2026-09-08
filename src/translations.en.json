@@ -138,7 +138,7 @@
   "浅色": "Light",
   "深色": "Dark",
   "快捷键": "Keyboard Shortcuts",
-  "⌘K 搜索 · Space 播放/暂停 · ⌘O 添加目录 · ⌘N 新建歌单 · ⌘L 歌词 · ⌘⇧Q 队列 · ⌘, 设置": "⌘K Search · Space Play/Pause · ⌘O Add Folder · ⌘N New Playlist · ⌘L Lyrics · ⌘⇧Q Queue · ⌘, Settings",
+  "⌘K 搜索 · Space 播放/暂停 · ⌘L 歌词": "⌘K Search · Space Play/Pause · ⌘L Lyrics",
   "播放恢复": "Playback Recovery",
   "队列、位置、评分和歌单同步到 SQLite；重启后恢复但不自动发声。": "Queue, position, ratings and playlists sync to SQLite. Restarting restores them without starting playback.",
   "默认": "Default",

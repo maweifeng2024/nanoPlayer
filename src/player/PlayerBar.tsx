@@ -382,7 +382,7 @@ export function PlayerBar() {
         <button
           className={state.drawer === "queue" ? "active" : ""}
           aria-label={t("播放队列")}
-          title={t("播放队列 (⌘⇧Q)")}
+          title={t("播放队列")}
           aria-pressed={state.drawer === "queue"}
           onClick={() => state.toggleDrawer("queue")}
           type="button"

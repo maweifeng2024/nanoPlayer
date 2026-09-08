@@ -869,12 +869,12 @@ h1 {
   box-shadow: none;
   /* Feather alpha into the real ambient background in both themes. */
   -webkit-mask-image:
-    linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
-    linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+    linear-gradient(to right, transparent, #000 3px, #000 calc(100% - 3px), transparent),
+    linear-gradient(to bottom, transparent, #000 3px, #000 calc(100% - 3px), transparent);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
-    linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+    linear-gradient(to right, transparent, #000 3px, #000 calc(100% - 3px), transparent),
+    linear-gradient(to bottom, transparent, #000 3px, #000 calc(100% - 3px), transparent);
   mask-composite: intersect;
 }
 .hero h1 {

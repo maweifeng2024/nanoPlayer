@@ -52,10 +52,12 @@ test("most played excludes unplayed tracks and sorts count and last-played time"
   });
   const rows = page.locator("[data-track-id]");
   await expect(rows).toHaveCount(2);
-  await expect(rows.first()).toHaveAttribute("data-track-id", "-2");
-  await expect(page.getByRole("button", { name: "添加日期", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "播放次数 ↓", exact: true }).click();
   await expect(rows.first()).toHaveAttribute("data-track-id", "-1");
+  await expect(page.getByRole("button", { name: "添加日期", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "播放次数", exact: true }).click();
+  await expect(rows.first()).toHaveAttribute("data-track-id", "-1");
+  await page.getByRole("button", { name: "播放次数 ↑", exact: true }).click();
+  await expect(rows.first()).toHaveAttribute("data-track-id", "-2");
   await page.getByRole("button", { name: "最后一次播放时间", exact: true }).click();
   await expect(rows.first()).toHaveAttribute("data-track-id", "-2");
   await page.getByRole("button", { name: "最后一次播放时间 ↑", exact: true }).click();
@@ -64,7 +66,7 @@ test("most played excludes unplayed tracks and sorts count and last-played time"
   await page.getByRole("button", { name: "设置", exact: true }).click();
   await page.getByLabel("界面语言", { exact: true }).selectOption("en");
   await page.getByRole("button", { name: "Most Played", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Last Played", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Last Played ↓", exact: true })).toBeVisible();
   await expect(page.locator(".added-cell").first()).toContainText("Sep");
   await page.screenshot({ path: "test-results/most-played-en.png" });
 });

@@ -18,7 +18,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  Sparkles,
+  Headphones,
   Star,
   WifiOff,
   X,
@@ -48,7 +48,7 @@ const navigation = [
   { id: "albums", label: "专辑", icon: Disc3 },
   { id: "artists", label: "艺术家", icon: MicVocal },
   { id: "recent", label: "最近添加", icon: Clock3 },
-  { id: "popular", label: "播放最多", icon: Sparkles },
+  { id: "popular", label: "播放最多", icon: Headphones },
   { id: "rated", label: "高评分", icon: Star },
 ] as const;
 
@@ -211,26 +211,6 @@ export default function App() {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "l") {
         event.preventDefault();
         useNanoStore.getState().toggleDrawer("lyrics");
-      }
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "q") {
-        event.preventDefault();
-        useNanoStore.getState().toggleDrawer("queue");
-      }
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "o") {
-        event.preventDefault();
-        useNanoStore.getState().setPage("library");
-        window.setTimeout(
-          () => document.querySelector<HTMLButtonElement>("[data-add-folder]")?.click(),
-          0,
-        );
-      }
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "n") {
-        event.preventDefault();
-        setNewPlaylistOpen(true);
-      }
-      if ((event.metaKey || event.ctrlKey) && event.key === ",") {
-        event.preventDefault();
-        useNanoStore.getState().setPage("settings");
       }
     };
     window.addEventListener("keydown", onKeyDown);

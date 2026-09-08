@@ -29,6 +29,18 @@ export function PlayerDrawer() {
       removeFromQueue: store.removeFromQueue,
     })),
   );
+  const queueListRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (state.drawer !== "queue") return;
+    const list = queueListRef.current;
+    const active = list?.querySelector<HTMLElement>(".queue-item.active");
+    if (list && active) {
+      list.scrollTop +=
+        active.getBoundingClientRect().top -
+        list.getBoundingClientRect().top -
+        (list.clientHeight - active.clientHeight) / 2;
+    }
+  }, [state.drawer, state.currentTrackId, state.queue, state.tracks]);
   if (!state.drawer) return null;
   const track = state.tracks.find((item) => item.id === state.currentTrackId);
   const queueTracks = state.queue
@@ -64,7 +76,7 @@ export function PlayerDrawer() {
               {t("清空待播")}
             </button>
           </div>
-          <div className="queue-list">
+          <div className="queue-list" ref={queueListRef}>
             {queueTracks.map(
               (item, index) =>
                 item && (

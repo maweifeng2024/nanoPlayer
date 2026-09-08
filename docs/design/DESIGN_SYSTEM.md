@@ -8,7 +8,7 @@ This document freezes the current first-version visual decisions so implementati
 
 - `nanoplayer-netease-inspired-home-v2.png`: primary desktop composition and spacing reference.
 - `nanoplayer-netease-inspired-home-v1.png`: text-only sidebar wordmark reference.
-- `nanoplayer-app-icon-v1.png`: editable application-icon source of truth.
+- `nanoplayer-app-icon-v3.png`: editable application-icon source of truth.
 - `../../test-results/nanoplayer-designed-home.png`: latest implemented desktop screenshot.
 - `../../test-results/nanoplayer-720.png`: latest 720 px responsive screenshot with the navigation overlay open.
 
@@ -34,10 +34,10 @@ Reference images communicate direction, not hard-coded content. Current product 
 
 The application icon belongs to Finder, Dock, installers, application metadata, the website/favicon, and empty-artwork fallbacks—not the sidebar title.
 
-Generate platform files only from `nanoplayer-app-icon-v1.png`:
+Generate platform files only from `nanoplayer-app-icon-v3.png`:
 
 ```bash
-pnpm tauri icon docs/design/nanoplayer-app-icon-v1.png
+pnpm tauri icon docs/design/nanoplayer-app-icon-v3.png
 ```
 
 The Tauri `bundle.icon` list is mandatory. A successful release check requires both `CFBundleIconFile=icon.icns` and a non-empty `Contents/Resources/icon.icns` in the built `.app`.

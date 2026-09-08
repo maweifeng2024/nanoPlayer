@@ -1,11 +1,11 @@
 # Application icons
 
-The source of truth is `../../docs/design/nanoplayer-app-icon-v2.png`. Files in this directory are generated outputs and must not be used as the next generation source.
+The source of truth is `../../docs/design/nanoplayer-app-icon-v3.png`. Files in this directory are generated outputs and must not be used as the next generation source.
 
 Generate all platform assets from the source artwork:
 
 ```bash
-pnpm tauri icon docs/design/nanoplayer-app-icon-v2.png
+pnpm tauri icon docs/design/nanoplayer-app-icon-v3.png
 ```
 
 `src-tauri/tauri.conf.json` must explicitly list the PNG, ICNS, and ICO assets under `bundle.icon`. For a macOS bundle, verify the final result rather than only checking the source files:

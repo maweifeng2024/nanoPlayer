@@ -1,3 +1,4 @@
+import { collectionTracks } from "./collectionTracks";
 import { t } from "../i18n";
 import {
   Album as AlbumIcon,
@@ -20,7 +21,7 @@ import {
   SearchX,
   Settings2,
   ShieldCheck,
-  Sparkles,
+  Star,
   SunMoon,
   Trash2,
   X,
@@ -129,20 +130,12 @@ export function ContentPage() {
           state.roots.filter((root) => selectedRootIds.includes(root.id)),
         ),
       );
-    if (state.page === "recent")
-      tracks = [...tracks].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+    if (state.page === "recent" || state.page === "popular" || state.page === "rated")
+      tracks = collectionTracks(tracks, state.page, state);
     if (state.page === "played")
       tracks = tracks
         .filter((track) => state.lastPlayedAt[track.id])
         .sort((a, b) => state.lastPlayedAt[b.id].localeCompare(state.lastPlayedAt[a.id]));
-    if (state.page === "popular")
-      tracks = tracks
-        .filter((track) => (state.playCounts[track.id] ?? 0) > 0)
-        .sort((a, b) => (state.playCounts[b.id] ?? 0) - (state.playCounts[a.id] ?? 0));
-    if (state.page === "rated")
-      tracks = tracks
-        .filter((track) => (state.ratings[track.id] ?? 0) >= 4)
-        .sort((a, b) => (state.ratings[b.id] ?? 0) - (state.ratings[a.id] ?? 0));
     return tracks;
   }, [
     nativeSearchIds,
@@ -255,19 +248,10 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   );
   const [momentSeed] = useState(() => Math.random());
   const featured = tracks[0];
-  const recent = [...tracks].sort((a, b) => b.addedAt.localeCompare(a.addedAt)).slice(0, 20);
-  const popular = [...tracks]
-    .filter((track) => (playCounts[track.id] ?? 0) > 0)
-    .sort((a, b) => (playCounts[b.id] ?? 0) - (playCounts[a.id] ?? 0))
-    .slice(0, 20);
-  const rated = [...tracks]
-    .filter((track) => (ratings[track.id] ?? 0) >= 4)
-    .sort(
-      (a, b) =>
-        (ratings[b.id] ?? 0) - (ratings[a.id] ?? 0) ||
-        a.title.localeCompare(b.title, "zh-CN", { numeric: true }),
-    )
-    .slice(0, 20);
+  const stats = { ratings, playCounts, lastPlayedAt };
+  const recent = collectionTracks(tracks, "recent", stats).slice(0, 20);
+  const popular = collectionTracks(tracks, "popular", stats).slice(0, 20);
+  const rated = collectionTracks(tracks, "rated", stats).slice(0, 20);
   if (!featured) return <EmptyLibrary />;
   const moment = (() => {
     const defaultTrack = tracks[Math.floor(momentSeed * tracks.length)] ?? featured;
@@ -396,7 +380,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
           tone="popular"
         />
         <HomeTrackList
-          icon={<Sparkles />}
+          icon={<Star />}
           kicker="YOUR FAVORITES"
           title={t("高评分")}
           page="rated"
@@ -1283,11 +1267,7 @@ function SettingsPage() {
           </span>
           <div>
             <strong>{t("快捷键")}</strong>
-            <p>
-              {t(
-                "⌘K 搜索 · Space 播放/暂停 · ⌘O 添加目录 · ⌘N 新建歌单 · ⌘L 歌词 · ⌘⇧Q 队列 · ⌘, 设置",
-              )}
-            </p>
+            <p>{t("⌘K 搜索 · Space 播放/暂停 · ⌘L 歌词")}</p>
           </div>
           <span className="setting-status">{t("已启用")}</span>
         </article>
