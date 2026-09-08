@@ -7,6 +7,7 @@ import {
   Disc3,
   Eraser,
   FileJson,
+  Filter,
   FolderPlus,
   Headphones,
   ImagePlus,
@@ -32,6 +33,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useNanoStore } from "../store";
 import type { Track } from "../domain";
 import { formatBytes, formatDuration } from "../domain";
+import { trackInRoots } from "./folderFilter";
+import { UpdateSettings } from "../updates/UpdateSettings";
 import { TrackTable } from "./TrackTable";
 import { Artwork } from "./Artwork";
 import { selectPlaylistCoverTracks } from "./playlistCover";
@@ -63,7 +66,6 @@ const labels: Record<string, { eyebrow: string; title: string }> = {
   artists: { eyebrow: "本地音乐人", title: "艺术家" },
 };
 
-const homeMomentSeed = Math.random();
 const musicThoughts = [
   ["留一点空白", "音乐响起的时候，不必急着去往哪里。"],
   ["让旋律慢一点", "有些熟悉的声音，值得重新认真听一次。"],
@@ -76,11 +78,14 @@ export function ContentPage() {
       query: store.query,
       page: store.page,
       tracks: store.tracks,
+      roots: store.roots,
       lastPlayedAt: store.lastPlayedAt,
       playCounts: store.playCounts,
       ratings: store.ratings,
     })),
   );
+  const [selectedRootIds, setSelectedRootIds] = useState<number[] | null>(null);
+  const selectedRoots = state.roots.filter((root) => selectedRootIds?.includes(root.id));
   const [nativeSearchIds, setNativeSearchIds] = useState<number[] | null>(null);
   useEffect(() => {
     const query = state.query.trim();
@@ -117,6 +122,13 @@ export function ContentPage() {
               field?.toLocaleLowerCase().includes(query),
             )),
     );
+    if (state.page === "songs" && selectedRootIds !== null)
+      tracks = tracks.filter((track) =>
+        trackInRoots(
+          track.path,
+          state.roots.filter((root) => selectedRootIds.includes(root.id)),
+        ),
+      );
     if (state.page === "recent")
       tracks = [...tracks].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
     if (state.page === "played")
@@ -134,6 +146,8 @@ export function ContentPage() {
     return tracks;
   }, [
     nativeSearchIds,
+    selectedRootIds,
+    state.roots,
     state.lastPlayedAt,
     state.page,
     state.playCounts,
@@ -155,10 +169,64 @@ export function ContentPage() {
   return (
     <section>
       <PageHeader eyebrow={t(copy.eyebrow)} title={t(copy.title)} count={filtered.length} />
-      {state.query && !filtered.length ? (
+      {state.query && !filtered.length && state.page !== "songs" ? (
         <NoResults />
       ) : (
-        <TrackTable key={state.page} tracks={filtered} popular={state.page === "popular"} />
+        <TrackTable
+          key={state.page}
+          tracks={filtered}
+          popular={state.page === "popular"}
+          toolbar={
+            state.page === "songs" ? (
+              <details
+                className="folder-filter"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") event.currentTarget.open = false;
+                }}
+              >
+                <summary
+                  className="text-button"
+                  aria-label={t("按文件夹筛选")}
+                  title={t("按文件夹筛选")}
+                >
+                  <Filter size={16} />
+                  {selectedRootIds === null ? t("筛选") : t("{0} 个文件夹", selectedRoots.length)}
+                </summary>
+                <div className="folder-filter-panel">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selectedRootIds === null}
+                      onChange={(event) => setSelectedRootIds(event.target.checked ? null : [])}
+                    />
+                    {t("所有文件夹")}
+                  </label>
+                  {state.roots.map((root) => (
+                    <label key={root.id}>
+                      <input
+                        type="checkbox"
+                        checked={selectedRootIds === null || selectedRootIds.includes(root.id)}
+                        onChange={(event) => {
+                          const ids = selectedRootIds ?? state.roots.map((item) => item.id);
+                          setSelectedRootIds(
+                            event.target.checked
+                              ? [...ids, root.id]
+                              : ids.filter((id) => id !== root.id),
+                          );
+                        }}
+                      />
+                      <span>
+                        {root.name}
+                        <small>{root.path}</small>
+                      </span>
+                    </label>
+                  ))}
+                  {!state.roots.length && <p>{t("尚未添加文件夹")}</p>}
+                </div>
+              </details>
+            ) : undefined
+          }
+        />
       )}
     </section>
   );
@@ -185,6 +253,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
       lastPlayedAt: state.lastPlayedAt,
     })),
   );
+  const [momentSeed] = useState(() => Math.random());
   const featured = tracks[0];
   const recent = [...tracks].sort((a, b) => b.addedAt.localeCompare(a.addedAt)).slice(0, 20);
   const popular = [...tracks]
@@ -201,7 +270,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
     .slice(0, 20);
   if (!featured) return <EmptyLibrary />;
   const moment = (() => {
-    const defaultTrack = tracks[Math.floor(homeMomentSeed * tracks.length)] ?? featured;
+    const defaultTrack = tracks[Math.floor(momentSeed * tracks.length)] ?? featured;
     const moments: Array<{
       eyebrow: string;
       title: string;
@@ -269,7 +338,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
       }),
     );
     return (
-      moments[Math.floor(homeMomentSeed * moments.length)] ?? {
+      moments[Math.floor(momentSeed * moments.length)] ?? {
         eyebrow: t("今天听点什么"),
         title: t("回到你的音乐"),
         copy: t("本地收藏，私密播放。"),
@@ -278,13 +347,18 @@ function HomePage({ tracks }: { tracks: Track[] }) {
       }
     );
   })();
+  const thoughtIndex = musicThoughts.findIndex(([title]) => t(title) === moment.title);
+  const illustration = ["quiet", "slow", "today"][
+    thoughtIndex >= 0 ? thoughtIndex : Math.abs(moment.track.id) % 3
+  ];
   return (
     <section>
       <div className="hero">
-        <div className="hero-art" aria-hidden="true">
-          <span className="hero-grooves" />
-          <span className="hero-ribbon" />
-        </div>
+        <Artwork
+          track={moment.track}
+          className="hero-art"
+          fallback={<img src={`/home/${illustration}.svg`} alt="" />}
+        />
         <div>
           <p className="eyebrow">{moment.eyebrow}</p>
           <h1>{moment.title}</h1>
@@ -786,10 +860,7 @@ function PlaylistPage() {
         <div>
           <p className="eyebrow">{t("歌单 · {0} 首", items.length)}</p>
           <h1>{playlist.name}</h1>
-          <p>
-            {formatDuration(items.reduce((sum, track) => sum + track.durationMs, 0))}
-            {t("· 仅保存在本机")}
-          </p>
+          <p>{formatDuration(items.reduce((sum, track) => sum + track.durationMs, 0))}</p>
           <div className="inline-actions">
             <button
               className="primary-button"
@@ -1119,6 +1190,7 @@ function SettingsPage() {
     <section>
       <PageHeader eyebrow={t("本地优先")} title={t("设置")} />
       <div className="settings-list">
+        <UpdateSettings />
         <article>
           <span className="settings-icon">
             <Settings2 />

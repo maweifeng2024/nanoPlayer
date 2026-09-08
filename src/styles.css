@@ -11,6 +11,11 @@
   background: #101012;
   color-scheme: dark;
   font-synthesis: none;
+  --font-page-title: 32px;
+  --font-section-title: 15px;
+  --font-body: 13px;
+  --font-caption: 12px;
+  --font-small: 11px;
   --accent: #e65353;
   --text: #f4f4f5;
   --surface: #202126;
@@ -226,18 +231,19 @@ summary:focus-visible {
 .eyebrow {
   margin: 0 0 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-small);
   letter-spacing: 0.02em;
 }
 h1 {
   margin: 0;
   color: #f5f5f6;
-  font-size: clamp(28px, 3vw, 36px);
+  font-size: var(--font-page-title);
+  line-height: 1.25;
   letter-spacing: -0.045em;
 }
 .count-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-caption);
 }
 .primary-button,
 .secondary-button {
@@ -382,7 +388,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 13px;
+  font-size: var(--font-body);
 }
 .status-dot {
   color: #8eb99d;
@@ -407,7 +413,7 @@ h1 {
   overflow: hidden;
   margin: 5px 0 8px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -415,7 +421,7 @@ h1 {
   display: flex;
   gap: 17px;
   color: #74777e;
-  font-size: 10px;
+  font-size: var(--font-small);
 }
 .root-actions {
   display: flex;
@@ -427,7 +433,7 @@ h1 {
   gap: 7px;
   margin: 12px 3px 0;
   color: #7f9d8c;
-  font-size: 10px;
+  font-size: var(--font-small);
 }
 .scan-status {
   display: flex;
@@ -452,7 +458,7 @@ h1 {
 }
 .issue-groups h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-section-title);
 }
 .issue-groups .issue-list {
   margin-top: 10px;
@@ -489,7 +495,7 @@ h1 {
   padding-inline: 8px;
   border-bottom: 1px solid #29292e;
   color: var(--text);
-  font-size: 11px;
+  font-size: var(--font-caption);
 }
 .track-row:last-child {
   border-bottom: 0;
@@ -504,7 +510,7 @@ h1 {
 .track-head {
   min-height: 40px;
   color: #777780;
-  font-size: 9px;
+  font-size: var(--font-small);
   letter-spacing: 0.04em;
 }
 .track-head button {
@@ -697,13 +703,13 @@ h1 {
 }
 .track-title strong {
   color: #f0f0f2;
-  font-size: 12px;
+  font-size: var(--font-body);
   font-weight: 650;
 }
 .track-title small {
   margin-top: 3px;
   color: #858890;
-  font-size: 10px;
+  font-size: var(--font-small);
 }
 .mini-cover,
 .queue-cover {
@@ -851,53 +857,29 @@ h1 {
   grid-template-columns: 210px 1fr;
   align-items: center;
   gap: 42px;
-  padding: 2px 12px 32px;
+  padding: 2px 0 32px;
 }
 .hero-art {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid #623034;
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 88% 28%, #38181b 0 20%, transparent 38%),
-    linear-gradient(145deg, #21171c, #100f12 52%, #321012);
-  box-shadow:
-    0 28px 70px #0009,
-    0 14px 35px #ec414126;
-}
-.hero-grooves {
-  position: absolute;
-  top: -24%;
-  right: -20%;
-  width: 92%;
-  aspect-ratio: 1;
-  border: 1px solid #ec414188;
-  border-radius: 50%;
-  background: repeating-radial-gradient(circle, transparent 0 8px, #ec414134 9px 10px);
-}
-.hero-ribbon {
-  position: absolute;
-  left: -18%;
-  right: -14%;
-  bottom: 12%;
-  height: 38%;
-  transform: rotate(13deg);
-  border-radius: 50% 35% 45% 40%;
-  background: linear-gradient(180deg, #ff3434, #c7131b);
-  box-shadow: 0 0 24px #ec414144;
-}
-.hero-ribbon::after {
-  position: absolute;
-  inset: 32% -8% -72% 18%;
-  transform: rotate(-19deg);
-  border-radius: 45% 50% 35% 45%;
-  background: linear-gradient(180deg, #e42428, #8c0e16);
-  content: "";
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  /* Feather alpha into the real ambient background in both themes. */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
+    linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
+    linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+  mask-composite: intersect;
 }
 .hero h1 {
   max-width: 780px;
-  font-size: clamp(34px, 4vw, 52px);
+  font-size: var(--font-page-title);
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -905,13 +887,13 @@ h1 {
   max-width: 490px;
   margin: 14px 0 22px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-body);
   line-height: 1.55;
 }
 .hero-play {
   min-height: 42px;
   padding-inline: 19px;
-  font-size: 13px;
+  font-size: var(--font-body);
 }
 .home-track-columns {
   display: grid;
@@ -1003,7 +985,7 @@ h1 {
 }
 .home-track-heading-copy strong {
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--font-section-title);
   line-height: 1.25;
 }
 .home-track-heading-link {
@@ -1064,7 +1046,7 @@ h1 {
 }
 .home-track-list li button span {
   overflow: hidden;
-  font-size: 11.5px;
+  font-size: var(--font-body);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1081,7 +1063,7 @@ h1 {
   margin: 0;
   padding: 18px 15px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-caption);
 }
 .collection-grid {
   display: grid;
@@ -1136,12 +1118,12 @@ h1 {
   white-space: nowrap;
 }
 .collection-card strong {
-  font-size: 12px;
+  font-size: var(--font-body);
 }
 .collection-card span {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--font-caption);
 }
 .collection-back {
   margin: 0 0 12px;
@@ -1242,7 +1224,7 @@ h1 {
 }
 .collection-detail-hero h1 {
   margin: 5px 0 8px;
-  font-size: clamp(31px, 5vw, 54px);
+  font-size: var(--font-page-title);
 }
 .collection-detail-hero p:last-child {
   color: var(--muted);
@@ -1282,7 +1264,7 @@ h1 {
 .playlist-hero p:not(.eyebrow) {
   margin: 8px 0 15px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-caption);
 }
 .inline-actions {
   display: flex;
@@ -1315,18 +1297,23 @@ h1 {
 .settings-icon svg {
   width: 17px;
 }
-.settings-list strong {
-  font-size: 12px;
+.settings-list strong,
+.settings-list h3 {
+  display: block;
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 650;
+  line-height: 1.5;
 }
 .settings-list p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-caption);
   line-height: 1.5;
 }
 .setting-status {
   color: #82b394;
-  font-size: 10px;
+  font-size: var(--font-small);
 }
 .switch {
   width: 38px;
@@ -1691,13 +1678,13 @@ h1 {
 }
 .now-playing-copy h1 {
   margin: 7px 0 4px;
-  font-size: clamp(30px, 4vw, 56px);
+  font-size: var(--font-page-title);
   line-height: 1.05;
 }
 .now-playing-copy h2 {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-body);
   font-weight: 500;
 }
 .immersive-lyrics {
@@ -2178,7 +2165,7 @@ h1 {
     gap: 20px;
   }
   .hero h1 {
-    font-size: 35px;
+    font-size: var(--font-page-title);
   }
   .player-bar {
     grid-template-columns: minmax(210px, 0.8fr) minmax(360px, 1.5fr);
@@ -2358,12 +2345,7 @@ a:focus-visible {
 .settings-list article {
   padding: 20px 4px;
 }
-.settings-list strong {
-  font-size: 13px;
-}
-.settings-list p {
-  font-size: 12px;
-}
+
 .home-track-list li button:focus-visible {
   background: var(--selection);
 }
@@ -2425,7 +2407,7 @@ a:focus-visible {
 }
 
 :root[data-theme="light"] .hero-art {
-  box-shadow: 0 14px 32px #38222624;
+  box-shadow: none;
 }
 :root[data-theme="light"] .home-track-list-heading {
   border-color: var(--line);
@@ -2497,21 +2479,79 @@ a:focus-visible {
 [data-theme="light"] .ambient-background {
   opacity: 0.68;
 }
+/* Use the same responsive columns as every library table. The duration slot
+   collapses for Most Played while its count and action columns stay visible. */
 .popular-table .track-row {
-  grid-template-columns: 28px minmax(140px, 1.7fr) 84px minmax(80px, 1fr) minmax(80px, 1fr) minmax(
-      155px,
-      1.2fr
-    ) 55px 82px 24px;
+  grid-template-columns: 42px minmax(170px, 1.2fr) minmax(100px, 0.7fr) minmax(
+      110px,
+      0.75fr
+    ) 82px 150px 62px 36px;
 }
-.popular-table .added-cell {
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
+.popular-table .duration-cell {
+  display: none;
 }
-.popular-table {
-  min-width: 880px;
+@container (max-width: 850px) {
+  .popular-table .track-row {
+    grid-template-columns: 38px minmax(160px, 1.2fr) 100px minmax(100px, 0.7fr) minmax(
+        110px,
+        0.75fr
+      ) 62px 36px;
+  }
+}
+@container (max-width: 650px) {
+  .popular-table .track-row {
+    grid-template-columns: 34px minmax(150px, 1.2fr) 96px minmax(100px, 0.8fr) 58px 34px;
+  }
+}
+.folder-filter {
+  margin-left: auto;
+  position: relative;
+}
+.folder-filter summary {
+  list-style: none;
+  cursor: pointer;
+}
+.folder-filter[open] summary {
+  color: var(--accent);
+}
+.folder-filter-panel {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  top: 32px;
+  width: min(340px, 70vw);
+  max-height: 320px;
+  overflow: auto;
+  padding: 14px;
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.folder-filter-panel label {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  align-items: center;
+  cursor: pointer;
+}
+.folder-filter-panel span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.folder-filter-panel small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.hero-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .settings-list select {
   font: inherit;
+  font-size: var(--font-caption);
   color: var(--text);
   background: var(--input);
   border: 1px solid var(--line);
@@ -2531,4 +2571,47 @@ html[lang="en"] .track-head button {
   .ambient-background {
     transition: none;
   }
+}
+
+.update-notice {
+  position: fixed;
+  right: 22px;
+  top: 58px;
+  z-index: 40;
+  background: var(--input);
+}
+.update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.update-notes {
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow: auto;
+}
+.update-error {
+  overflow-wrap: anywhere;
+}
+
+/* Shared secondary text and section headings across library views. */
+.collection-detail-hero p:not(.eyebrow),
+.settings-list summary,
+.settings-list .secondary-button,
+.settings-list .primary-button {
+  font-size: var(--font-caption);
+  line-height: 1.5;
+}
+.section-title,
+.disc-group > h2,
+.disc-group > h3 {
+  font-size: var(--font-section-title);
+  line-height: 1.5;
+  font-weight: 650;
+}
+.settings-list article > div {
+  min-width: 0;
+}
+.settings-list p {
+  overflow-wrap: anywhere;
 }

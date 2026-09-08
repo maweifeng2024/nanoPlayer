@@ -1,6 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "rewrites": [
+    { "source": "/", "destination": "/index" }
+  ],
   "git": {
     "deploymentEnabled": {
       "main": false

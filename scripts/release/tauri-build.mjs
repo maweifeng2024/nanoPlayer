@@ -17,6 +17,12 @@ if (process.platform === 'darwin') {
     console.log('macOS signing: no certificate supplied; no P12 import requested.');
   }
 }
-const result = spawnSync(process.execPath, [require.resolve('@tauri-apps/cli/tauri.js'), ...process.argv.slice(2)], { env, stdio: 'inherit' });
+const args = process.argv.slice(2);
+if (env.TAURI_SIGNING_PRIVATE_KEY?.trim()) {
+  args.push('--config', JSON.stringify({ bundle: { createUpdaterArtifacts: true } }));
+} else if (env.GITHUB_ACTIONS === 'true') {
+  throw new Error('TAURI_SIGNING_PRIVATE_KEY is required to publish signed updates.');
+}
+const result = spawnSync(process.execPath, [require.resolve('@tauri-apps/cli/tauri.js'), ...args], { env, stdio: 'inherit' });
 if (result.error) throw result.error;
 process.exitCode = result.status ?? 1;

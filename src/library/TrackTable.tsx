@@ -31,10 +31,12 @@ export function TrackTable({
   tracks,
   playlistId,
   popular = false,
+  toolbar,
 }: {
   tracks: Track[];
   playlistId?: string;
   popular?: boolean;
+  toolbar?: React.ReactNode;
 }) {
   const state = useNanoStore(
     useShallow((store) => ({
@@ -113,17 +115,6 @@ export function TrackTable({
       (current) => new Set([...current].filter((id) => tracks.some((track) => track.id === id))),
     );
   }, [tracks]);
-
-  if (!tracks.length)
-    return (
-      <div className="table-empty">
-        <ListPlus size={25} />
-        <strong>{t("这里还没有歌曲")}</strong>
-        <span>
-          {popular ? t("完整播放一首歌后，它会出现在这里。") : t("从“歌曲”页面的更多菜单添加。")}
-        </span>
-      </div>
-    );
 
   const setSortKey = (key: SortKey) =>
     setSort((current) =>
@@ -258,8 +249,23 @@ export function TrackTable({
                 : t("{0} 首", tracks.length)}
           </span>
         )}
+        {toolbar}
       </div>
+      {!tracks.length && (
+        <div className="table-empty">
+          <ListPlus size={25} />
+          <strong>{t("这里还没有歌曲")}</strong>
+          <span>
+            {toolbar
+              ? t("调整筛选条件或添加音乐文件夹。")
+              : popular
+                ? t("完整播放一首歌后，它会出现在这里。")
+                : t("从“歌曲”页面的更多菜单添加。")}
+          </span>
+        </div>
+      )}
       <div
+        hidden={!tracks.length}
         ref={tableRef}
         className={`track-table ${popular ? "popular-table" : ""}`}
         role="table"
@@ -294,10 +300,16 @@ export function TrackTable({
                 : " ↓"
               : ""}
           </button>
-          <button disabled={Boolean(playlistId)} onClick={() => setSortKey("durationMs")}>
-            {t("时长")}
-            {sort?.key === "durationMs" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
-          </button>
+          {!popular && (
+            <button
+              className="duration-cell"
+              disabled={Boolean(playlistId)}
+              onClick={() => setSortKey("durationMs")}
+            >
+              {t("时长")}
+              {sort?.key === "durationMs" ? (sort.direction === 1 ? " ↑" : " ↓") : ""}
+            </button>
+          )}
           {popular ? (
             <button onClick={() => setSortKey("playCount")}>
               {t("播放次数")}
@@ -456,7 +468,9 @@ export function TrackTable({
                     : "—"
                   : formatDate(track.addedAt)}
               </span>
-              <span className="duration-cell">{formatDuration(track.durationMs)}</span>
+              {!popular && (
+                <span className="duration-cell">{formatDuration(track.durationMs)}</span>
+              )}
               {playlistId ? (
                 <div className="playlist-order-actions" aria-label={t("{0} 排序", track.title)}>
                   <button

@@ -1,3 +1,4 @@
+import { UpdateNotifier } from "./updates/UpdateSettings";
 import { AmbientBackground } from "./library/AmbientBackground";
 import { t } from "./i18n";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
@@ -282,6 +283,7 @@ export default function App() {
   return (
     <div className={`app-shell ${drawer ? "has-drawer" : ""}`}>
       <AmbientBackground />
+      <UpdateNotifier />
       <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label={t("主导航")}>
         <div className="brand-row" data-tauri-drag-region onMouseDown={startWindowDrag}>
           <div className="brand">

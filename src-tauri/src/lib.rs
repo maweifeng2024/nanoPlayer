@@ -886,6 +886,8 @@ fn set_interface_language(app: tauri::AppHandle, language: String) -> Result<(),
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .menu(|app| localized_menu(app, false))
         .on_menu_event(|app, event| {
             let _ = app.emit("native-menu", event.id().as_ref());

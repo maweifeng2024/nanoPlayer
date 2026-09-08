@@ -4,6 +4,8 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-09-08
+
 ## [0.1.5] - 2026-09-07
 
 ## [0.1.4] - 2026-09-06
