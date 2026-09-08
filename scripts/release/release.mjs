@@ -27,10 +27,10 @@ function succeeds(command, commandArgs) {
 
 function runGitNetwork(commandArgs) {
   try {
-    return run('git', commandArgs);
+    return execFileSync('git', ['-c', 'http.lowSpeedLimit=1', '-c', 'http.lowSpeedTime=30', ...commandArgs], { cwd: root, stdio: 'inherit', timeout: 120000 });
   } catch {
     console.warn('\nGitHub connection over HTTP/2 failed. Retrying this command with HTTP/1.1...');
-    return run('git', [
+    return execFileSync('git', [
       '-c',
       'http.version=HTTP/1.1',
       '-c',
@@ -38,7 +38,7 @@ function runGitNetwork(commandArgs) {
       '-c',
       'http.lowSpeedTime=30',
       ...commandArgs,
-    ]);
+    ], { cwd: root, stdio: 'inherit', timeout: 120000 });
   }
 }
 
