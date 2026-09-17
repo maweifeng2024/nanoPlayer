@@ -1,3 +1,4 @@
+import { isAndroid } from "../platform/android";
 import { t } from "../i18n";
 import {
   CheckSquare,
@@ -38,6 +39,7 @@ export function TrackTable({
   popular?: boolean;
   toolbar?: React.ReactNode;
 }) {
+  const phone = isAndroid() && document.documentElement.dataset.device === "phone";
   const state = useNanoStore(
     useShallow((store) => ({
       ratings: store.ratings,
@@ -70,7 +72,10 @@ export function TrackTable({
   }>();
   const [orderedTrackId, setOrderedTrackId] = useState<number>();
   const [orderEffect, setOrderEffect] = useState<{ trackId: number; direction: "up" | "down" }>();
+  const contextRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const press = useRef({ timer: 0, x: 0, y: 0, opened: false });
+  const cancelPress = () => window.clearTimeout(press.current.timer);
   const detailsTimer = useRef<number>(0);
   const orderEffectTimer = useRef<number>(0);
   const sorted = useMemo(
@@ -107,6 +112,7 @@ export function TrackTable({
     return () => {
       window.removeEventListener("pointerdown", close);
       window.clearTimeout(detailsTimer.current);
+      window.clearTimeout(press.current.timer);
       window.clearTimeout(orderEffectTimer.current);
     };
   }, []);
@@ -115,6 +121,25 @@ export function TrackTable({
       (current) => new Set([...current].filter((id) => tracks.some((track) => track.id === id))),
     );
   }, [tracks]);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = (event: Event) => {
+      event.preventDefault();
+      setContextMenu(undefined);
+    };
+    window.addEventListener("android-back", close);
+    return () => window.removeEventListener("android-back", close);
+  }, [contextMenu]);
+
+  useLayoutEffect(() => {
+    const menu = contextRef.current;
+    if (!menu || !contextMenu) return;
+    menu.style.left =
+      Math.max(8, Math.min(contextMenu.x, window.innerWidth - menu.offsetWidth - 8)) + "px";
+    menu.style.top =
+      Math.max(8, Math.min(contextMenu.y, window.innerHeight - menu.offsetHeight - 8)) + "px";
+  }, [contextMenu]);
 
   const setSortKey = (key: SortKey) =>
     setSort((current) =>
@@ -181,6 +206,27 @@ export function TrackTable({
       <button onClick={() => state.enqueue(track.id)} type="button">
         {t("添加到队列")}
       </button>
+      {phone && (
+        <>
+          <button type="button" onClick={() => state.setSelectedTrack(track.id)}>
+            {t("查看详情")}
+          </button>
+          <div className="phone-rating" aria-label={t("{0} 评分", track.title)}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button
+                key={value}
+                aria-label={t("{0} 星", value)}
+                onClick={() => state.rate(track.id, state.ratings[track.id] === value ? 0 : value)}
+              >
+                <Star
+                  size={20}
+                  fill={value <= (state.ratings[track.id] ?? 0) ? "currentColor" : "none"}
+                />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {state.playlists.map((playlist) => (
         <button
           key={playlist.id}
@@ -267,7 +313,7 @@ export function TrackTable({
       <div
         hidden={!tracks.length}
         ref={tableRef}
-        className={`track-table ${popular ? "popular-table" : ""}`}
+        className={`track-table ${playlistId ? "playlist-table" : ""} ${popular ? "popular-table" : ""}`}
         role="table"
         aria-label={t("歌曲列表")}
       >
@@ -321,7 +367,11 @@ export function TrackTable({
           <span />
         </div>
         {range.start > 0 ? (
-          <div className="track-spacer" aria-hidden="true" style={{ height: range.start * 58 }} />
+          <div
+            className="track-spacer"
+            aria-hidden="true"
+            style={{ height: range.start * range.rowHeight }}
+          />
         ) : null}
         {sorted.slice(range.start, range.end).map((track, visibleIndex) => {
           const index = range.start + visibleIndex;
@@ -332,6 +382,36 @@ export function TrackTable({
               role="row"
               key={track.id}
               data-track-id={track.id}
+              onPointerDown={(event) => {
+                if (
+                  !isAndroid() ||
+                  event.pointerType === "mouse" ||
+                  (event.target as HTMLElement).closest("input, summary, [role=button]")
+                )
+                  return;
+                cancelPress();
+                press.current = { timer: 0, x: event.clientX, y: event.clientY, opened: false };
+                press.current.timer = window.setTimeout(() => {
+                  press.current.opened = true;
+                  window.clearTimeout(detailsTimer.current);
+                  setContextMenu({ track, x: press.current.x, y: press.current.y });
+                }, 500);
+              }}
+              onPointerMove={(event) => {
+                if (
+                  Math.hypot(event.clientX - press.current.x, event.clientY - press.current.y) > 10
+                )
+                  cancelPress();
+              }}
+              onPointerUp={cancelPress}
+              onPointerCancel={cancelPress}
+              onClickCapture={(event) => {
+                if (press.current.opened) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  press.current.opened = false;
+                }
+              }}
               onContextMenu={(event) => {
                 event.preventDefault();
                 setContextMenu({ track, x: event.clientX, y: event.clientY });
@@ -430,6 +510,10 @@ export function TrackTable({
                 <button
                   className="track-title-button"
                   onClick={(event) => {
+                    if (phone) {
+                      state.playTrack(track.id, queueContext);
+                      return;
+                    }
                     if (event.detail === 1) openDetails(track.id);
                     else window.clearTimeout(detailsTimer.current);
                   }}
@@ -437,8 +521,14 @@ export function TrackTable({
                 >
                   <strong>{track.title}</strong>
                   <small>
-                    {track.format.toUpperCase()}
-                    {t("· 查看详情")}
+                    {phone ? (
+                      `${track.artist} · ${formatDuration(track.durationMs)}`
+                    ) : (
+                      <>
+                        {track.format.toUpperCase()}
+                        {t("· 查看详情")}
+                      </>
+                    )}
                   </small>
                 </button>
               </div>
@@ -518,12 +608,13 @@ export function TrackTable({
           <div
             className="track-spacer"
             aria-hidden="true"
-            style={{ height: (sorted.length - range.end) * 58 }}
+            style={{ height: (sorted.length - range.end) * range.rowHeight }}
           />
         ) : null}
       </div>
       {contextMenu ? (
         <div
+          ref={contextRef}
           className="context-menu menu-popover"
           role="menu"
           style={{
@@ -531,6 +622,7 @@ export function TrackTable({
             top: Math.min(contextMenu.y, window.innerHeight - 240),
           }}
           onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => setContextMenu(undefined)}
         >
           {menu(contextMenu.track)}
         </div>
@@ -544,16 +636,16 @@ function useVirtualRows(
   count: number,
   layoutKey: boolean,
 ) {
-  const [range, setRange] = useState({ start: 0, end: Math.min(count, 40) });
+  const [range, setRange] = useState({ start: 0, end: Math.min(count, 40), rowHeight: 58 });
   useLayoutEffect(() => {
     if (count <= 200) {
-      setRange({ start: 0, end: count });
+      setRange({ start: 0, end: count, rowHeight: 58 });
       return;
     }
     const table = tableRef.current;
     const scroller = table?.closest<HTMLElement>(".page-scroll");
     if (!table || !scroller) {
-      setRange({ start: 0, end: Math.min(count, 80) });
+      setRange({ start: 0, end: Math.min(count, 80), rowHeight: 58 });
       return;
     }
     let frame = 0;
@@ -562,19 +654,32 @@ function useVirtualRows(
       frame = requestAnimationFrame(() => {
         const tableRect = table.getBoundingClientRect();
         const scrollRect = scroller.getBoundingClientRect();
-        const visibleTop = Math.max(0, scrollRect.top - tableRect.top - 40);
-        const start = Math.max(0, Math.floor(visibleTop / 58) - 10);
-        const end = Math.min(count, Math.ceil((visibleTop + scroller.clientHeight) / 58) + 10);
+        const rowHeight =
+          table.querySelector("[data-track-id]")?.getBoundingClientRect().height || 58;
+        const headerHeight =
+          table.querySelector(".track-head")?.getBoundingClientRect().height || 0;
+        const visibleTop = Math.max(0, scrollRect.top - tableRect.top - headerHeight);
+        const start = Math.min(count, Math.max(0, Math.floor(visibleTop / rowHeight) - 10));
+        const end = Math.min(
+          count,
+          Math.ceil((visibleTop + scroller.clientHeight) / rowHeight) + 10,
+        );
         setRange((current) =>
-          current.start === start && current.end === end ? current : { start, end },
+          current.start === start && current.end === end && current.rowHeight === rowHeight
+            ? current
+            : { start, end, rowHeight },
         );
       });
     };
+    const observer = new ResizeObserver(update);
+    observer.observe(table);
+    observer.observe(scroller);
     update();
     scroller.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => {
       cancelAnimationFrame(frame);
+      observer.disconnect();
       scroller.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };

@@ -1,0 +1,7 @@
+{
+  "identifier": "android-main",
+  "description": "Android media service and user-selected documents",
+  "windows": ["main"],
+  "platforms": ["android"],
+  "permissions": ["core:default", "dialog:allow-open", "nanoplayer-mobile:default"]
+}

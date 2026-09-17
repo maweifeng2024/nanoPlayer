@@ -1,3 +1,4 @@
+import { isAndroid, androidCommand } from "../platform/android";
 import { collectionTracks } from "./collectionTracks";
 import { t } from "../i18n";
 import {
@@ -513,7 +514,12 @@ function NowPlayingPage() {
                 <button
                   className={originalIndex === active ? "active" : ""}
                   disabled={line.at === null}
-                  onClick={() => line.at !== null && state.setProgress(line.at)}
+                  onClick={() => {
+                    if (line.at !== null) {
+                      state.seekPlayback(line.at);
+                      if (isAndroid()) void androidCommand("seek", { positionMs: line.at });
+                    }
+                  }}
                   key={`${line.at}-${index}`}
                 >
                   {line.text}
@@ -779,10 +785,12 @@ function PlaylistPage() {
     .filter(Boolean) as Track[];
   const chooseCover = async () => {
     if (!isTauri()) return setNotice(t("自定义歌单图片可在 Tauri 桌面版中选择。"));
-    const chosen = await open({
-      multiple: false,
-      filters: [{ name: t("图片"), extensions: ["jpg", "jpeg", "png", "webp", "gif"] }],
-    });
+    const chosen = isAndroid()
+      ? (await androidCommand<{ path?: string }>("pickFile", { kind: "cover" })).path
+      : await open({
+          multiple: false,
+          filters: [{ name: t("图片"), extensions: ["jpg", "jpeg", "png", "webp", "gif"] }],
+        });
     if (typeof chosen !== "string") return;
     try {
       setCustomCover(await setPlaylistCover(playlist.id, chosen));
@@ -1088,7 +1096,7 @@ function SettingsPage() {
         .catch(() => undefined);
   }, []);
   useEffect(() => {
-    if (isTauri())
+    if (isTauri() && !isAndroid())
       getAudioOutputs()
         .then(setOutputs)
         .catch(() => undefined);
@@ -1261,7 +1269,7 @@ function SettingsPage() {
             ))}
           </div>
         </article>
-        <article>
+        <article hidden={isAndroid()}>
           <span className="settings-icon">
             <Keyboard />
           </span>
@@ -1289,24 +1297,35 @@ function SettingsPage() {
             <strong>{t("音频输出")}</strong>
             <p>{t("切换设备时保留当前曲目、进度、音量和暂停状态。")}</p>
           </div>
-          <div className="output-picker">
-            <select
-              aria-label={t("音频输出设备")}
-              value={outputDevice ?? ""}
-              onChange={(event) => chooseOutput(event.target.value)}
+          {isAndroid() ? (
+            <button
+              className="secondary-button"
+              onClick={() =>
+                void androidCommand("audioSettings").catch((error) => setNotice(String(error)))
+              }
             >
-              <option value="">{t("系统默认")}</option>
-              {outputs.map((output) => (
-                <option value={output.name} key={output.name}>
-                  {output.name}
-                  {output.isDefault ? t("（默认）") : ""}
-                </option>
-              ))}
-            </select>
-            <button className="secondary-button" onClick={reconnectAudio} type="button">
-              {t("重新连接")}
+              {t("系统音频设置")}
             </button>
-          </div>
+          ) : (
+            <div className="output-picker">
+              <select
+                aria-label={t("音频输出设备")}
+                value={outputDevice ?? ""}
+                onChange={(event) => chooseOutput(event.target.value)}
+              >
+                <option value="">{t("系统默认")}</option>
+                {outputs.map((output) => (
+                  <option value={output.name} key={output.name}>
+                    {output.name}
+                    {output.isDefault ? t("（默认）") : ""}
+                  </option>
+                ))}
+              </select>
+              <button className="secondary-button" onClick={reconnectAudio} type="button">
+                {t("重新连接")}
+              </button>
+            </div>
+          )}
         </article>
         <article>
           <span className="settings-icon">

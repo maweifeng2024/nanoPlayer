@@ -36,10 +36,10 @@ Browser runs intentionally use demo tracks. Tauri runs load the application data
 
 ## Icon generation
 
-The editable source of truth is `docs/design/nanoplayer-app-icon-v1.png`. Regenerate platform assets with:
+The editable source of truth is `docs/design/nanoplayer-app-icon-v3.png`. Regenerate platform assets with:
 
 ```bash
-pnpm tauri icon docs/design/nanoplayer-app-icon-v1.png
+pnpm tauri icon docs/design/nanoplayer-app-icon-v3.png
 ```
 
 Do not use a generated `src-tauri/icons/icon.png` as the next generation source. Verify `bundle.icon` in `src-tauri/tauri.conf.json` and inspect the final application bundle as described in `src-tauri/icons/README.md`.

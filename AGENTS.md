@@ -34,7 +34,7 @@ Use Vitest for UI and state logic, Rust tests for playback/library rules, and Pl
 
 ## Commit & Pull Request Guidelines
 
-There is no Git history yet. Use Conventional Commits, for example `feat(library): add folder rescan`. Keep commits focused. Pull requests must explain behavior changes, link the relevant plan section or issue, list verification commands, and include screenshots for UI changes. Call out database migrations, permission changes, and any source-file write risk explicitly.
+The repository has Git history and published desktop releases. Use Conventional Commits, for example `feat(library): add folder rescan`. Keep commits focused. Pull requests must explain behavior changes, link the relevant plan section or issue, list verification commands, and include screenshots for UI changes. Call out database migrations, permission changes, and any source-file write risk explicitly.
 
 ## Security & Local-First Rules
 

@@ -16,7 +16,7 @@ nanoPlayer is a desktop music player focused on your local music collection. Add
 - Read-only source audio: nanoPlayer never edits or deletes your music files
 - Local SQLite library for indexes, playlists, ratings, and listening history
 - MP3, FLAC, M4A/AAC, ALAC, WAV, Ogg Vorbis, Opus, and AIFF support
-- macOS universal and Windows x64 downloads are available; Linux downloads are pending
+- v0.1.7 downloads are available for macOS universal, Windows x64, and Linux x64
 - Current packages are unsigned; macOS packages are not Apple-notarized
 
 ## 中文
@@ -27,7 +27,7 @@ nanoPlayer 是一款专注本地歌曲播放的桌面音乐播放器。添加音
 - 源音频只读：不修改或删除音乐文件
 - 使用本机 SQLite 保存索引、歌单、评分与收听记录
 - 支持 MP3、FLAC、M4A/AAC、ALAC、WAV、Ogg Vorbis、Opus 和 AIFF
-- 已提供 macOS 通用版及 Windows x64 安装包；Linux 下载待开放
+- v0.1.7 已提供 macOS 通用版、Windows x64 和 Linux x64 安装包
 - 当前安装包未签名，macOS 版尚未完成 Apple 公证
 
 ## Project status / 项目状态
@@ -35,6 +35,8 @@ nanoPlayer 是一款专注本地歌曲播放的桌面音乐播放器。添加音
 The first desktop feature set is implemented in this repository. See [First Version Status](docs/development/FIRST_VERSION_STATUS.md), [Design System](docs/design/DESIGN_SYSTEM.md), and [Product & Technical Plan](docs/PRODUCT_AND_TECHNICAL_PLAN.md) for verified behavior, the current visual baseline, and remaining release gates.
 
 仓库已包含首个桌面版本的主要功能。已验证行为、当前视觉基线与剩余发布门槛分别见上述状态、设计系统和产品技术计划文档。
+
+2026-09-11 audit / 核对结果：[成果与文档核对](docs/development/DOCUMENTATION_AUDIT_2026-09-11.md)。移动平台仅完成[可行性、技术路线与工作量分析](docs/architecture/MOBILE_FEASIBILITY.md)，尚未开发或制定实施计划。
 
 ## Development / 开发
 

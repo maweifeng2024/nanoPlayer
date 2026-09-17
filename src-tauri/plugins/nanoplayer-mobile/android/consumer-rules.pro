@@ -1,0 +1,2 @@
+-keep class app.nanoplayer.mobile.NanoPlayerPlugin { *; }
+-keep class app.nanoplayer.mobile.NativeArgs { *; }

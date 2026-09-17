@@ -4,17 +4,43 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-09-17
+
+### Documentation
+
+- Reconciled desktop v0.1.7 release, updater, icon, architecture and verification status on 2026-09-11; added mobile feasibility analysis only.
+
 ## [0.1.7] - 2026-09-08
+
+- Release tooling validates arguments and recognizes successful recovery without duplicate deployment (included in tag).
+- Published eight desktop packages plus updater signatures, manifest and checksums; GitHub publication timestamp is 2026-09-08 23:26 UTC (2026-09-09 in China).
+- The local-push recovery fix was committed after this tag on main; it is tooling, not a v0.1.7 client binary change.
 
 ## [0.1.6] - 2026-09-08
 
+- Added desktop automatic updates, signed updater manifests, folder multi-selection, responsive most-played tables, contextual home artwork/SVG fallback and simplified playlist subtitles.
+- Artifact normalization and publishing recovery fixes landed after the tag on main.
+
+> Version summaries 0.1.2–0.1.7 were reconstructed from Git tag differences on 2026-09-11. The older cumulative feature list under 0.1.1 is retained as historical documentation; current behavior and qualification are in `docs/development/FIRST_VERSION_STATUS.md`.
+
 ## [0.1.5] - 2026-09-07
+
+- Added release completion watching, explicit asset publishing and Vercel secret setup; improved artifact checksum/website manifest handling.
 
 ## [0.1.4] - 2026-09-06
 
+- Added Chinese/English interface and native menu localization, artwork-derived ambient backgrounds and UI refinements.
+- Changed play-count rules to natural completion, with pause/resume, skipped/seeked tracks and repeat regression coverage.
+- Refreshed actual product screenshots and website introduction.
+
 ## [0.1.3] - 2026-09-04
 
+- Added a Tauri build wrapper that handles empty optional Apple signing variables without attempting an invalid certificate import.
+- Improved release branch synchronization and interrupted push handling.
+
 ## [0.1.2] - 2026-09-04
+
+- Isolated browser tests behind a temporary HTTP server/port; pinned the macOS build runner and improved release version/network handling.
 
 ## [0.1.1] - 2026-09-04
 

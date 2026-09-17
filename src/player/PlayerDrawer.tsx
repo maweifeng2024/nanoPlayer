@@ -1,5 +1,16 @@
+import { isAndroid, androidCommand } from "../platform/android";
 import { t } from "../i18n";
-import { FileText, GripVertical, ListMusic, Mic2, Play, Trash2, X } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  FileText,
+  GripVertical,
+  ListMusic,
+  Mic2,
+  Play,
+  Trash2,
+  X,
+} from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -112,6 +123,26 @@ export function PlayerDrawer() {
                         <small>{item.artist}</small>
                       </span>
                     </button>
+                    {isAndroid() && (
+                      <div className="phone-queue-order">
+                        <button
+                          className="icon-button"
+                          disabled={index === 0}
+                          aria-label={t("上移 {0}", item.title)}
+                          onClick={() => state.reorderQueue(index, index - 1)}
+                        >
+                          <ChevronUp size={20} />
+                        </button>
+                        <button
+                          className="icon-button"
+                          disabled={index === queueTracks.length - 1}
+                          aria-label={t("下移 {0}", item.title)}
+                          onClick={() => state.reorderQueue(index, index + 1)}
+                        >
+                          <ChevronDown size={20} />
+                        </button>
+                      </div>
+                    )}
                     <button
                       className="icon-button remove-queue"
                       onClick={() => state.removeFromQueue(index)}
@@ -200,11 +231,13 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
   const chooseLocalLyrics = async () => {
     if (!track || track.id < 0 || !isTauri())
       return setNotice(t("本地歌词选择仅用于桌面版真实曲目。"));
-    const chosen = await open({
-      multiple: false,
-      title: t("为“{0}”选择歌词", track.title),
-      filters: [{ name: t("歌词"), extensions: ["lrc", "txt"] }],
-    });
+    const chosen = isAndroid()
+      ? (await androidCommand<{ path?: string }>("pickFile", { kind: "lyrics" })).path
+      : await open({
+          multiple: false,
+          title: t("为“{0}”选择歌词", track.title),
+          filters: [{ name: t("歌词"), extensions: ["lrc", "txt"] }],
+        });
     if (typeof chosen !== "string") return;
     try {
       const result = await importManualLyrics(track.id, chosen);
@@ -317,7 +350,12 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
           className={index === activeIndex ? "active" : ""}
           key={`${line.at}-${index}`}
           disabled={line.at === null}
-          onClick={() => line.at !== null && useNanoStore.getState().setProgress(line.at)}
+          onClick={() => {
+            if (line.at !== null) {
+              useNanoStore.getState().seekPlayback(line.at);
+              if (isAndroid()) void androidCommand("seek", { positionMs: line.at });
+            }
+          }}
         >
           {line.text}
         </button>

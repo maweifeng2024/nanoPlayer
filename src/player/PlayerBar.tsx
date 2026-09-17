@@ -1,3 +1,4 @@
+import { isAndroid, androidCommand } from "../platform/android";
 import { t } from "../i18n";
 import {
   Heart,
@@ -13,7 +14,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { formatDuration } from "../domain";
 import { useNanoStore } from "../store";
 import {
@@ -28,6 +29,9 @@ import { Artwork } from "../library/Artwork";
 export function PlayerBar() {
   const state = useNanoStore();
   const track = state.tracks.find((item) => item.id === state.currentTrackId);
+  const [seekPreview, setSeekPreview] = useState<number | null>(null);
+  const scrubbing = useRef(false);
+  const visibleProgress = seekPreview ?? state.progressMs;
   const loadedTrack = useRef<number | undefined>(undefined);
   const loadedRevision = useRef(-1);
   const session = useRef<{ id: number; trackId: number } | undefined>(undefined);
@@ -41,7 +45,7 @@ export function PlayerBar() {
   }, [state.listenedSessionMs, state.sessionCounted]);
 
   useEffect(() => {
-    if (!isTauri() || !track || track.id < 0) return;
+    if (isAndroid() || !isTauri() || !track || track.id < 0) return;
     let disposed = false;
     let starting = false;
     const begin = () => {
@@ -87,7 +91,7 @@ export function PlayerBar() {
   }, [track?.id, state.playbackRevision]);
 
   useEffect(() => {
-    if (!track || !state.playing) return;
+    if (isAndroid() || !track || !state.playing) return;
     let polling = false;
     const finish = () => {
       const latest = useNanoStore.getState();
@@ -154,7 +158,7 @@ export function PlayerBar() {
   }, [state.playing, track?.id]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !track || track.durationMs <= 0) return;
+    if (isAndroid() || !("mediaSession" in navigator) || !track || track.durationMs <= 0) return;
     try {
       navigator.mediaSession.setPositionState({
         duration: track.durationMs / 1000,
@@ -167,7 +171,7 @@ export function PlayerBar() {
   }, [state.progressMs, track?.id]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
+    if (isAndroid() || !("mediaSession" in navigator)) return;
     navigator.mediaSession.playbackState = state.playing ? "playing" : "paused";
     if (track)
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -216,7 +220,7 @@ export function PlayerBar() {
   }, [state.playing, track?.id]);
 
   useEffect(() => {
-    if (!isTauri() || !track || track.id < 0) return;
+    if (isAndroid() || !isTauri() || !track || track.id < 0) return;
     const needsLoad =
       loadedTrack.current !== track.id || loadedRevision.current !== state.playbackRevision;
     const command = !needsLoad
@@ -251,19 +255,24 @@ export function PlayerBar() {
 
   const seek = (value: number) => {
     state.seekPlayback(value);
-    if (isTauri() && track && track.id > 0)
+    if (isAndroid())
+      void androidCommand("seek", { positionMs: value }).catch((error) =>
+        state.setNotice(String(error)),
+      );
+    else if (isTauri() && track && track.id > 0)
       invoke("playback_seek", { positionMs: value }).catch((error) =>
         state.setNotice(t(String(error))),
       );
   };
   const setVolume = (value: number) => {
     state.setVolume(value);
-    if (isTauri()) invoke("playback_volume", { volume: value }).catch(() => undefined);
+    if (isTauri() && !isAndroid())
+      invoke("playback_volume", { volume: value }).catch(() => undefined);
   };
   const toggleMute = () => {
     const nextMuted = !state.muted;
     state.toggleMute();
-    if (isTauri())
+    if (isTauri() && !isAndroid())
       invoke("playback_volume", { volume: nextMuted ? 0 : state.volume }).catch((error) =>
         state.setNotice(t(String(error))),
       );
@@ -305,6 +314,15 @@ export function PlayerBar() {
           <Heart size={18} fill={track && state.ratings[track.id] ? "currentColor" : "none"} />
         </button>
       </div>
+      {isAndroid() && (
+        <button
+          className="mobile-queue icon-button"
+          aria-label={t("播放队列")}
+          onClick={() => state.toggleDrawer("queue")}
+        >
+          <ListMusic size={20} />
+        </button>
+      )}
       <div className="transport">
         <div className="transport-buttons">
           <button
@@ -328,7 +346,11 @@ export function PlayerBar() {
           >
             {state.repeatMode === "one" ? <Repeat1 size={16} /> : <Repeat2 size={16} />}
           </button>
-          <button aria-label={t("上一首")} onClick={state.previous} type="button">
+          <button
+            aria-label={t("上一首")}
+            onClick={() => (isAndroid() ? void androidCommand("previous") : state.previous())}
+            type="button"
+          >
             <SkipBack size={18} />
           </button>
           <button
@@ -343,7 +365,11 @@ export function PlayerBar() {
               <Play size={18} fill="currentColor" />
             )}
           </button>
-          <button aria-label={t("下一首")} onClick={() => state.next()} type="button">
+          <button
+            aria-label={t("下一首")}
+            onClick={() => (isAndroid() ? void androidCommand("next") : state.next())}
+            type="button"
+          >
             <SkipForward size={18} />
           </button>
           <button
@@ -372,8 +398,25 @@ export function PlayerBar() {
             type="range"
             min="0"
             max={track?.durationMs ?? 1}
-            value={Math.min(state.progressMs, track?.durationMs ?? 1)}
-            onChange={(event) => seek(Number(event.target.value))}
+            value={Math.min(visibleProgress, track?.durationMs ?? 1)}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              if (isAndroid() && scrubbing.current) setSeekPreview(value);
+              else seek(value);
+            }}
+            onPointerDown={() => {
+              if (isAndroid()) scrubbing.current = true;
+            }}
+            onPointerUp={(event) => {
+              if (!scrubbing.current) return;
+              scrubbing.current = false;
+              seek(Number(event.currentTarget.value));
+              setSeekPreview(null);
+            }}
+            onPointerCancel={() => {
+              scrubbing.current = false;
+              setSeekPreview(null);
+            }}
           />
           <span>{formatDuration(track?.durationMs ?? 0)}</span>
         </div>

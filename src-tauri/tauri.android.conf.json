@@ -1,0 +1,5 @@
+{
+  "identifier": "app.nanoplayer.android",
+  "app": { "windows": [{ "title": "nanoPlayer", "width": 1200, "height": 760 }] },
+  "bundle": { "android": { "minSdkVersion": 29 } }
+}

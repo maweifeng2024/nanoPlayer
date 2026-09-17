@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { isAndroid, androidCommand } from "../platform/android";
+import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { t } from "../i18n";
 import { formatBytes } from "../domain";
@@ -29,6 +30,27 @@ export function UpdateNotifier() {
 
 export function UpdateSettings() {
   const { phase, update, received, total, error } = useUpdateStore();
+  const [androidVersion, setAndroidVersion] = useState("");
+  useEffect(() => {
+    if (isAndroid())
+      void androidCommand<{ versionName: string; versionCode: number }>("deviceInfo")
+        .then((info) => setAndroidVersion(`${info.versionName} (${info.versionCode})`))
+        .catch(() => undefined);
+  }, []);
+  if (isAndroid())
+    return (
+      <article>
+        <span className="settings-icon">
+          <Download />
+        </span>
+        <div>
+          <h3>
+            {t("软件更新")} · Android {androidVersion}
+          </h3>
+          <p>{t("Android 版本通过安装同一签名的新 APK 更新，保留资料库和设置。")}</p>
+        </div>
+      </article>
+    );
   const busy = phase === "checking" || phase === "downloading";
   return (
     <article>

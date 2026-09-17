@@ -130,6 +130,9 @@ impl LibraryDatabase {
         connection
             .execute_batch(USER_FEATURES_MIGRATION)
             .map_err(to_string)?;
+        connection
+            .execute_batch(include_str!("../../migrations/0006_android_resources.sql"))
+            .map_err(to_string)?;
         Ok(Self {
             connection,
             path: path.to_owned(),
@@ -147,6 +150,15 @@ impl LibraryDatabase {
             .and_then(|value| value.to_str())
             .unwrap_or(&canonical)
             .to_owned();
+        self.upsert_source_scan(&canonical, &name, scan)
+    }
+
+    pub fn upsert_source_scan(
+        &mut self,
+        canonical: &str,
+        name: &str,
+        scan: ScanResult,
+    ) -> Result<(), String> {
         let now = unix_now();
         let transaction = self.connection.transaction().map_err(to_string)?;
         transaction.execute(
@@ -209,10 +221,35 @@ impl LibraryDatabase {
                     |row| row.get(0),
                 )
                 .map_err(to_string)?;
+            if canonical.starts_with("content://") {
+                transaction.execute("INSERT INTO document_resources(media_file_id, tree_uri, document_id, content_uri) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(media_file_id) DO UPDATE SET content_uri=excluded.content_uri, document_id=excluded.document_id", params![file_id, canonical, scanned.file_identity, scanned.path]).map_err(to_string)?;
+            }
+            let existing: Option<i64> = transaction
+                .query_row(
+                    "SELECT id FROM tracks WHERE media_file_id=?1",
+                    [file_id],
+                    |row| row.get(0),
+                )
+                .optional()
+                .map_err(to_string)?;
+            let allocated_id = if canonical.starts_with("content://") && existing.is_none() {
+                transaction
+                    .execute(
+                        "INSERT OR IGNORE INTO android_track_identities(id) SELECT id FROM tracks",
+                        [],
+                    )
+                    .map_err(to_string)?;
+                transaction
+                    .execute("INSERT INTO android_track_identities DEFAULT VALUES", [])
+                    .map_err(to_string)?;
+                Some(transaction.last_insert_rowid())
+            } else {
+                existing
+            };
             let raw_tags = serde_json::to_string(&metadata).map_err(to_string)?;
             transaction.execute(
-                "INSERT INTO tracks(media_file_id, album_id, title, normalized_title, duration_ms, disc_number, track_number, raw_tags_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) ON CONFLICT(media_file_id) DO UPDATE SET album_id=excluded.album_id, title=excluded.title, normalized_title=excluded.normalized_title, duration_ms=excluded.duration_ms, disc_number=excluded.disc_number, track_number=excluded.track_number, raw_tags_json=excluded.raw_tags_json",
-                params![file_id, album_id, metadata.title, normalize(&metadata.title), metadata.duration_ms, metadata.disc_number, metadata.track_number, raw_tags],
+                "INSERT INTO tracks(media_file_id, album_id, title, normalized_title, duration_ms, disc_number, track_number, raw_tags_json, id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9) ON CONFLICT(media_file_id) DO UPDATE SET album_id=excluded.album_id, title=excluded.title, normalized_title=excluded.normalized_title, duration_ms=excluded.duration_ms, disc_number=excluded.disc_number, track_number=excluded.track_number, raw_tags_json=excluded.raw_tags_json",
+                params![file_id, album_id, metadata.title, normalize(&metadata.title), metadata.duration_ms, metadata.disc_number, metadata.track_number, raw_tags, allocated_id],
             ).map_err(to_string)?;
             let track_id: i64 = transaction
                 .query_row(
@@ -361,7 +398,7 @@ impl LibraryDatabase {
 
     pub fn track_path(&self, track_id: i64) -> Result<Option<String>, String> {
         self.connection.query_row(
-            "SELECT r.canonical_path || '/' || m.relative_path FROM tracks t JOIN media_files m ON m.id=t.media_file_id JOIN library_roots r ON r.id=m.library_root_id WHERE t.id=?1 AND m.availability='available'",
+            "SELECT COALESCE((SELECT content_uri FROM document_resources dr WHERE dr.media_file_id=m.id), r.canonical_path || '/' || m.relative_path) FROM tracks t JOIN media_files m ON m.id=t.media_file_id JOIN library_roots r ON r.id=m.library_root_id WHERE t.id=?1 AND m.availability='available'",
             [track_id], |row| row.get(0),
         ).optional().map_err(to_string)
     }
@@ -384,7 +421,7 @@ impl LibraryDatabase {
 
     pub fn snapshot(&self) -> Result<LibrarySnapshot, String> {
         let roots = collect(&self.connection, "SELECT r.id, r.canonical_path, r.display_name, r.availability, COUNT(CASE WHEN m.availability='available' THEN 1 END), COALESCE(SUM(CASE WHEN m.availability='available' THEN m.size_bytes ELSE 0 END), 0), r.last_scanned_at FROM library_roots r LEFT JOIN media_files m ON m.library_root_id=r.id GROUP BY r.id ORDER BY r.created_at", |row| Ok(LibraryRootDto { id: row.get(0)?, path: row.get(1)?, name: row.get(2)?, availability: row.get(3)?, song_count: row.get(4)?, size_bytes: row.get(5)?, last_scanned_at: row.get(6)? }))?;
-        let tracks = collect(&self.connection, "SELECT t.id, r.canonical_path || '/' || m.relative_path, COALESCE(o.title, t.title), COALESCE(o.artist, a.name, '未知艺术家'), COALESCE(o.album, al.title), t.duration_ms, m.format, COALESCE(o.year, json_extract(t.raw_tags_json, '$.year')), COALESCE(o.genre, json_extract(t.raw_tags_json, '$.genre')), t.track_number, t.disc_number, r.created_at, ly.content, ly.source, ly.kind, EXISTS(SELECT 1 FROM artwork_cache ac WHERE ac.track_id=t.id), (SELECT content_hash FROM artwork_cache ac WHERE ac.track_id=t.id), json_extract(t.raw_tags_json, '$.trackTotal'), json_extract(t.raw_tags_json, '$.discTotal'), json_extract(t.raw_tags_json, '$.albumArtist'), COALESCE(o.composer, json_extract(t.raw_tags_json, '$.composer')), json_extract(t.raw_tags_json, '$.bitrate'), json_extract(t.raw_tags_json, '$.sampleRate'), json_extract(t.raw_tags_json, '$.channels'), json_extract(t.raw_tags_json, '$.musicbrainzRecordingId') FROM tracks t JOIN media_files m ON m.id=t.media_file_id JOIN library_roots r ON r.id=m.library_root_id JOIN albums al ON al.id=t.album_id LEFT JOIN track_artists ta ON ta.track_id=t.id AND ta.position=0 LEFT JOIN artists a ON a.id=ta.artist_id LEFT JOIN track_metadata_overrides o ON o.track_id=t.id LEFT JOIN lyrics ly ON ly.id=(SELECT id FROM lyrics WHERE track_id=t.id ORDER BY CASE WHEN source='manual' THEN 0 WHEN source='embedded' AND kind='synchronized' THEN 1 WHEN source='sidecar' AND kind='synchronized' THEN 2 WHEN source='lrclib' AND kind='synchronized' THEN 3 WHEN source='embedded' THEN 4 WHEN source='sidecar' THEN 5 WHEN source='lrclib' THEN 6 ELSE 7 END, id DESC LIMIT 1) WHERE m.availability='available' ORDER BY COALESCE(o.title, t.title) COLLATE NOCASE", |row| Ok(TrackDto { id: row.get(0)?, path: row.get(1)?, title: row.get(2)?, artist: row.get(3)?, album: row.get(4)?, duration_ms: row.get(5)?, format: row.get(6)?, year: row.get(7)?, genre: row.get(8)?, track_number: row.get(9)?, disc_number: row.get(10)?, added_at: row.get(11)?, lyrics: row.get(12)?, lyrics_source: row.get(13)?, lyrics_kind: row.get(14)?, has_artwork: row.get(15)?, artwork_hash: row.get(16)?, track_total: row.get(17)?, disc_total: row.get(18)?, album_artist: row.get(19)?, composer: row.get(20)?, bitrate: row.get(21)?, sample_rate: row.get(22)?, channels: row.get(23)?, musicbrainz_recording_id: row.get(24)? }))?;
+        let tracks = collect(&self.connection, "SELECT t.id, COALESCE((SELECT content_uri FROM document_resources dr WHERE dr.media_file_id=m.id), r.canonical_path || '/' || m.relative_path), COALESCE(o.title, t.title), COALESCE(o.artist, a.name, '未知艺术家'), COALESCE(o.album, al.title), t.duration_ms, m.format, COALESCE(o.year, json_extract(t.raw_tags_json, '$.year')), COALESCE(o.genre, json_extract(t.raw_tags_json, '$.genre')), t.track_number, t.disc_number, r.created_at, ly.content, ly.source, ly.kind, EXISTS(SELECT 1 FROM artwork_cache ac WHERE ac.track_id=t.id), (SELECT content_hash FROM artwork_cache ac WHERE ac.track_id=t.id), json_extract(t.raw_tags_json, '$.trackTotal'), json_extract(t.raw_tags_json, '$.discTotal'), json_extract(t.raw_tags_json, '$.albumArtist'), COALESCE(o.composer, json_extract(t.raw_tags_json, '$.composer')), json_extract(t.raw_tags_json, '$.bitrate'), json_extract(t.raw_tags_json, '$.sampleRate'), json_extract(t.raw_tags_json, '$.channels'), json_extract(t.raw_tags_json, '$.musicbrainzRecordingId') FROM tracks t JOIN media_files m ON m.id=t.media_file_id JOIN library_roots r ON r.id=m.library_root_id JOIN albums al ON al.id=t.album_id LEFT JOIN track_artists ta ON ta.track_id=t.id AND ta.position=0 LEFT JOIN artists a ON a.id=ta.artist_id LEFT JOIN track_metadata_overrides o ON o.track_id=t.id LEFT JOIN lyrics ly ON ly.id=(SELECT id FROM lyrics WHERE track_id=t.id ORDER BY CASE WHEN source='manual' THEN 0 WHEN source='embedded' AND kind='synchronized' THEN 1 WHEN source='sidecar' AND kind='synchronized' THEN 2 WHEN source='lrclib' AND kind='synchronized' THEN 3 WHEN source='embedded' THEN 4 WHEN source='sidecar' THEN 5 WHEN source='lrclib' THEN 6 ELSE 7 END, id DESC LIMIT 1) WHERE m.availability='available' ORDER BY COALESCE(o.title, t.title) COLLATE NOCASE", |row| Ok(TrackDto { id: row.get(0)?, path: row.get(1)?, title: row.get(2)?, artist: row.get(3)?, album: row.get(4)?, duration_ms: row.get(5)?, format: row.get(6)?, year: row.get(7)?, genre: row.get(8)?, track_number: row.get(9)?, disc_number: row.get(10)?, added_at: row.get(11)?, lyrics: row.get(12)?, lyrics_source: row.get(13)?, lyrics_kind: row.get(14)?, has_artwork: row.get(15)?, artwork_hash: row.get(16)?, track_total: row.get(17)?, disc_total: row.get(18)?, album_artist: row.get(19)?, composer: row.get(20)?, bitrate: row.get(21)?, sample_rate: row.get(22)?, channels: row.get(23)?, musicbrainz_recording_id: row.get(24)? }))?;
         let issues = collect(&self.connection, "SELECT id, library_root_id, path, category, COALESCE(detail, '') FROM scan_issues WHERE resolved_at IS NULL ORDER BY observed_at DESC", |row| Ok(IssueDto { id: row.get(0)?, root_id: row.get(1)?, path: row.get(2)?, category: row.get(3)?, detail: row.get(4)? }))?;
         let mut playlist_statement = self
             .connection
@@ -431,14 +468,95 @@ impl LibraryDatabase {
         })
     }
 
+    #[cfg(any(target_os = "android", test))]
+    pub fn merge_native_events(
+        &mut self,
+        events: &[serde_json::Value],
+    ) -> Result<serde_json::Value, String> {
+        let transaction = self.connection.transaction().map_err(to_string)?;
+        for event in events {
+            let Some(track_id) = event["trackId"]
+                .as_str()
+                .and_then(|s| s.parse::<i64>().ok())
+            else {
+                continue;
+            };
+            let Some(session) = event["sessionId"].as_str() else {
+                continue;
+            };
+            let listened = event["listenedMs"]
+                .as_u64()
+                .unwrap_or(0)
+                .min(i64::MAX as u64);
+            let old: u64 = transaction
+                .query_row(
+                    "SELECT listened_ms FROM native_playback_events WHERE session_id=?1",
+                    [session],
+                    |row| row.get(0),
+                )
+                .optional()
+                .map_err(to_string)?
+                .unwrap_or(0);
+            let started_at = event["startedAt"]
+                .as_str()
+                .and_then(|s| s.parse::<u64>().ok())
+                .filter(|time| *time > 0)
+                .map(|time| time.to_string())
+                .unwrap_or_else(unix_now);
+            if old == 0 && listened > 0 {
+                transaction.execute("INSERT INTO track_user_state(track_id,last_played_at) SELECT ?1,?2 WHERE EXISTS(SELECT 1 FROM tracks WHERE id=?1) ON CONFLICT(track_id) DO UPDATE SET last_played_at=MAX(COALESCE(last_played_at,excluded.last_played_at),excluded.last_played_at)", params![track_id,started_at]).map_err(to_string)?;
+            }
+            transaction.execute("INSERT INTO native_playback_events(session_id,track_id,listened_ms,counted) SELECT ?1,?2,?3,?4 WHERE EXISTS(SELECT 1 FROM tracks WHERE id=?2) ON CONFLICT(session_id) DO UPDATE SET listened_ms=MAX(listened_ms,excluded.listened_ms),counted=MAX(counted,excluded.counted)", params![session,track_id,listened,event["counted"].as_bool().unwrap_or(false)]).map_err(to_string)?;
+        }
+        transaction.commit().map_err(to_string)?;
+        self.native_play_counts()
+    }
+
+    pub fn native_play_counts(&self) -> Result<serde_json::Value, String> {
+        let mut counts = serde_json::Map::new();
+        let mut statement = self
+            .connection
+            .prepare("SELECT track_id,SUM(counted) FROM native_playback_events GROUP BY track_id")
+            .map_err(to_string)?;
+        let rows = statement
+            .query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, u64>(1)?)))
+            .map_err(to_string)?;
+        for row in rows {
+            let (id, count) = row.map_err(to_string)?;
+            counts.insert(id.to_string(), count.into());
+        }
+        Ok(counts.into())
+    }
+
+    pub fn native_last_played(&self) -> Result<serde_json::Value, String> {
+        let mut result = serde_json::Map::new();
+        let mut statement=self.connection.prepare("SELECT track_id,last_played_at FROM track_user_state WHERE last_played_at IS NOT NULL AND track_id IN (SELECT track_id FROM native_playback_events)").map_err(to_string)?;
+        let rows = statement
+            .query_map([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })
+            .map_err(to_string)?;
+        for row in rows {
+            let (id, date) = row.map_err(to_string)?;
+            result.insert(id.to_string(), date.into());
+        }
+        Ok(result.into())
+    }
+
     pub fn save_user_state(&mut self, value: &str) -> Result<(), String> {
         if value.len() > 5_000_000 {
             return Err("状态数据超过 5 MB 上限".into());
         }
-        let parsed: serde_json::Value = serde_json::from_str(value).map_err(to_string)?;
+        let mut parsed: serde_json::Value = serde_json::from_str(value).map_err(to_string)?;
         if !parsed.is_object() {
             return Err("状态数据必须是 JSON 对象".into());
         }
+        let counts = self.native_play_counts()?;
+        if counts.as_object().is_some_and(|counts| !counts.is_empty()) {
+            parsed["playCounts"] = counts;
+            parsed["lastPlayedAt"] = self.native_last_played()?;
+        }
+        let value = parsed.to_string();
         self.connection.execute("INSERT INTO app_state(key, value_json, updated_at) VALUES ('user_state', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json, updated_at=excluded.updated_at", params![value, unix_now()]).map_err(to_string)?;
         self.sync_playlists_from_state(&parsed)?;
         Ok(())
@@ -902,6 +1020,97 @@ mod tests {
         LibraryDatabase, ARTIST_RELATIONS_MIGRATION, INITIAL_MIGRATION, SCAN_RUNS_MIGRATION,
         USER_FEATURES_MIGRATION,
     };
+
+    #[test]
+    fn document_uri_rescan_preserves_identity_and_recovers_permission() {
+        use crate::{
+            metadata::TrackMetadata,
+            scanner::{ScanResult, ScannedTrack},
+        };
+        let path = std::env::temp_dir().join(format!(
+            "nanoplayer-uri-{}.sqlite3",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let mut database = LibraryDatabase::open(&path).unwrap();
+        let tree = "content://example.documents/tree/music%3A";
+        let uri = "content://example.documents/tree/music%3A/document/music%3Atrack.wav";
+        let track = ScannedTrack {
+            path: uri.into(),
+            relative_path: "music:track.wav".into(),
+            file_identity: "music:track.wav".into(),
+            size_bytes: 44,
+            modified_at: 1,
+            format: "wav".into(),
+            content_fingerprint: "44:1".into(),
+            metadata: Some(TrackMetadata {
+                title: "Test".into(),
+                album: "Album".into(),
+                artist: "Artist".into(),
+                artists: vec!["Artist".into()],
+                album_artist: "Artist".into(),
+                duration_ms: 2000,
+                track_number: None,
+                track_total: None,
+                disc_number: None,
+                disc_total: None,
+                year: None,
+                genre: None,
+                bitrate: None,
+                sample_rate: None,
+                channels: None,
+                composer: None,
+                musicbrainz_recording_id: None,
+            }),
+            embedded_artwork: None,
+            embedded_lyrics: None,
+            sidecar_lyrics: Some("[00:00.00]Fixture".into()),
+        };
+        let scan = || ScanResult {
+            tracks: vec![track.clone()],
+            ..ScanResult::default()
+        };
+        database.upsert_source_scan(tree, "Music", scan()).unwrap();
+        let first = database.snapshot().unwrap();
+        let id = first.tracks[0].id;
+        let root = first.roots[0].id;
+        assert_eq!(database.track_path(id).unwrap().as_deref(), Some(uri));
+        database.save_user_state(&format!(r#"{{"ratings":{{"{id}":5}},"playlists":[{{"id":"fixture","name":"Test","trackIds":[{id}]}}]}}"#)).unwrap();
+        database
+            .mark_root_unavailable(root, "permission expired")
+            .unwrap();
+        database.upsert_source_scan(tree, "Music", scan()).unwrap();
+        database.upsert_source_scan(tree, "Music", scan()).unwrap();
+        let restored = database.snapshot().unwrap();
+        assert_eq!(restored.tracks.len(), 1);
+        assert_eq!(restored.tracks[0].id, id);
+        assert_eq!(restored.tracks[0].path, uri);
+        assert_eq!(restored.playlists[0].track_ids, vec![id]);
+        assert_eq!(restored.user_state.unwrap()["ratings"][id.to_string()], 5);
+        assert_eq!(restored.roots[0].availability, "available");
+        database.connection.execute("INSERT INTO track_user_state(track_id,rating,last_played_at) VALUES (?1,5,NULL) ON CONFLICT(track_id) DO UPDATE SET last_played_at=NULL", rusqlite::params![id]).unwrap();
+        let event = serde_json::json!({"sessionId":"native-unique-session","trackId":id.to_string(),"listenedMs":2000,"counted":true,"startedAt":"1700000000"});
+        database
+            .merge_native_events(&[event.clone(), event.clone()])
+            .unwrap();
+        database.merge_native_events(&[serde_json::json!({"sessionId":"native-unique-session","trackId":id.to_string(),"listenedMs":100,"counted":false})]).unwrap();
+        assert_eq!(database.native_play_counts().unwrap()[id.to_string()], 1);
+        assert_eq!(
+            database.native_last_played().unwrap()[id.to_string()],
+            "1700000000"
+        );
+        database
+            .save_user_state(r#"{"playCounts":{},"lastPlayedAt":{}}"#)
+            .unwrap();
+        assert_eq!(
+            database.snapshot().unwrap().user_state.unwrap()["playCounts"][id.to_string()],
+            1
+        );
+        drop(database);
+        std::fs::remove_file(path).unwrap();
+    }
 
     #[test]
     fn initial_schema_contains_library_roots() {

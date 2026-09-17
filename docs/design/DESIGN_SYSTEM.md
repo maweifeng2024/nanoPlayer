@@ -1,6 +1,6 @@
 # nanoPlayer visual baseline
 
-Updated: 2026-09-05
+Updated: 2026-09-11
 
 This document freezes the current first-version visual decisions so implementation work does not accidentally replace the approved interface with a generic light player layout.
 
@@ -69,3 +69,17 @@ Visual design version 2 changes the new-install default from `system` to `dark`.
 Song rows now start with a bounded first render instead of mounting the entire library before virtualization. Album and artist groups are built in one pass, and their grids render only visible rows plus overscan. Artist portraits stop scanning after four distinct available album covers.
 
 The 10,000-track synthetic Chrome regression checks bounded row/card counts, navigation, scrolling to the last collection, opening its details and returning. Observed click-to-heading times on this machine: songs 144 ms, albums 49 ms, artists 29 ms (includes Playwright overhead; synthetic metadata without artwork, not native playback latency). The original 15 E2E flows and 14 unit tests also pass. Release and debug application bundles both include the fix.
+
+## Current implementation clarification (2026-09-11)
+
+Home artwork follows the selected welcome track, uses bundled SVG scenes when missing, aligns with the lists and has no hero shadow. Returning home remounts its contextual selection. The UI includes Chinese/English and cover-derived ambient coloring in dark/light modes. Current browser validation is 27 passing E2E flows; older counts/timings above are dated historical evidence, not current gates. The current captured product image is `website/public/product-home-current.png` (2026-09-06); generated `test-results/` images are local, not durable design masters.
+
+Mobile analysis preserves this desktop composition for Pad, with touch/safe-area/split-screen adaptation; phones require new UI design. No mobile UI has been implemented.
+
+## Android inheritance clarification (2026-09-16, user confirmed)
+
+Phone and Pad share the existing desktop styles, colors, typography, icons, theme and control states; phone layout redesign does not authorize a separate visual system. Pad must also preserve desktop feature structure, every menu's order and interaction semantics. Mobile incompatibilities require a concrete proposal and user decision before changing them. The prior suggestion to switch a narrow Pad to phone navigation is withdrawn. See `../android/PLAN.md` revision 2 for source mappings and pending platform exceptions.
+
+### Approved Android exceptions (revision 3)
+
+P1: hide the persistent sidebar in narrow split view and scroll content, retaining navigation access and menu order. P2: long press opens the same More/context menu; scrolling cancels it. P3: enlarge text and buttons for touch while preserving visual consistency, using mobile size overrides rather than changing desktop tokens. P4: remove desktop-only window behavior and use Android safe areas. P5: preserve feature placement while mapping output, updates and folder access to Android system routing, APK/store updates and SAF. These exceptions are user-approved; implementation still awaits approval of the complete plan.

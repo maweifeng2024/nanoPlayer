@@ -9,7 +9,8 @@ test-results/
 .env.*
 !.env.example
 src-tauri/target/
-src-tauri/gen/
+src-tauri/gen/*
+!src-tauri/gen/android/
 src-tauri/.taurignore
 *.log
 *.tsbuildinfo
@@ -22,3 +23,12 @@ website/.wrangler/
 .website-git-backup/
 
 .release-keys/
+
+# Android local state and signing secrets (native project not initialized yet)
+*.jks
+*.keystore
+local.properties
+.gradle/
+.android-local/
+
+/artifacts/

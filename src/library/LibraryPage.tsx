@@ -1,10 +1,11 @@
+import { androidCommand, isAndroid } from "../platform/android";
 import { t } from "../i18n";
 import { AlertTriangle, Folder, FolderCheck, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ConfirmDialog } from "../ConfirmDialog";
-import { formatBytes } from "../domain";
+import { formatBytes, formatDate } from "../domain";
 import { useNanoStore } from "../store";
 import {
   addLibraryRoots,
@@ -40,7 +41,9 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
   const chooseFolder = async () => {
     if (!isTauri())
       return setNotice(t("浏览器预览使用示例资料库；在 Tauri 桌面版中可选择真实文件夹。"));
-    const chosen = await open({ directory: true, multiple: true, title: t("添加音乐文件夹") });
+    const chosen = isAndroid()
+      ? (await androidCommand<{ uri?: string }>("pickTree")).uri
+      : await open({ directory: true, multiple: true, title: t("添加音乐文件夹") });
     const paths = Array.isArray(chosen) ? chosen : chosen ? [chosen] : [];
     if (!paths.length) return;
     setScanning(true);
@@ -206,7 +209,7 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
                     <span>{formatBytes(root.sizeBytes)}</span>
                     <span>
                       {t("上次扫描")}
-                      {root.lastScannedAt ?? t("尚未扫描")}
+                      {root.lastScannedAt ? formatDate(root.lastScannedAt, true) : t("尚未扫描")}
                     </span>
                   </div>
                 </div>

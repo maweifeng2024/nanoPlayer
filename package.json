@@ -1,6 +1,6 @@
 {
   "name": "nanoplayer",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "type": "module",
   "engines": {
@@ -19,7 +19,12 @@
     "check": "pnpm lint && pnpm test && pnpm build",
     "website:dev": "npm --prefix website run dev",
     "website:build": "npm --prefix website run build",
-    "release": "node scripts/release/release.mjs"
+    "release": "node scripts/release/dispatch.mjs",
+    "release:desktop": "node scripts/release/dispatch.mjs --platform desktop",
+    "release:android": "node scripts/release/dispatch.mjs --platform android",
+    "android:doctor": "node scripts/android/doctor.mjs",
+    "android:build:debug": "bash scripts/android/build-debug.sh",
+    "android:test:emulator": "bash scripts/android/test-emulator.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.1",

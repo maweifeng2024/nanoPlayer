@@ -2230,7 +2230,7 @@ dependencies = [
 
 [[package]]
 name = "nanoplayer"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -2245,6 +2245,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tauri-plugin-nanoplayer-mobile",
  "tauri-plugin-process",
  "tauri-plugin-updater",
  "tokio",
@@ -4381,6 +4382,17 @@ dependencies = [
  "thiserror 2.0.20",
  "toml 1.1.4+spec-1.1.0",
  "url",
+]
+
+[[package]]
+name = "tauri-plugin-nanoplayer-mobile"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

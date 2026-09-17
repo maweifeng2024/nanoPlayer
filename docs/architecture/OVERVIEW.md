@@ -10,7 +10,7 @@ The React UI communicates with a narrow Tauri command/event layer. Rust owns app
 4. Lyrics providers are optional adapters; embedded and sidecar lyrics work offline.
 5. User state and caches live in application-managed storage, never beside source audio by default.
 
-Platform integrations belong behind small adapters: CoreAudio/Now Playing on macOS, WASAPI/SMTC on Windows, and PipeWire or ALSA/MPRIS on Linux.
+Audio output currently uses rodio/cpal platform backends. Media controls in `src/player/PlayerBar.tsx` use the WebView's `navigator.mediaSession`; dedicated native Now Playing, SMTC, and MPRIS adapters are not implemented and must not be inferred from package availability.
 
 ## Implemented flow
 
@@ -27,7 +27,10 @@ Platform integrations belong behind small adapters: CoreAudio/Now Playing on mac
 - `src/store.ts`: client state transitions, recovery rules, unavailable-file fallback, and persisted UI preferences.
 - `src/tauriBridge.ts`: the narrow typed command boundary.
 - `src-tauri/src/scanner`, `metadata`, `database`, `audio`, `lyrics`: filesystem, tag normalization, SQLite ownership, playback, and provider logic.
-- `src-tauri/migrations`: ordered, idempotent schema additions. The current sequence adds the base library, app state/caches, artist relationships, and scan runs.
+- `src-tauri/migrations`: five ordered migrations (`0001`–`0005`): base library, app state/caches, artist relationships, scan runs, and user features (metadata overrides, normalized playlists and custom artwork).
+- `src/updates`: desktop update checking, installation and restart; release scripts generate signed updater metadata independently of OS code signing.
+
+Playback completion/queue advance and periodic state saving currently depend on frontend timers (`PlayerBar.tsx`, `App.tsx`). A mobile background service cannot depend on these timers remaining active. The existing mobile entry-point annotation does not constitute a working mobile port; see [mobile feasibility](MOBILE_FEASIBILITY.md).
 
 ## Recovery and safety
 

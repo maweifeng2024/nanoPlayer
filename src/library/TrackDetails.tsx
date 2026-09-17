@@ -1,3 +1,4 @@
+import { isAndroid } from "../platform/android";
 import { t } from "../i18n";
 import { FolderOpen, RotateCcw, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -214,6 +215,7 @@ export function TrackDetails({ trackId }: { trackId: number }) {
               </button>
               <button
                 className="text-button"
+                hidden={isAndroid()}
                 onClick={() => {
                   if (!isTauri() || track.id < 0)
                     return state.setNotice(t("在文件管理器中显示仅用于桌面版真实曲目。"));

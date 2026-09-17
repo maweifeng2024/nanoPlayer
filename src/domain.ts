@@ -9,6 +9,7 @@ export type Page =
   | "played"
   | "popular"
   | "rated"
+  | "playlists"
   | "playlist"
   | "now-playing"
   | "settings"

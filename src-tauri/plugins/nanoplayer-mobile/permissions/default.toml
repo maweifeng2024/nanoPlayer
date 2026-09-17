@@ -1,0 +1,3 @@
+[default]
+description = "Read-only SAF access and native media controls"
+permissions = ["allow-dispatch"]

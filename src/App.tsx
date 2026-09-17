@@ -1,3 +1,10 @@
+import {
+  PhoneNavigation,
+  PhoneLibraryTabs,
+  PhonePlaylists,
+  PhoneSettingsButton,
+} from "./layouts/PhoneNavigation";
+import { isAndroid, androidCommand, connectAndroidPlayback } from "./platform/android";
 import { UpdateNotifier } from "./updates/UpdateSettings";
 import { AmbientBackground } from "./library/AmbientBackground";
 import { t } from "./i18n";
@@ -58,7 +65,7 @@ const startWindowDrag = (event: MouseEvent<HTMLElement>) => {
     (event.target as HTMLElement).closest("button, input, label, a, [role='button']")
   )
     return;
-  if (isTauri())
+  if (isTauri() && !isAndroid())
     getCurrentWindow()
       .startDragging()
       .catch(() => undefined);
@@ -124,13 +131,42 @@ export default function App() {
     let watchTimer = 0;
     let unlisten: (() => void) | undefined;
     let unlistenProgress: (() => void) | undefined;
+    let disconnectAndroid: (() => void) | undefined;
     let unsubscribePlaylists: (() => void) | undefined;
     getLibrarySnapshot()
       .then(({ roots, tracks, issues, playlists: nativePlaylists, userState }) => {
         if (!active) return;
+        if (isAndroid() && !userState)
+          useNanoStore.setState({
+            playlists: [],
+            ratings: {},
+            playCounts: {},
+            lastPlayedAt: {},
+            queue: [],
+            currentTrackId: undefined,
+          });
         replaceLibrary(roots, tracks, issues);
         applyNativeUserState(userState);
         if (nativePlaylists?.length) replacePlaylists(nativePlaylists);
+        if (isAndroid()) {
+          const loaded = useNanoStore.getState();
+          replacePlaylists(
+            loaded.playlists.filter(
+              (list) =>
+                !(
+                  list.id === "quiet-night" &&
+                  list.trackIds.length > 0 &&
+                  list.trackIds.every((id) => id < 0)
+                ),
+            ),
+          );
+          useNanoStore.setState({
+            ratings: Object.fromEntries(
+              Object.entries(loaded.ratings).filter(([id]) => Number(id) > 0),
+            ),
+          });
+        }
+        if (isAndroid()) disconnectAndroid = connectAndroidPlayback();
         unsubscribePlaylists = useNanoStore.subscribe((state, previous) => {
           if (
             state.playlists !== previous.playlists ||
@@ -187,6 +223,7 @@ export default function App() {
       unlisten?.();
       unlistenProgress?.();
       unsubscribePlaylists?.();
+      disconnectAndroid?.();
       saveUserState(getNativeUserState()).catch(() => undefined);
     };
   }, [replaceLibrary, replacePlaylists, setNotice, setScanProcessed, setScanning]);
@@ -258,12 +295,38 @@ export default function App() {
     return () => media.removeEventListener("change", apply);
   }, [theme]);
 
+  useEffect(() => {
+    if (!isAndroid()) return;
+    const back = (event: Event) =>
+      queueMicrotask(() => {
+        if (event.defaultPrevented) return;
+        const menu = document.querySelector("details[open]");
+        if (menu) {
+          menu.removeAttribute("open");
+          return;
+        }
+        if (document.querySelector('[role="dialog"]')) {
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", cancelable: true }));
+          return;
+        }
+        if (newPlaylistOpen) return setNewPlaylistOpen(false);
+        if (selectedTrackId !== undefined)
+          return useNanoStore.getState().setSelectedTrack(undefined);
+        if (sidebarOpen) return setSidebarOpen(false);
+        if (drawer) return useNanoStore.getState().toggleDrawer(drawer);
+        if (page !== "home") return setPage("home");
+        void androidCommand("background");
+      });
+    window.addEventListener("android-back", back);
+    return () => window.removeEventListener("android-back", back);
+  }, [newPlaylistOpen, selectedTrackId, sidebarOpen, drawer, page, setPage]);
+
   const addPlaylist = () => setNewPlaylistOpen(true);
 
   return (
-    <div className={`app-shell ${drawer ? "has-drawer" : ""}`}>
+    <div className={`app-shell ${drawer ? "has-drawer" : ""}`} data-page={page}>
       <AmbientBackground />
-      <UpdateNotifier />
+      {!isAndroid() && <UpdateNotifier />}
       <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label={t("主导航")}>
         <div className="brand-row" data-tauri-drag-region onMouseDown={startWindowDrag}>
           <div className="brand">
@@ -395,9 +458,13 @@ export default function App() {
               <kbd>⌘K</kbd>
             )}
           </label>
+          {isAndroid() && <PhoneSettingsButton />}
         </header>
         <div className="page-scroll">
-          {page === "library" || page === "issues" ? (
+          {isAndroid() && <PhoneLibraryTabs />}
+          {page === "playlists" ? (
+            <PhonePlaylists onCreate={addPlaylist} />
+          ) : page === "library" || page === "issues" ? (
             <LibraryPage issuesOnly={page === "issues"} />
           ) : (
             <ContentPage />
@@ -406,6 +473,7 @@ export default function App() {
       </main>
       <PlayerDrawer />
       <PlayerBar />
+      {isAndroid() && <PhoneNavigation />}
       {isTauri() && !roots.length && !onboardingDismissed && (
         <div className="modal-backdrop" role="presentation">
           <section
@@ -415,7 +483,9 @@ export default function App() {
             aria-labelledby="onboarding-title"
           >
             <p className="eyebrow">{t("欢迎使用 nanoPlayer")}</p>
-            <h1 id="onboarding-title">{t("你的音乐，只属于这台电脑")}</h1>
+            <h1 id="onboarding-title">
+              {t(isAndroid() ? "你的音乐，只属于这台设备" : "你的音乐，只属于这台电脑")}
+            </h1>
             <p>{t("选择本地音乐文件夹，nanoPlayer 会建立私有索引并保持源文件只读。")}</p>
             <div className="onboarding-points">
               <span>
