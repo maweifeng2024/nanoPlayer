@@ -1,19 +1,12 @@
-import { androidCommand, isAndroid } from "../platform/android";
+import { chooseLibraryFolders } from "./importFolders";
 import { t } from "../i18n";
 import { AlertTriangle, Folder, FolderCheck, Plus, RefreshCw, Trash2, X } from "lucide-react";
-import { open } from "@tauri-apps/plugin-dialog";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { formatBytes, formatDate } from "../domain";
 import { useNanoStore } from "../store";
-import {
-  addLibraryRoots,
-  cancelScan,
-  isTauri,
-  removeLibraryRoot,
-  rescanLibraryRoot,
-} from "../tauriBridge";
+import { cancelScan, isTauri, removeLibraryRoot, rescanLibraryRoot } from "../tauriBridge";
 
 export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
   const [removeTarget, setRemoveTarget] = useState<{ id: number; name: string }>();
@@ -38,24 +31,8 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
       setPage: state.setPage,
     })),
   );
-  const chooseFolder = async () => {
-    if (!isTauri())
-      return setNotice(t("浏览器预览使用示例资料库；在 Tauri 桌面版中可选择真实文件夹。"));
-    const chosen = isAndroid()
-      ? (await androidCommand<{ uri?: string }>("pickTree")).uri
-      : await open({ directory: true, multiple: true, title: t("添加音乐文件夹") });
-    const paths = Array.isArray(chosen) ? chosen : chosen ? [chosen] : [];
-    if (!paths.length) return;
-    setScanning(true);
-    try {
-      const result = await addLibraryRoots(paths);
-      replaceLibrary(result.roots, result.tracks, result.issues);
-    } catch (error) {
-      setNotice(t(String(error)));
-    } finally {
-      setScanning(false);
-    }
-  };
+  const chooseFolder = chooseLibraryFolders;
+  const pendingPaths = useNanoStore((state) => state.pendingRootPaths);
   const rescan = async (id: number) => {
     if (!isTauri()) return setNotice(t("示例资料库无需重新扫描。"));
     setScanning(true);
@@ -167,7 +144,23 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
         )}
       </header>
 
-      {!roots.length ? (
+      {pendingPaths.length > 0 && (
+        <div className="root-list" role="status" aria-live="polite">
+          {pendingPaths.map((path) => (
+            <article className="root-card" key={path}>
+              <div className="root-icon">
+                <Folder size={22} />
+              </div>
+              <div className="root-main">
+                <strong>{decodeURIComponent(path).split(/[/:]/).filter(Boolean).pop()}</strong>
+                <p>{t("已添加，正在扫描…")}</p>
+              </div>
+              <RefreshCw size={18} />
+            </article>
+          ))}
+        </div>
+      )}
+      {!roots.length && !pendingPaths.length ? (
         <div className="empty-state">
           <span className="empty-icon">
             <Folder aria-hidden="true" size={28} />
@@ -216,6 +209,7 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
                 <div className="root-actions">
                   <button
                     className="icon-button"
+                    disabled={scanning}
                     onClick={() => rescan(root.id)}
                     aria-label={t("重新扫描 {0}", root.name)}
                     title={t("重新扫描")}
@@ -224,6 +218,7 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
                   </button>
                   <button
                     className="icon-button danger"
+                    disabled={scanning}
                     onClick={() => setRemoveTarget({ id: root.id, name: root.name })}
                     aria-label={t("移除目录 {0}", root.name)}
                     title={t("仅移除索引")}

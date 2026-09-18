@@ -1,3 +1,4 @@
+import { Artwork } from "../library/Artwork";
 import { isAndroid, androidCommand } from "../platform/android";
 import { t } from "../i18n";
 import {
@@ -7,12 +8,12 @@ import {
   GripVertical,
   ListMusic,
   Mic2,
-  Play,
+  MoreHorizontal,
   Trash2,
   X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { LyricsCandidate, LyricsSearchInput } from "../domain";
 import { useNanoStore } from "../store";
@@ -40,6 +41,43 @@ export function PlayerDrawer() {
       removeFromQueue: store.removeFromQueue,
     })),
   );
+  const [menu, setMenu] = useState<{ index: number; x: number; y: number }>();
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const close = () => setMenu(undefined);
+    window.addEventListener("pointerdown", close);
+
+    return () => {
+      window.removeEventListener("pointerdown", close);
+    };
+  }, []);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (event: Event) => {
+      event.preventDefault();
+      setMenu(undefined);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close(event);
+    };
+    window.addEventListener("android-back", close);
+    window.addEventListener("keydown", escape);
+    return () => {
+      window.removeEventListener("android-back", close);
+      window.removeEventListener("keydown", escape);
+    };
+  }, [menu]);
+  useEffect(() => setMenu(undefined), [state.queue, state.drawer]);
+  useLayoutEffect(() => {
+    if (!menu || !menuRef.current) return;
+    const element = menuRef.current;
+    element.style.top =
+      Math.max(8, Math.min(menu.y, innerHeight - element.offsetHeight - 8)) + "px";
+  }, [menu]);
+  const trackMap = useMemo(
+    () => new Map(state.tracks.map((track) => [track.id, track])),
+    [state.tracks],
+  );
   const queueListRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (state.drawer !== "queue") return;
@@ -54,9 +92,7 @@ export function PlayerDrawer() {
   }, [state.drawer, state.currentTrackId, state.queue, state.tracks]);
   if (!state.drawer) return null;
   const track = state.tracks.find((item) => item.id === state.currentTrackId);
-  const queueTracks = state.queue
-    .map((id) => state.tracks.find((item) => item.id === id))
-    .filter(Boolean);
+  const queueTracks = state.queue.map((id) => trackMap.get(id)).filter(Boolean);
   return (
     <aside
       className="player-drawer"
@@ -75,6 +111,35 @@ export function PlayerDrawer() {
           <X size={17} />
         </button>
       </header>
+      {menu && (
+        <div
+          ref={menuRef}
+          className="context-menu menu-popover queue-menu"
+          role="menu"
+          style={{ left: menu.x, top: menu.y }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => setMenu(undefined)}
+        >
+          <button
+            disabled={menu.index === 0}
+            onClick={() => state.reorderQueue(menu.index, menu.index - 1)}
+          >
+            <ChevronUp size={16} />
+            {t("上移")}
+          </button>
+          <button
+            disabled={menu.index === state.queue.length - 1}
+            onClick={() => state.reorderQueue(menu.index, menu.index + 1)}
+          >
+            <ChevronDown size={16} />
+            {t("下移")}
+          </button>
+          <button onClick={() => state.removeFromQueue(menu.index)}>
+            <Trash2 size={16} />
+            {t("移除")}
+          </button>
+        </div>
+      )}
       {state.drawer === "queue" ? (
         <>
           <div className="drawer-subhead">
@@ -108,47 +173,23 @@ export function PlayerDrawer() {
                   >
                     <GripVertical size={14} className="drag-handle" />
                     <button className="queue-play" onClick={() => state.playTrack(item.id)}>
-                      <span
-                        className="queue-cover"
-                        style={{ "--cover": item.color ?? "#4c5960" } as React.CSSProperties}
-                      >
-                        {item.id === state.currentTrackId ? (
-                          <Play size={12} fill="currentColor" />
-                        ) : (
-                          item.title.slice(0, 1)
-                        )}
-                      </span>
+                      <Artwork className="queue-cover" track={item} />
                       <span>
                         <strong>{item.title}</strong>
-                        <small>{item.artist}</small>
+                        <small>
+                          {item.artist} · {item.album}
+                        </small>
                       </span>
                     </button>
-                    {isAndroid() && (
-                      <div className="phone-queue-order">
-                        <button
-                          className="icon-button"
-                          disabled={index === 0}
-                          aria-label={t("上移 {0}", item.title)}
-                          onClick={() => state.reorderQueue(index, index - 1)}
-                        >
-                          <ChevronUp size={20} />
-                        </button>
-                        <button
-                          className="icon-button"
-                          disabled={index === queueTracks.length - 1}
-                          aria-label={t("下移 {0}", item.title)}
-                          onClick={() => state.reorderQueue(index, index + 1)}
-                        >
-                          <ChevronDown size={20} />
-                        </button>
-                      </div>
-                    )}
                     <button
-                      className="icon-button remove-queue"
-                      onClick={() => state.removeFromQueue(index)}
-                      aria-label={t("移除 {0}", item.title)}
+                      className="icon-button"
+                      aria-label={t("{0} 更多操作", item.title)}
+                      onClick={(event) => {
+                        const bounds = event.currentTarget.getBoundingClientRect();
+                        setMenu({ index, x: Math.max(8, bounds.right - 200), y: bounds.bottom });
+                      }}
                     >
-                      <X size={14} />
+                      <MoreHorizontal size={20} />
                     </button>
                   </div>
                 ),

@@ -23,7 +23,9 @@ test("English applies throughout the UI and survives reload", async ({ page }) =
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.getByRole("button", { name: "Songs", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Date Added", exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Order", exact: true })).toContainText(
+    "Date Added",
+  );
   await page.getByRole("button", { name: "New Playlist", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("Playlist name");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -54,20 +56,21 @@ test("most played excludes unplayed tracks and sorts count and last-played time"
   await expect(rows).toHaveCount(2);
   await expect(rows.first()).toHaveAttribute("data-track-id", "-1");
   await expect(page.getByRole("button", { name: "添加日期", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "播放次数", exact: true }).click();
+  await page.getByRole("combobox", { name: "排序", exact: true }).selectOption("playCount");
   await expect(rows.first()).toHaveAttribute("data-track-id", "-1");
-  await page.getByRole("button", { name: "播放次数 ↑", exact: true }).click();
+  await page.getByRole("button", { name: "切换排序方向", exact: true }).click();
   await expect(rows.first()).toHaveAttribute("data-track-id", "-2");
-  await page.getByRole("button", { name: "最后一次播放时间", exact: true }).click();
+  await page.getByRole("combobox", { name: "排序", exact: true }).selectOption("lastPlayedAt");
   await expect(rows.first()).toHaveAttribute("data-track-id", "-2");
-  await page.getByRole("button", { name: "最后一次播放时间 ↑", exact: true }).click();
+  await page.getByRole("button", { name: "切换排序方向", exact: true }).click();
   await expect(rows.first()).toHaveAttribute("data-track-id", "-1");
   await page.screenshot({ path: "test-results/most-played-zh.png" });
   await page.getByRole("button", { name: "设置", exact: true }).click();
   await page.getByLabel("界面语言", { exact: true }).selectOption("en");
   await page.getByRole("button", { name: "Most Played", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Last Played ↓", exact: true })).toBeVisible();
-  await expect(page.locator(".added-cell").first()).toContainText("Sep");
+  await expect(page.getByRole("combobox", { name: "Order", exact: true })).toHaveValue(
+    "lastPlayedAt",
+  );
   await page.screenshot({ path: "test-results/most-played-en.png" });
 });
 
@@ -206,7 +209,10 @@ test("native playback checkpoints complete sessions across pause/resume and shor
   });
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: "Native Song", exact: true }).first(),
+    page
+      .locator(".recommendation-copy strong")
+      .filter({ hasText: /^Native Song$/ })
+      .first(),
   ).toBeVisible();
   await page.getByRole("button", { name: "播放", exact: true }).click();
   await expect.poll(() => page.getByLabel("播放进度", { exact: true }).inputValue()).not.toBe("0");

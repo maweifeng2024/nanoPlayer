@@ -71,7 +71,7 @@ test("home aligns artwork and list; most-played columns respond with other lists
     const popularWidth = await page
       .locator(".track-table")
       .evaluate((element) => element.getBoundingClientRect().width);
-    const popularDate = await page.locator(".added-cell").first().isVisible();
+    const popularCover = await page.locator(".track-cover").first().isVisible();
     await page.screenshot({ path: `test-results/most-played-${width}.png` });
     if (width <= 760) await page.getByRole("button", { name: "打开导航", exact: true }).click();
     await page.getByLabel("主导航").getByRole("button", { name: "最近添加", exact: true }).click();
@@ -80,6 +80,6 @@ test("home aligns artwork and list; most-played columns respond with other lists
         .locator(".track-table")
         .evaluate((element) => element.getBoundingClientRect().width),
     ).toBe(popularWidth);
-    expect(await page.locator(".added-cell").first().isVisible()).toBe(popularDate);
+    expect(await page.locator(".track-cover").first().isVisible()).toBe(popularCover);
   }
 });

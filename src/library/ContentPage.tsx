@@ -6,6 +6,7 @@ import {
   Archive,
   AudioLines,
   Clock3,
+  ChevronDown,
   Disc3,
   Eraser,
   FileJson,
@@ -27,7 +28,15 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { useModalBehavior } from "../useModalBehavior";
@@ -250,9 +259,9 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   const [momentSeed] = useState(() => Math.random());
   const featured = tracks[0];
   const stats = { ratings, playCounts, lastPlayedAt };
-  const recent = collectionTracks(tracks, "recent", stats).slice(0, 20);
-  const popular = collectionTracks(tracks, "popular", stats).slice(0, 20);
-  const rated = collectionTracks(tracks, "rated", stats).slice(0, 20);
+  const recent = collectionTracks(tracks, "recent", stats).slice(0, isAndroid() ? 12 : 20);
+  const popular = collectionTracks(tracks, "popular", stats).slice(0, isAndroid() ? 12 : 20);
+  const rated = collectionTracks(tracks, "rated", stats).slice(0, isAndroid() ? 12 : 20);
   if (!featured) return <EmptyLibrary />;
   const moment = (() => {
     const defaultTrack = tracks[Math.floor(momentSeed * tracks.length)] ?? featured;
@@ -424,12 +433,21 @@ function HomeTrackList({
       </button>
       <div className="home-track-list-body">
         {tracks.length ? (
-          <ol>
+          <ol style={{ "--recommendation-rows": Math.min(3, tracks.length) } as CSSProperties}>
             {tracks.map((track) => (
               <li key={track.id}>
                 <button onClick={() => playTrack(track.id, queue)} type="button">
-                  <span>{track.title}</span>
-                  <Play className="home-track-play" size={13} fill="currentColor" />
+                  <Artwork
+                    className="recommendation-art"
+                    track={track}
+                    fallback={<Music2 size={20} />}
+                  />
+                  <span className="recommendation-copy">
+                    <strong>{track.title}</strong>
+                    <small>
+                      {track.artist} · {track.album}
+                    </small>
+                  </span>
                 </button>
               </li>
             ))}
@@ -492,6 +510,14 @@ function NowPlayingPage() {
   const lyrics = parsed.lines.slice(start, Math.max(8, active + 6));
   return (
     <section className="now-playing-page">
+      <button
+        className="secondary-button collapse-player"
+        onClick={() => state.collapsePlayer()}
+        aria-label={t("收起正在播放")}
+      >
+        <ChevronDown size={18} />
+        {t("收起")}
+      </button>
       <Artwork
         className="now-playing-art"
         track={track}
@@ -813,7 +839,13 @@ function PlaylistPage() {
         )),
   );
   return (
-    <section>
+    <section className="playlist-page">
+      <button
+        className="text-button playlist-back"
+        onClick={() => useNanoStore.getState().setPage("playlists")}
+      >
+        {t("返回歌单")}
+      </button>
       <div className="playlist-hero">
         <div className="playlist-cover-wrap">
           <div className="playlist-art">
@@ -884,7 +916,7 @@ function PlaylistPage() {
           </div>
         </div>
       </div>
-      <TrackTable tracks={items} playlistId={playlist.id} />
+      <TrackTable key={playlist.id} tracks={items} playlistId={playlist.id} />
       {renaming ? (
         <NameDialog
           title={t("重命名歌单")}

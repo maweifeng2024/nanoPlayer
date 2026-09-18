@@ -1,6 +1,6 @@
 import { isAndroid, androidCommand } from "../platform/android";
 import { useEffect, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { t } from "../i18n";
 import { formatBytes } from "../domain";
 import { isTauri } from "../tauriBridge";
@@ -10,6 +10,12 @@ import { checkForUpdates, installUpdate, restartUpdatedApp, useUpdateStore } fro
 export function UpdateNotifier() {
   const phase = useUpdateStore((state) => state.phase);
   const version = useUpdateStore((state) => state.update?.version);
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    if (phase !== "available" && phase !== "ready") return;
+    const timer = window.setTimeout(() => setDismissed(true), 10_000);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
   const setPage = useNanoStore((state) => state.setPage);
   useEffect(() => {
     const timer = window.setTimeout(() => void checkForUpdates(), 5000);
@@ -19,12 +25,23 @@ export function UpdateNotifier() {
       window.clearInterval(interval);
     };
   }, []);
-  if (phase !== "available" && phase !== "ready") return null;
+  if (dismissed || (phase !== "available" && phase !== "ready")) return null;
   return (
-    <button className="update-notice secondary-button" onClick={() => setPage("settings")}>
-      <Download size={14} />
-      {phase === "ready" ? t("更新已安装，重启后生效") : t("发现新版本 {0}", version)}
-    </button>
+    <div className="update-notice secondary-button" role="status">
+      <button
+        className="text-button"
+        onClick={() => {
+          setDismissed(true);
+          setPage("settings");
+        }}
+      >
+        <Download size={14} />
+        {phase === "ready" ? t("更新已安装，重启后生效") : t("发现新版本 {0}", version)}
+      </button>
+      <button className="icon-button" aria-label={t("关闭提示")} onClick={() => setDismissed(true)}>
+        <X size={16} />
+      </button>
+    </div>
   );
 }
 

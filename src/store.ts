@@ -20,6 +20,8 @@ interface NanoState {
   visualDesignVersion: number;
   statisticsVersion: number;
   page: Page;
+  playerReturn?: { page: Page; playlistId?: string; query: string };
+  collapsePlayer: () => void;
   selectedPlaylistId?: string;
   roots: LibraryRoot[];
   tracks: Track[];
@@ -52,6 +54,7 @@ interface NanoState {
   setLanguage: (language: "zh-CN" | "en") => void;
   outputDevice?: string;
   scanning: boolean;
+  pendingRootPaths: string[];
   scanProcessed: number;
   onboardingDismissed: boolean;
   notice?: string;
@@ -218,9 +221,26 @@ export const useNanoStore = create<NanoState>()(
       setLanguage: (language) => set({ language }),
       outputDevice: undefined,
       scanning: false,
+      pendingRootPaths: [],
       scanProcessed: 0,
       onboardingDismissed: false,
-      setPage: (page, selectedPlaylistId) => set({ page, selectedPlaylistId, query: "" }),
+      setPage: (page, selectedPlaylistId) =>
+        set((state) => ({
+          page,
+          selectedPlaylistId,
+          query: "",
+          playerReturn:
+            page === "now-playing" && state.page !== "now-playing"
+              ? { page: state.page, playlistId: state.selectedPlaylistId, query: state.query }
+              : state.playerReturn,
+        })),
+      collapsePlayer: () =>
+        set((state) => ({
+          page: state.playerReturn?.page ?? "home",
+          selectedPlaylistId: state.playerReturn?.playlistId,
+          query: state.playerReturn?.query ?? "",
+          drawer: null,
+        })),
       setQuery: (query) => set({ query }),
       replaceLibrary: (roots, tracks, issues) =>
         set((state) => {
@@ -477,7 +497,7 @@ export const useNanoStore = create<NanoState>()(
       deletePlaylist: (id) =>
         set({
           playlists: get().playlists.filter((playlist) => playlist.id !== id),
-          page: "songs",
+          page: "playlists",
           selectedPlaylistId: undefined,
         }),
       addToPlaylist: (playlistId, trackId) =>

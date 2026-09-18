@@ -25,6 +25,8 @@ import java.util.concurrent.Executors
 @InvokeArg
 class NativeArgs {
     var action: String = "snapshot"
+    var color: String = "#18181b"
+    var light: Boolean = false
     var queue: String = "[]"
     var uri: String = ""
     var index: Int = 0
@@ -56,6 +58,22 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
         val args = invoke.parseArgs(NativeArgs::class.java)
         when (args.action) {
             "acknowledge" -> { PlaybackJournal(activity).use { it.acknowledge(JSONArray(args.events)) }; invoke.resolve(JSObject()) }
+            "systemBars" -> {
+                val color = try { android.graphics.Color.parseColor(args.color) } catch (_: IllegalArgumentException) { invoke.reject("Invalid surface color"); return }
+                activity.runOnUiThread {
+                    activity.findViewById<android.view.View>(android.R.id.content).setBackgroundColor(color)
+                    @Suppress("DEPRECATION")
+                    activity.window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    @Suppress("DEPRECATION")
+                    activity.window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                    if (android.os.Build.VERSION.SDK_INT >= 29) activity.window.isNavigationBarContrastEnforced = false
+                    androidx.core.view.WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
+                        isAppearanceLightStatusBars = args.light
+                        isAppearanceLightNavigationBars = args.light
+                    }
+                    invoke.resolve(JSObject())
+                }
+            }
             "deviceInfo" -> {
                 val metrics = activity.resources.displayMetrics
                 val bounds = if (android.os.Build.VERSION.SDK_INT >= 30) activity.windowManager.maximumWindowMetrics.bounds else null

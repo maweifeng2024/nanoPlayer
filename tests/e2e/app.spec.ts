@@ -33,7 +33,7 @@ test("filters tracks globally and exposes privacy settings", async ({ page }) =>
   await page.goto("/");
   await page.getByRole("button", { name: "歌曲", exact: true }).click();
   await page.getByRole("textbox", { name: "全局搜索" }).fill("Northbound");
-  await expect(page.getByRole("row")).toHaveCount(3);
+  await expect(page.getByRole("row")).toHaveCount(2);
   await page.getByRole("button", { name: "设置" }).click();
   await expect(page.getByText("源文件只读")).toBeVisible();
   await expect(page.getByRole("switch")).toHaveAttribute("aria-checked", "false");
@@ -61,8 +61,8 @@ test("supports sorting, batch playlist actions and theme choice", async ({ page 
   await page.goto("/");
   await expect(page.locator(".vite-error-overlay")).toHaveCount(0);
   await page.getByLabel("主导航").getByRole("button", { name: "歌曲", exact: true }).click();
-  await page.getByRole("button", { name: "添加日期" }).click();
-  await expect(page.getByRole("button", { name: /添加日期 ↑/ })).toBeVisible();
+  await page.getByRole("combobox", { name: "排序", exact: true }).selectOption("addedAt");
+  await expect(page.getByRole("combobox", { name: "排序", exact: true })).toHaveValue("addedAt");
   await page.getByRole("button", { name: "批量选择" }).click();
   await page.getByRole("button", { name: "选择 迟到的风" }).click();
   await page.getByText("添加到歌单", { exact: true }).click();
@@ -74,9 +74,7 @@ test("supports sorting, batch playlist actions and theme choice", async ({ page 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });
 
-test("shows three title-only home lists and keeps rating as the second song column", async ({
-  page,
-}) => {
+test("shows three cover home lists and cover rows with artist and album", async ({ page }) => {
   await page.goto("/");
   const homeLists = page.getByLabel("首页歌曲推荐");
   await expect(homeLists.getByRole("region")).toHaveCount(3);
@@ -87,9 +85,10 @@ test("shows three title-only home lists and keeps rating as the second song colu
   await expect(page.getByLabel("主导航").getByRole("button", { name: "最近播放" })).toHaveCount(0);
 
   await page.getByLabel("主导航").getByRole("button", { name: "歌曲", exact: true }).click();
-  const headers = page.locator(".track-head > *");
-  await expect(headers.nth(1)).toHaveText("标题");
-  await expect(headers.nth(2)).toHaveText("评分");
+  await expect(page.locator(".track-cover").first()).toBeVisible();
+  await expect(page.locator(".track-title small").first()).toContainText("·");
+  await page.locator(".more-menu").first().click();
+  await expect(page.getByRole("button", { name: "5 星", exact: true })).toBeVisible();
 });
 
 test("keeps the core controls usable at the 720px minimum width", async ({ page }) => {
@@ -110,7 +109,7 @@ test("opens track details, keeps genre metadata, and saves an app-local override
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "歌曲", exact: true }).click();
-  const titleButton = page.getByRole("button", { name: /海平面以下.*查看详情/ });
+  const titleButton = page.locator(".track-title-button").filter({ hasText: "海平面以下" });
   await titleButton.dblclick();
   await expect(page.getByRole("button", { name: "暂停" })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -172,7 +171,7 @@ test("shows only played tracks in most-played and paints playback progress", asy
     useNanoStore.setState({ playCounts: { [-1]: 14, [-3]: 8, [-6]: 21 } });
   });
   await page.getByLabel("主导航").getByRole("button", { name: "播放最多", exact: true }).click();
-  await expect(page.getByRole("row")).toHaveCount(4);
+  await expect(page.getByRole("row")).toHaveCount(3);
   await expect(page.getByRole("row", { name: /迟到的风/ })).toHaveCount(0);
   await page.getByRole("button", { name: "播放 海平面以下" }).click();
   await expect
@@ -266,9 +265,9 @@ test("updates playlist selection immediately and separates title clicks from row
 
   await page.getByRole("button", { name: "歌曲", exact: true }).click();
   const row = page.getByRole("row", { name: /海平面以下/ });
-  await row.locator(".album-cell").click();
+  await row.click({ position: { x: 65, y: 4 } });
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await row.locator(".album-cell").dblclick();
+  await row.dblclick({ position: { x: 65, y: 4 } });
   await expect(page.getByRole("button", { name: "暂停" })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await row.locator(".track-title-button").click();

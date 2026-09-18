@@ -1,3 +1,4 @@
+import { chooseLibraryFolders } from "./library/importFolders";
 import {
   PhoneNavigation,
   PhoneLibraryTabs,
@@ -230,7 +231,8 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
       const typing = target.matches('input, textarea, [contenteditable="true"]');
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -305,7 +307,7 @@ export default function App() {
           menu.removeAttribute("open");
           return;
         }
-        if (document.querySelector('[role="dialog"]')) {
+        if (document.querySelector('[role="dialog"], [role="alertdialog"]')) {
           window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", cancelable: true }));
           return;
         }
@@ -314,6 +316,8 @@ export default function App() {
           return useNanoStore.getState().setSelectedTrack(undefined);
         if (sidebarOpen) return setSidebarOpen(false);
         if (drawer) return useNanoStore.getState().toggleDrawer(drawer);
+        if (page === "now-playing") return useNanoStore.getState().collapsePlayer();
+        if (page === "playlist") return setPage("playlists");
         if (page !== "home") return setPage("home");
         void androidCommand("background");
       });
@@ -343,7 +347,11 @@ export default function App() {
           </button>
         </div>
         <nav>
-          {navigation.map(({ id, label, icon: Icon }) => (
+          {[
+            ...navigation.slice(0, 5),
+            ...(isAndroid() ? [{ id: "playlists" as const, label: "歌单", icon: Heart }] : []),
+            ...navigation.slice(5),
+          ].map(({ id, label, icon: Icon }) => (
             <button
               className="nav-item"
               aria-current={page === id ? "page" : undefined}
@@ -359,28 +367,30 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <p className="section-label">{t("歌单")}</p>
-        <button className="nav-item" onClick={addPlaylist} type="button">
-          <Plus aria-hidden="true" size={17} />
-          {t("新建歌单")}
-        </button>
-        {playlists.map((playlist) => (
-          <button
-            className="nav-item playlist-nav"
-            aria-current={
-              page === "playlist" && selectedPlaylistId === playlist.id ? "page" : undefined
-            }
-            key={playlist.id}
-            onClick={() => {
-              setPage("playlist", playlist.id);
-              setSidebarOpen(false);
-            }}
-            type="button"
-          >
-            <Heart aria-hidden="true" size={15} />
-            {playlist.name}
+        <div className="sidebar-playlists">
+          <p className="section-label">{t("歌单")}</p>
+          <button className="nav-item" onClick={addPlaylist} type="button">
+            <Plus aria-hidden="true" size={17} />
+            {t("新建歌单")}
           </button>
-        ))}
+          {playlists.map((playlist) => (
+            <button
+              className="nav-item playlist-nav"
+              aria-current={
+                page === "playlist" && selectedPlaylistId === playlist.id ? "page" : undefined
+              }
+              key={playlist.id}
+              onClick={() => {
+                setPage("playlist", playlist.id);
+                setSidebarOpen(false);
+              }}
+              type="button"
+            >
+              <Heart aria-hidden="true" size={15} />
+              {playlist.name}
+            </button>
+          ))}
+        </div>
         <div className="sidebar-spacer" />
         <button
           className="nav-item"
@@ -507,10 +517,7 @@ export default function App() {
                 onClick={() => {
                   dismissOnboarding();
                   setPage("library");
-                  window.setTimeout(
-                    () => document.querySelector<HTMLButtonElement>("[data-add-folder]")?.click(),
-                    0,
-                  );
+                  void chooseLibraryFolders();
                 }}
               >
                 {t("选择音乐文件夹")}

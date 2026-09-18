@@ -315,13 +315,22 @@ export function PlayerBar() {
         </button>
       </div>
       {isAndroid() && (
-        <button
-          className="mobile-queue icon-button"
-          aria-label={t("播放队列")}
-          onClick={() => state.toggleDrawer("queue")}
-        >
-          <ListMusic size={20} />
-        </button>
+        <div className="mobile-player-actions">
+          <button
+            className="icon-button mobile-lyrics"
+            aria-label={t("歌词")}
+            onClick={() => state.toggleDrawer("lyrics")}
+          >
+            {t("词")}
+          </button>
+          <button
+            className="mobile-queue icon-button"
+            aria-label={t("播放队列")}
+            onClick={() => state.toggleDrawer("queue")}
+          >
+            <ListMusic size={20} />
+          </button>
+        </div>
       )}
       <div className="transport">
         <div className="transport-buttons">
@@ -422,6 +431,16 @@ export function PlayerBar() {
         </div>
       </div>
       <div className="player-tools">
+        {isAndroid() && (
+          <button
+            className="pad-lyrics lyrics-text-icon"
+            aria-label={t("歌词")}
+            aria-pressed={state.drawer === "lyrics"}
+            onClick={() => state.toggleDrawer("lyrics")}
+          >
+            <span>{t("词")}</span>
+          </button>
+        )}
         <button
           className={state.drawer === "queue" ? "active" : ""}
           aria-label={t("播放队列")}

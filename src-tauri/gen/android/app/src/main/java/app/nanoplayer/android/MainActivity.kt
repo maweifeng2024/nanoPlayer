@@ -1,6 +1,8 @@
 package app.nanoplayer.android
 
 import android.os.Bundle
+import android.graphics.Color
+import androidx.activity.SystemBarStyle
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -11,9 +13,11 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
-    enableEdgeToEdge()
+    val surface = Color.rgb(24, 24, 27)
+    enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(surface), navigationBarStyle = SystemBarStyle.dark(surface))
     super.onCreate(savedInstanceState)
     val content = findViewById<View>(android.R.id.content)
+    content.setBackgroundColor(surface)
     ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
       val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
       view.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom))

@@ -406,5 +406,14 @@
   "检查更新": "Check for Updates",
   "下载并安装": "Download and Install",
   "重启并完成更新": "Restart to Finish",
-  "重启失败，请手动退出并重新打开：{0}": "Restart failed. Quit and reopen manually: {0}"
+  "重启失败，请手动退出并重新打开：{0}": "Restart failed. Quit and reopen manually: {0}",
+  "编辑": "Edit",
+  "返回歌单": "Back to playlists",
+  "已添加，正在扫描…": "Added, scanning…",
+  "将选中的 {0} 首歌曲从歌单移除，音乐文件不会受影响。": "Remove {0} selected songs from this playlist? Music files will not be changed.",
+  "切换排序方向": "Reverse sort order",
+  "收起正在播放": "Collapse now playing",
+  "收起": "Collapse",
+  "重命名 {0}": "Rename {0}",
+  "删除 {0}": "Delete {0}"
 }

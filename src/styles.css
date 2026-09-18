@@ -2446,12 +2446,12 @@ a:focus-visible {
   background:
     radial-gradient(
       ellipse at 22% 0%,
-      color-mix(in srgb, var(--ambient-primary) 30%, transparent),
+      color-mix(in srgb, var(--ambient-primary) 48%, transparent),
       transparent 72%
     ),
     radial-gradient(
       ellipse at 100% 78%,
-      color-mix(in srgb, var(--ambient-secondary) 21%, transparent),
+      color-mix(in srgb, var(--ambient-secondary) 34%, transparent),
       transparent 75%
     );
   transition:
@@ -2614,4 +2614,171 @@ html[lang="en"] .track-head button {
 }
 .settings-list p {
   overflow-wrap: anywhere;
+}
+
+/* Cover rows share the same anatomy in library, collections and playlists. */
+.track-table.cover-track-table .track-row {
+  grid-template-columns: 48px minmax(0, 1fr) 36px;
+  gap: 12px;
+  min-height: 68px;
+  padding: 10px 12px;
+}
+.track-table.cover-track-table.playlist-table .track-row {
+  grid-template-columns: 64px minmax(0, 1fr) 64px 36px;
+}
+.cover-track-table .track-row > span {
+  display: none;
+}
+.cover-track-table .row-leading {
+  width: 48px;
+}
+.cover-track-table.playlist-table .row-leading {
+  width: 64px;
+}
+.cover-track-table .row-play {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+}
+.track-cover,
+.home-track-list .recommendation-art,
+.queue-cover {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel-raised);
+}
+.track-cover img,
+.recommendation-art img,
+.queue-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cover-track-table .row-play {
+  position: relative;
+}
+.track-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.track-sort select {
+  max-width: 150px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+}
+.context-menu.menu-popover {
+  width: 280px;
+  min-width: 0;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+}
+.context-menu .phone-rating {
+  display: flex;
+  width: 100%;
+}
+.context-menu .phone-rating button {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  padding: 8px 0;
+}
+:root .home-track-list {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.home-track-list::before,
+.home-track-list li::before {
+  display: none;
+}
+.home-track-list-heading {
+  border: 0;
+}
+.home-track-list li {
+  padding: 0;
+  min-width: 0;
+}
+.home-track-list li button {
+  min-height: 64px;
+  padding: 8px;
+  gap: 12px;
+}
+.home-track-list .recommendation-copy strong,
+.home-track-list .recommendation-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-track-list .recommendation-copy strong {
+  font-weight: 600;
+  line-height: 22px;
+}
+.home-track-list .recommendation-copy small {
+  color: var(--muted);
+  font-size: var(--font-small);
+  line-height: 20px;
+}
+.now-playing-page {
+  position: relative;
+  padding-top: 56px;
+}
+.collapse-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.playlist-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.playlist-open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+}
+.playlist-open > span {
+  min-width: 0;
+}
+.playlist-open strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.playlist-list-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+.queue-item {
+  grid-template-columns: 14px minmax(0, 1fr) 36px;
+}
+.queue-menu button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
