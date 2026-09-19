@@ -5,6 +5,7 @@ import { recoverPush } from './recover-push.mjs';
 
 const root = new URL('../..', import.meta.url);
 const cliArgs = process.argv.slice(2);
+let retryHint = 'Fix the error above, then retry the original release command.';
 
 function run(command, commandArgs) {
   console.log(`\n> ${command} ${commandArgs.join(' ')}`);
@@ -44,6 +45,7 @@ function runGitNetwork(commandArgs, capture = false) {
 
 function main() {
   const { explicitVersion, resume, skipChecks, resumeTag } = parseReleaseArgs(cliArgs);
+  if (resume) retryHint = `Remote recovery requires committed, pushed changes. Use pnpm release --resume${resumeTag ? ` ${resumeTag}` : ''} only for an existing release tag. If local checks failed before a tag was created, rerun pnpm release [version] instead.`;
   const branch = output('git', ['branch', '--show-current']);
   if (branch !== 'main') throw new Error(`Release must start from main; current branch is ${branch || '(detached)'}.`);
 
@@ -69,7 +71,7 @@ function main() {
   }
 
   if (resume) {
-    if (ahead > 0 || output('git', ['status', '--porcelain'])) throw new Error('Commit and push release-script fixes before resuming; recovery runs the scripts on origin/main.');
+    if (ahead > 0 || output('git', ['status', '--porcelain'])) throw new Error('Remote recovery requires a clean worktree with all commits pushed; it runs the scripts on origin/main.');
     run('node', ['scripts/release/resume-release.mjs', ...(resumeTag ? [resumeTag.startsWith('v') ? resumeTag : `v${resumeTag}`] : [])]);
     process.exit(0);
   }
@@ -103,6 +105,7 @@ function main() {
   if (!current && !explicitVersion) throw new Error(`Cannot infer the next patch version from HEAD version ${headPackage.version}; pass an explicit version.`);
   const version = explicitVersion ?? `${current[1]}.${current[2]}.${Number(current[3]) + 1}`;
   const tag = `v${version}`;
+  retryHint = `No new release tag has been created by this attempt. Fix the error, then rerun: pnpm release ${version}. Do not use --resume for failed local checks.`;
 
   if (ahead > 0 && behind === 0) console.log(`\nIncluding ${ahead} existing local commit(s) in this release.`);
   if (succeeds('git', ['show-ref', '--verify', '--quiet', `refs/tags/${tag}`])) {
@@ -126,6 +129,7 @@ function main() {
   if (!output('git', ['status', '--porcelain'])) throw new Error('There are no changes to commit.');
   run('git', ['commit', '-m', `release: ${tag}`]);
   run('git', ['tag', '-a', tag, '-m', `nanoPlayer ${tag}`]);
+  retryHint = `Retry the same tagged release (including an interrupted push): pnpm release --resume ${tag}. GitHub connectivity is required.`;
   runGitNetwork(['push', '--atomic', 'origin', 'main', tag]);
 
   console.log(`\n${tag} is pushed. GitHub Actions will build all three platforms, publish the Release, update the website, and deploy it to Vercel.`);
@@ -135,6 +139,6 @@ function main() {
 }
 try { main(); } catch (error) {
   console.error(`\nRelease failed: ${error.message.split('\n')[0]}`);
-  console.error('Retry the same version (including an interrupted push): pnpm release --resume [tag]. GitHub connectivity is required.');
+  console.error(retryHint);
   process.exitCode = 1;
 }

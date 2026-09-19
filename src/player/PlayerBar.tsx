@@ -1,4 +1,5 @@
-import { isAndroid, androidCommand } from "../platform/android";
+import { shortcut } from "../platform/shortcuts";
+import { isAndroid, sendAndroidPlayback } from "../platform/android";
 import { t } from "../i18n";
 import {
   Heart,
@@ -255,10 +256,7 @@ export function PlayerBar() {
 
   const seek = (value: number) => {
     state.seekPlayback(value);
-    if (isAndroid())
-      void androidCommand("seek", { positionMs: value }).catch((error) =>
-        state.setNotice(String(error)),
-      );
+    if (isAndroid() && isTauri()) sendAndroidPlayback("seek", { positionMs: value });
     else if (isTauri() && track && track.id > 0)
       invoke("playback_seek", { positionMs: value }).catch((error) =>
         state.setNotice(t(String(error))),
@@ -307,6 +305,7 @@ export function PlayerBar() {
         <button
           className={`now-favorite ${track && state.ratings[track.id] ? "active" : ""}`}
           disabled={!track}
+          aria-pressed={!!track && !!state.ratings[track.id]}
           onClick={() => track && state.rate(track.id, state.ratings[track.id] ? 0 : 5)}
           aria-label={track && state.ratings[track.id] ? t("取消收藏") : t("收藏")}
           type="button"
@@ -318,6 +317,7 @@ export function PlayerBar() {
         <div className="mobile-player-actions">
           <button
             className="icon-button mobile-lyrics"
+            aria-pressed={state.drawer === "lyrics"}
             aria-label={t("歌词")}
             onClick={() => state.toggleDrawer("lyrics")}
           >
@@ -325,6 +325,7 @@ export function PlayerBar() {
           </button>
           <button
             className="mobile-queue icon-button"
+            aria-pressed={state.drawer === "queue"}
             aria-label={t("播放队列")}
             onClick={() => state.toggleDrawer("queue")}
           >
@@ -336,6 +337,7 @@ export function PlayerBar() {
         <div className="transport-buttons">
           <button
             className={state.orderMode === "shuffle" ? "active" : ""}
+            aria-pressed={state.orderMode === "shuffle"}
             aria-label={t(
               "播放顺序：{0}",
               state.orderMode === "shuffle" ? t("随机播放") : t("顺序播放"),
@@ -348,6 +350,7 @@ export function PlayerBar() {
           </button>
           <button
             className={state.repeatMode !== "off" ? "active" : ""}
+            aria-pressed={state.repeatMode !== "off"}
             aria-label={t("循环方式：{0}", repeatLabel)}
             title={repeatLabel}
             onClick={state.cycleRepeatMode}
@@ -357,7 +360,9 @@ export function PlayerBar() {
           </button>
           <button
             aria-label={t("上一首")}
-            onClick={() => (isAndroid() ? void androidCommand("previous") : state.previous())}
+            onClick={() =>
+              isAndroid() && isTauri() ? sendAndroidPlayback("previous") : state.previous()
+            }
             type="button"
           >
             <SkipBack size={18} />
@@ -376,7 +381,7 @@ export function PlayerBar() {
           </button>
           <button
             aria-label={t("下一首")}
-            onClick={() => (isAndroid() ? void androidCommand("next") : state.next())}
+            onClick={() => (isAndroid() && isTauri() ? sendAndroidPlayback("next") : state.next())}
             type="button"
           >
             <SkipForward size={18} />
@@ -385,7 +390,7 @@ export function PlayerBar() {
             className={`lyrics-text-icon ${state.drawer === "lyrics" ? "active" : ""}`}
             aria-label={t("歌词")}
             aria-pressed={state.drawer === "lyrics"}
-            title={t("歌词 (⌘L)")}
+            title={`${t("歌词")} (${shortcut("L")})`}
             onClick={() => state.toggleDrawer("lyrics")}
             type="button"
           >
@@ -393,28 +398,28 @@ export function PlayerBar() {
           </button>
         </div>
         <div className="progress-row">
-          <span>{formatDuration(state.progressMs)}</span>
+          <span>{formatDuration(visibleProgress)}</span>
           <input
             className="range"
             style={
               {
-                "--range-progress": `${track?.durationMs ? Math.min(100, (state.progressMs / track.durationMs) * 100) : 0}%`,
+                "--range-progress": `${track?.durationMs ? Math.min(100, (visibleProgress / track.durationMs) * 100) : 0}%`,
               } as CSSProperties
             }
             aria-label={t("播放进度")}
             disabled={!track}
-            aria-valuetext={`${formatDuration(state.progressMs)} / ${formatDuration(track?.durationMs ?? 0)}`}
+            aria-valuetext={`${formatDuration(visibleProgress)} / ${formatDuration(track?.durationMs ?? 0)}`}
             type="range"
             min="0"
             max={track?.durationMs ?? 1}
             value={Math.min(visibleProgress, track?.durationMs ?? 1)}
             onChange={(event) => {
               const value = Number(event.target.value);
-              if (isAndroid() && scrubbing.current) setSeekPreview(value);
+              if (scrubbing.current) setSeekPreview(value);
               else seek(value);
             }}
             onPointerDown={() => {
-              if (isAndroid()) scrubbing.current = true;
+              scrubbing.current = true;
             }}
             onPointerUp={(event) => {
               if (!scrubbing.current) return;
@@ -453,6 +458,7 @@ export function PlayerBar() {
         </button>
         <button
           aria-label={state.muted ? t("取消静音") : t("静音")}
+          aria-pressed={state.muted}
           onClick={toggleMute}
           type="button"
         >
@@ -470,10 +476,11 @@ export function PlayerBar() {
           min="0"
           max="1"
           step="0.01"
+          aria-valuetext={`${Math.round((state.muted ? 0 : state.volume) * 100)}%`}
           value={state.muted ? 0 : state.volume}
           onChange={(event) => setVolume(Number(event.target.value))}
         />
-        <span className="volume-value" aria-label={t("当前音量")}>
+        <span className="volume-value" aria-hidden="true">
           {Math.round((state.muted ? 0 : state.volume) * 100)}%
         </span>
       </div>

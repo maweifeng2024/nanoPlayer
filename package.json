@@ -1,6 +1,6 @@
 {
   "name": "nanoplayer",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": true,
   "type": "module",
   "engines": {
@@ -16,7 +16,8 @@
     "test:e2e": "node scripts/test-e2e.mjs",
     "lint": "oxlint src tests",
     "format": "oxfmt --write src tests",
-    "check": "pnpm lint && pnpm test && pnpm build",
+    "check": "pnpm lint && pnpm check:ui && pnpm test && pnpm build",
+    "check:ui": "node scripts/design/check-tokens.mjs",
     "website:dev": "npm --prefix website run dev",
     "website:build": "npm --prefix website run build",
     "release": "node scripts/release/dispatch.mjs",

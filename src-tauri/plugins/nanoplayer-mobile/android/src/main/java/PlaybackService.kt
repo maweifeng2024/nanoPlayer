@@ -10,6 +10,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import org.json.JSONArray
@@ -47,7 +48,11 @@ class PlaybackService : MediaSessionService() {
         }
         restore()
         player.addListener(object : Player.Listener {
+            override fun onShuffleModeEnabledChanged(enabled: Boolean) {
+                if (enabled) resetShuffleOrder()
+            }
             override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
+                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED && player.shuffleModeEnabled) resetShuffleOrder()
                 checkpoint()
                 trackId = item?.mediaId ?: ""
                 sessionId = UUID.randomUUID().toString()
@@ -72,6 +77,12 @@ class PlaybackService : MediaSessionService() {
         session = MediaSession.Builder(this, player).build()
         lastTick = SystemClock.elapsedRealtime()
         handler.post(tick)
+    }
+
+    private fun resetShuffleOrder() {
+        player.setShuffleOrder(DefaultShuffleOrder(
+            shuffledQueueIndices(player.mediaItemCount, player.currentMediaItemIndex),
+            System.nanoTime()))
     }
 
     private fun restore() {

@@ -31,6 +31,7 @@ interface NanoState {
   selectedTrackId?: number;
   queue: number[];
   playing: boolean;
+  queueEnded: boolean;
   progressMs: number;
   listenedSessionMs: number;
   sessionCounted: boolean;
@@ -173,13 +174,14 @@ export function getNativeUserState(): Record<string, unknown> {
   return Object.fromEntries(nativeStateKeys.map((key) => [key, state[key]]));
 }
 
-const shuffleTracks = (ids: number[]) => {
-  const result = [...ids];
+const shuffleTracks = (ids: number[], currentId?: number) => {
+  const currentIndex = currentId === undefined ? -1 : ids.indexOf(currentId);
+  const result = ids.filter((_, index) => index !== currentIndex);
   for (let index = result.length - 1; index > 0; index -= 1) {
     const swap = Math.floor(Math.random() * (index + 1));
     [result[index], result[swap]] = [result[swap], result[index]];
   }
-  return result;
+  return currentIndex < 0 ? result : [ids[currentIndex], ...result];
 };
 const repeatCycle: RepeatMode[] = ["off", "all", "one"];
 const memoryStorage: StateStorage = {
@@ -200,6 +202,7 @@ export const useNanoStore = create<NanoState>()(
       query: "",
       queue: demoTracks.map((track) => track.id),
       playing: false,
+      queueEnded: false,
       progressMs: 0,
       listenedSessionMs: 0,
       sessionCounted: false,
@@ -285,7 +288,8 @@ export const useNanoStore = create<NanoState>()(
             currentTrackId,
             playbackRevision: state.playbackRevision + 1,
             queue,
-            shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue) : [],
+            shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue, currentTrackId) : [],
+            queueEnded: false,
             playing: true,
             progressMs: 0,
             listenedSessionMs: 0,
@@ -295,14 +299,18 @@ export const useNanoStore = create<NanoState>()(
         }),
       togglePlay: () => {
         const state = get();
-        if (state.currentTrackId === undefined && state.tracks.length) {
+        if (state.queueEnded && state.queue.length) {
+          const order = state.orderMode === "shuffle" ? shuffleTracks(state.queue) : state.queue;
+          state.playTrack(order[0], state.queue);
+        } else if (state.currentTrackId === undefined && state.tracks.length) {
           const currentTrackId = state.tracks[0].id;
           const queue = state.tracks.map((track) => track.id);
           set({
             currentTrackId,
             playing: true,
             queue,
-            shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue) : [],
+            shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue, currentTrackId) : [],
+            queueEnded: false,
           });
         } else set({ playing: !state.playing });
       },
@@ -328,6 +336,7 @@ export const useNanoStore = create<NanoState>()(
         if (nextIndex >= order.length && state.repeatMode === "off")
           return set({
             playing: false,
+            queueEnded: true,
             playbackRevision: state.playbackRevision + 1,
             progressMs: 0,
             listenedSessionMs: 0,
@@ -341,6 +350,7 @@ export const useNanoStore = create<NanoState>()(
         const currentTrackId = nextOrder[nextIndex >= order.length ? 0 : nextIndex];
         set({
           currentTrackId,
+          queueEnded: false,
           playbackRevision: state.playbackRevision + 1,
           shuffleOrder: state.orderMode === "shuffle" ? nextOrder : [],
           progressMs: 0,
@@ -377,6 +387,7 @@ export const useNanoStore = create<NanoState>()(
         const currentTrackId = order[(previousIndex + order.length) % order.length];
         set({
           currentTrackId,
+          queueEnded: false,
           playbackRevision: state.playbackRevision + 1,
           progressMs: 0,
           listenedSessionMs: 0,
@@ -386,7 +397,7 @@ export const useNanoStore = create<NanoState>()(
         });
       },
       setProgress: (progressMs) => set({ progressMs }),
-      seekPlayback: (progressMs) => set({ progressMs, sessionSeeked: true }),
+      seekPlayback: (progressMs) => set({ progressMs, sessionSeeked: true, queueEnded: false }),
       tickPlayback: (elapsedMs) => {
         const state = get();
         if (!state.playing || state.currentTrackId === undefined) return;
@@ -417,7 +428,8 @@ export const useNanoStore = create<NanoState>()(
           const orderMode = state.orderMode === "sequence" ? "shuffle" : "sequence";
           return {
             orderMode,
-            shuffleOrder: orderMode === "shuffle" ? shuffleTracks(state.queue) : [],
+            shuffleOrder:
+              orderMode === "shuffle" ? shuffleTracks(state.queue, state.currentTrackId) : [],
           };
         }),
       cycleRepeatMode: () =>

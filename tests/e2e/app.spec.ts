@@ -88,7 +88,7 @@ test("shows three cover home lists and cover rows with artist and album", async 
   await expect(page.locator(".track-cover").first()).toBeVisible();
   await expect(page.locator(".track-title small").first()).toContainText("·");
   await page.locator(".more-menu").first().click();
-  await expect(page.getByRole("button", { name: "5 星", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "5 星", exact: true })).toBeVisible();
 });
 
 test("keeps the core controls usable at the 720px minimum width", async ({ page }) => {

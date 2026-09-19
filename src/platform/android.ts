@@ -22,12 +22,21 @@ export const androidCommand = <T = unknown>(action: string, args: Record<string,
     { payload: { action, ...args } },
   );
 
+let transportSender: ((action: string, args?: Record<string, unknown>) => void) | undefined;
+
+/** Route transport through the same queue as mode changes and polling. */
+export function sendAndroidPlayback(action: string, args: Record<string, unknown> = {}) {
+  transportSender?.(action, args);
+}
+
 interface NativePlayback {
   queue: string[];
   trackId?: string;
   positionMs: number;
   playWhenReady: boolean;
   shuffle: boolean;
+  playbackOrder?: string[];
+  ended?: boolean;
   repeatMode: number;
   playCounts: Record<number, number>;
   lastPlayedAt?: Record<number, string>;
@@ -50,8 +59,16 @@ export function connectAndroidPlayback() {
     const sameCounts =
       Object.keys(counts).length === Object.keys(current.playCounts).length &&
       Object.entries(counts).every(([id, count]) => current.playCounts[Number(id)] === count);
+    const queue = snapshot.queue.map(Number).filter(Number.isFinite);
+    const order = snapshot.playbackOrder?.map(Number).filter(Number.isFinite);
+    const sameIds = (left: number[], right: number[]) =>
+      left.length === right.length && left.every((id, index) => id === right[index]);
     useNanoStore.setState({
-      queue: snapshot.queue.map(Number).filter(Number.isFinite),
+      queue: sameIds(queue, current.queue) ? current.queue : queue,
+      ...(order
+        ? { shuffleOrder: sameIds(order, current.shuffleOrder) ? current.shuffleOrder : order }
+        : {}),
+      queueEnded: snapshot.ended ?? false,
       currentTrackId:
         snapshot.trackId && Number.isFinite(Number(snapshot.trackId))
           ? Number(snapshot.trackId)
@@ -81,6 +98,7 @@ export function connectAndroidPlayback() {
         pending--;
       });
   };
+  transportSender = send;
   send("snapshot");
   const initial = useNanoStore.getState();
   send("volume", { volume: initial.muted ? 0 : initial.volume });
@@ -136,6 +154,7 @@ export function connectAndroidPlayback() {
   }, 500);
   return () => {
     disposed = true;
+    if (transportSender === send) transportSender = undefined;
     unsubscribe();
     window.clearInterval(timer);
   };

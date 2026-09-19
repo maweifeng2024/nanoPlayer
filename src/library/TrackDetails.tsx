@@ -31,7 +31,7 @@ export function TrackDetails({ trackId }: { trackId: number }) {
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<TrackMetadataUpdate>({});
   const close = () => state.setSelectedTrack(undefined);
-  useModalBehavior(true, close);
+  const modalRef = useModalBehavior(true, close);
 
   useEffect(() => {
     if (!track) return;
@@ -101,6 +101,9 @@ export function TrackDetails({ trackId }: { trackId: number }) {
     >
       <section
         className="app-dialog track-details"
+        ref={(node) => {
+          modalRef.current = node;
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="track-details-title"

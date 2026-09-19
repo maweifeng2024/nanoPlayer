@@ -83,3 +83,11 @@ Phone and Pad share the existing desktop styles, colors, typography, icons, them
 ### Approved Android exceptions (revision 3)
 
 P1: hide the persistent sidebar in narrow split view and scroll content, retaining navigation access and menu order. P2: long press opens the same More/context menu; scrolling cancels it. P3: enlarge text and buttons for touch while preserving visual consistency, using mobile size overrides rather than changing desktop tokens. P4: remove desktop-only window behavior and use Android safe areas. P5: preserve feature placement while mapping output, updates and folder access to Android system routing, APK/store updates and SAF. These exceptions are user-approved; implementation still awaits approval of the complete plan.
+
+## September 19 shared UI refactor
+
+The user confirmed retaining navigation while improving existing screens. Desktop body/caption/micro text now uses 14/13/11 px; Android retains 16 px body and 14 px caption text. Spacing and radii use shared tokens, with explicit exceptions for layout geometry. Phone and Pad use real 48 px icon targets. Desktop widths below 720 px use compact controls without changing the native minimum window size.
+
+Home lists grow with their contents and use the page scroller. All themes have a stable frame color; artwork-derived colors fade to that same color at content boundaries. Placeholder artwork retains the previous real cover's palette. Button pressed states remain visible in both themes.
+
+Current evidence and limitations are recorded in [the implementation report](../UI_REFACTOR_2026-09-19.md). Reproducible Chrome screenshots are in `tests/e2e/ui-visual.spec.ts-snapshots/`; the six pre-refactor references are in `docs/design/baseline/`. Native Android queue replay/shuffle is covered by emulator instrumentation; this is not physical-device acceptance.

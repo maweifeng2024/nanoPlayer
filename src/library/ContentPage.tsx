@@ -1,3 +1,4 @@
+import { shortcut } from "../platform/shortcuts";
 import { isAndroid, androidCommand } from "../platform/android";
 import { collectionTracks } from "./collectionTracks";
 import { t } from "../i18n";
@@ -375,7 +376,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
       <div className="home-track-columns" aria-label={t("首页歌曲推荐")}>
         <HomeTrackList
           icon={<Clock3 />}
-          kicker="NEW IN LIBRARY"
+          kicker={t("新入库")}
           title={t("最近添加")}
           page="recent"
           tracks={recent}
@@ -383,7 +384,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
         />
         <HomeTrackList
           icon={<Headphones />}
-          kicker="MOST PLAYED"
+          kicker={t("常听")}
           title={t("播放最多")}
           page="popular"
           tracks={popular}
@@ -391,7 +392,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
         />
         <HomeTrackList
           icon={<Star />}
-          kicker="YOUR FAVORITES"
+          kicker={t("收藏精选")}
           title={t("高评分")}
           page="rated"
           tracks={rated}
@@ -580,7 +581,14 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
     return [...result.entries()];
   }, [tracks, kind, fallback]);
   const gridRef = useRef<HTMLDivElement>(null);
-  const gridWindow = useCollectionWindow(gridRef, groups.length, selected);
+  const scrollPosition = useRef(0);
+  const gridWindow = useCollectionWindow(gridRef, groups.length, selected, scrollPosition);
+  const openCollection = (value: string) => {
+    const scroller = gridRef.current?.closest<HTMLElement>(".page-scroll");
+    scrollPosition.current = scroller?.scrollTop ?? 0;
+    setSelected(value);
+    if (scroller) scroller.scrollTop = 0;
+  };
 
   const title = { album: t("专辑"), artist: t("艺术家") }[kind];
   if (selected) {
@@ -648,12 +656,15 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
         {gridWindow.before > 0 && (
           <div
             aria-hidden="true"
-            style={{ gridColumn: "1 / -1", height: gridWindow.before - 24 }}
+            style={{
+              gridColumn: "1 / -1",
+              height: Math.max(0, gridWindow.before - gridWindow.gap),
+            }}
           />
         )}
         {groups.slice(gridWindow.start, gridWindow.end).map(([value, items]) => {
           return (
-            <button className="collection-card" onClick={() => setSelected(value)} key={value}>
+            <button className="collection-card" onClick={() => openCollection(value)} key={value}>
               {kind === "artist" ? (
                 <CollectionPortrait kind="artist" items={items} label={value} grid />
               ) : (
@@ -673,7 +684,10 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
           );
         })}
         {gridWindow.after > 0 && (
-          <div aria-hidden="true" style={{ gridColumn: "1 / -1", height: gridWindow.after - 24 }} />
+          <div
+            aria-hidden="true"
+            style={{ gridColumn: "1 / -1", height: Math.max(0, gridWindow.after - gridWindow.gap) }}
+          />
         )}
       </div>
     </section>
@@ -683,17 +697,21 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
 function useCollectionWindow(
   ref: React.RefObject<HTMLDivElement | null>,
   count: number,
-  selected?: string,
+  selected: string | undefined,
+  scrollPosition: React.RefObject<number>,
 ) {
-  const [window, setWindow] = useState({ start: 0, end: 30, before: 0, after: 0 });
+  const [window, setWindow] = useState({ start: 0, end: 30, before: 0, after: 0, gap: 24 });
   useLayoutEffect(() => {
     const grid = ref.current;
     const scroller = grid?.closest<HTMLElement>(".page-scroll");
     if (!grid || !scroller) return;
+    scroller.scrollTop = scrollPosition.current;
     const update = () => {
-      const columns = Math.max(1, Math.floor((grid.clientWidth + 16) / 166));
-      const cardWidth = (grid.clientWidth - (columns - 1) * 16) / columns;
-      const rowHeight = cardWidth + 68;
+      const style = getComputedStyle(grid);
+      const columns = Math.max(1, style.gridTemplateColumns.split(" ").length);
+      const gap = parseFloat(style.rowGap) || 0;
+      const card = grid.querySelector<HTMLElement>(".collection-card");
+      const rowHeight = (card?.getBoundingClientRect().height ?? 200) + gap;
       const top = Math.max(
         0,
         scroller.getBoundingClientRect().top - grid.getBoundingClientRect().top,
@@ -706,6 +724,7 @@ function useCollectionWindow(
         end: last * columns,
         before: first * rowHeight,
         after: (rows - last) * rowHeight,
+        gap,
       };
       setWindow((current) =>
         Object.keys(next).every(
@@ -723,7 +742,7 @@ function useCollectionWindow(
       observer.disconnect();
       scroller.removeEventListener("scroll", update);
     };
-  }, [ref, count, selected]);
+  }, [ref, count, selected, scrollPosition]);
   return window;
 }
 
@@ -796,7 +815,7 @@ function PlaylistPage() {
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   const [customCover, setCustomCover] = useState<string>();
   const [deleting, setDeleting] = useState(false);
-  useModalBehavior(adding, () => setAdding(false));
+  const modalRef = useModalBehavior(adding, () => setAdding(false));
   const playlist = playlists.find((item) => item.id === selectedPlaylistId);
   useEffect(() => {
     setCustomCover(undefined);
@@ -932,6 +951,9 @@ function PlaylistPage() {
         <div className="modal-backdrop" role="presentation">
           <section
             className="app-dialog song-picker"
+            ref={(node) => {
+              modalRef.current = node;
+            }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-songs-title"
@@ -1046,11 +1068,14 @@ function NameDialog({
   onSave: (name: string) => void;
 }) {
   const [name, setName] = useState(initial);
-  useModalBehavior(true, onClose);
+  const modalRef = useModalBehavior(true, onClose);
   return (
     <div className="modal-backdrop" role="presentation">
       <form
         className="app-dialog compact-dialog"
+        ref={(node) => {
+          modalRef.current = node;
+        }}
         role="dialog"
         aria-label={title}
         aria-modal="true"
@@ -1307,7 +1332,11 @@ function SettingsPage() {
           </span>
           <div>
             <strong>{t("快捷键")}</strong>
-            <p>{t("⌘K 搜索 · Space 播放/暂停 · ⌘L 歌词")}</p>
+            <p>
+              {t("⌘K 搜索 · Space 播放/暂停 · ⌘L 歌词")
+                .replace("⌘K", shortcut("K"))
+                .replace("⌘L", shortcut("L"))}
+            </p>
           </div>
           <span className="setting-status">{t("已启用")}</span>
         </article>

@@ -44,7 +44,7 @@ env:
 jobs:
   publish:
     if: ${{ !inputs.published_run_id }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
         with:
@@ -58,7 +58,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         run: node scripts/release/validate-release-source.mjs "$RELEASE_TAG" "$SOURCE_RUN_ID"
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           pattern: '{macos,windows,linux}'
           run-id: ${{ inputs.source_run_id }}
@@ -72,7 +72,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/release/publish-assets.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: published-release
           path: release-artifacts/*.*
@@ -80,7 +80,7 @@ jobs:
   website:
     if: ${{ always() && !cancelled() && (needs.publish.result == 'success' || inputs.published_run_id != '') }}
     needs: publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check Vercel credentials
         env:
@@ -104,7 +104,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISHED_RUN_ID: ${{ inputs.published_run_id }}
         run: node scripts/release/validate-published-source.mjs "$RELEASE_TAG" "$PUBLISHED_RUN_ID"
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           run-id: ${{ inputs.published_run_id || github.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

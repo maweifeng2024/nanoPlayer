@@ -83,14 +83,14 @@ for (const width of [390, 600, 1024]) {
         .getByRole("button", { name: /更多操作/ })
         .click();
       await expect(page.locator(".queue-menu button")).toHaveText(["上移", "下移", "移除"]);
-      await page.locator(".queue-menu").getByRole("button", { name: "下移" }).click();
+      await page.locator(".queue-menu").getByRole("menuitem", { name: "下移" }).click();
       await page
         .locator(".queue-item")
         .first()
         .getByRole("button", { name: /更多操作/ })
         .click();
       const before = await page.locator(".queue-item").count();
-      await page.locator(".queue-menu").getByRole("button", { name: "移除", exact: true }).click();
+      await page.locator(".queue-menu").getByRole("menuitem", { name: "移除", exact: true }).click();
       await expect(page.locator(".queue-item")).toHaveCount(before - 1);
     });
   });

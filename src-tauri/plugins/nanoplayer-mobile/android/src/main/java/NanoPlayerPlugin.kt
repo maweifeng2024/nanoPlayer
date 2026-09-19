@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.activity.result.ActivityResult
 import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -137,10 +138,7 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                                 player.playWhenReady = args.enabled
                             }
                         }
-                        "play" -> {
-                            if (player.playbackState == Player.STATE_ENDED) player.currentMediaItem?.let { player.setMediaItem(it) }
-                            player.prepare(); player.play()
-                        }
+                        "play" -> resumeQueue(player)
                         "pause" -> player.pause()
                         "seek" -> player.seekTo(args.positionMs.coerceAtLeast(0))
                         "volume" -> { require(args.volume.isFinite()); player.volume = args.volume.coerceIn(0f, 1f) }
@@ -162,8 +160,15 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                     }
                     val queue = JSONArray()
                     for (i in 0 until player.mediaItemCount) queue.put(player.getMediaItemAt(i).mediaId)
+                    val playbackOrder = JSONArray()
+                    var cursor = player.currentTimeline.getFirstWindowIndex(player.shuffleModeEnabled)
+                    while (cursor != C.INDEX_UNSET && playbackOrder.length() < player.mediaItemCount) {
+                        playbackOrder.put(player.getMediaItemAt(cursor).mediaId)
+                        cursor = player.currentTimeline.getNextWindowIndex(cursor, Player.REPEAT_MODE_OFF, player.shuffleModeEnabled)
+                    }
                     val events = PlaybackJournal(activity).use { it.pendingEvents() }
                     val state = JSObject().put("queue", queue).put("events", events)
+                        .put("playbackOrder", playbackOrder).put("ended", player.playbackState == Player.STATE_ENDED)
                         .put("shuffle", player.shuffleModeEnabled).put("repeatMode", player.repeatMode)
                         .put("playWhenReady", player.playWhenReady && player.playbackState != Player.STATE_ENDED).put("positionMs", player.currentPosition.coerceAtLeast(0))
                         .put("playing", player.isPlaying).put("trackId", player.currentMediaItem?.mediaId)

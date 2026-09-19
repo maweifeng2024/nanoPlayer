@@ -1,3 +1,4 @@
+import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "../library/Artwork";
 import { isAndroid, androidCommand } from "../platform/android";
 import { t } from "../i18n";
@@ -34,6 +35,9 @@ export function PlayerDrawer() {
       tracks: store.tracks,
       currentTrackId: store.currentTrackId,
       queue: store.queue,
+      orderMode: store.orderMode,
+      shuffleOrder: store.shuffleOrder,
+      repeatMode: store.repeatMode,
       toggleDrawer: store.toggleDrawer,
       clearQueue: store.clearQueue,
       reorderQueue: store.reorderQueue,
@@ -42,7 +46,7 @@ export function PlayerDrawer() {
     })),
   );
   const [menu, setMenu] = useState<{ index: number; x: number; y: number }>();
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useModalBehavior(!!menu, () => setMenu(undefined), true);
   useEffect(() => {
     const close = () => setMenu(undefined);
     window.addEventListener("pointerdown", close);
@@ -57,20 +61,18 @@ export function PlayerDrawer() {
       event.preventDefault();
       setMenu(undefined);
     };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close(event);
-    };
+
     window.addEventListener("android-back", close);
-    window.addEventListener("keydown", escape);
+
     return () => {
       window.removeEventListener("android-back", close);
-      window.removeEventListener("keydown", escape);
     };
   }, [menu]);
   useEffect(() => setMenu(undefined), [state.queue, state.drawer]);
   useLayoutEffect(() => {
     if (!menu || !menuRef.current) return;
     const element = menuRef.current;
+    element.style.left = Math.max(8, Math.min(menu.x, innerWidth - element.offsetWidth - 8)) + "px";
     element.style.top =
       Math.max(8, Math.min(menu.y, innerHeight - element.offsetHeight - 8)) + "px";
   }, [menu]);
@@ -93,6 +95,16 @@ export function PlayerDrawer() {
   if (!state.drawer) return null;
   const track = state.tracks.find((item) => item.id === state.currentTrackId);
   const queueTracks = state.queue.map((id) => trackMap.get(id)).filter(Boolean);
+  const order =
+    state.orderMode === "shuffle" && state.shuffleOrder.length === state.queue.length
+      ? state.shuffleOrder
+      : state.queue;
+  const position = order.indexOf(state.currentTrackId ?? -1);
+  const nextId =
+    state.repeatMode === "one"
+      ? state.currentTrackId
+      : (order[position + 1] ?? (state.repeatMode === "all" ? order[0] : undefined));
+  const nextTrack = nextId === undefined ? undefined : trackMap.get(nextId);
   return (
     <aside
       className="player-drawer"
@@ -113,7 +125,9 @@ export function PlayerDrawer() {
       </header>
       {menu && (
         <div
-          ref={menuRef}
+          ref={(node) => {
+            menuRef.current = node;
+          }}
           className="context-menu menu-popover queue-menu"
           role="menu"
           style={{ left: menu.x, top: menu.y }}
@@ -121,6 +135,7 @@ export function PlayerDrawer() {
           onClick={() => setMenu(undefined)}
         >
           <button
+            role="menuitem"
             disabled={menu.index === 0}
             onClick={() => state.reorderQueue(menu.index, menu.index - 1)}
           >
@@ -128,13 +143,14 @@ export function PlayerDrawer() {
             {t("上移")}
           </button>
           <button
+            role="menuitem"
             disabled={menu.index === state.queue.length - 1}
             onClick={() => state.reorderQueue(menu.index, menu.index + 1)}
           >
             <ChevronDown size={16} />
             {t("下移")}
           </button>
-          <button onClick={() => state.removeFromQueue(menu.index)}>
+          <button role="menuitem" onClick={() => state.removeFromQueue(menu.index)}>
             <Trash2 size={16} />
             {t("移除")}
           </button>
@@ -152,6 +168,10 @@ export function PlayerDrawer() {
               {t("清空待播")}
             </button>
           </div>
+          <p className="queue-playback-status">
+            {t(state.orderMode === "shuffle" ? "随机播放" : "顺序播放")}
+            {nextTrack ? ` · ${t("下一首：{0}", nextTrack.title)}` : ""}
+          </p>
           <div className="queue-list" ref={queueListRef}>
             {queueTracks.map(
               (item, index) =>

@@ -101,3 +101,40 @@ describe("language and artwork", () => {
     expect(result).toEqual({ primary: "rgb(190, 65, 45)", secondary: "rgb(30, 80, 190)" });
   });
 });
+
+describe("playlist rounds", () => {
+  it("restarts a completed repeat-off playlist without losing any items", () => {
+    const queue = [-1, -2, -3];
+    state().playTrack(-3, queue);
+    state().next(true);
+    expect(state()).toMatchObject({ playing: false, queueEnded: true, queue });
+    state().togglePlay();
+    expect(state()).toMatchObject({ currentTrackId: -1, playing: true, queueEnded: false, queue });
+    state().next(true);
+    expect(state().currentTrackId).toBe(-2);
+  });
+  it("enabling shuffle anchors the current song and visits every song before stopping", () => {
+    const queue = [-1, -2, -3, -4, -5];
+    state().playTrack(-3, queue);
+    state().toggleOrderMode();
+    expect(state().shuffleOrder[0]).toBe(-3);
+    const heard = [state().currentTrackId];
+    for (let index = 1; index < queue.length; index++) {
+      state().next(true);
+      heard.push(state().currentTrackId);
+    }
+    expect(new Set(heard)).toEqual(new Set(queue));
+    state().next(true);
+    expect(state().queueEnded).toBe(true);
+    state().togglePlay();
+    expect(state().queue).toEqual(queue);
+    expect(state().playing).toBe(true);
+  });
+  it("pause/resume within a playlist preserves the current position", () => {
+    state().playTrack(-2, [-1, -2, -3]);
+    state().setProgress(42000);
+    state().togglePlay();
+    state().togglePlay();
+    expect(state()).toMatchObject({ currentTrackId: -2, progressMs: 42000, queueEnded: false });
+  });
+});

@@ -108,20 +108,20 @@ test("natural end counts once; seeking to the end does not count", async ({ page
   await expect(page.getByText("完整播放一首歌后，它会出现在这里。")).toBeVisible();
 });
 
-test("cover colors change subtly in dark and light themes", async ({ page }) => {
+test("placeholder artwork keeps the neutral background in both themes", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "歌曲", exact: true }).click();
   await page.getByRole("button", { name: "播放 海平面以下", exact: true }).click();
   await expect(page.locator(".ambient-background")).toHaveCSS(
     "--ambient-primary",
-    "rgb(49, 88, 107)",
+    "rgb(102, 118, 140)",
   );
   await page.getByRole("button", { name: "暂停", exact: true }).click();
   await page.screenshot({ path: "test-results/ambient-blue-dark.png" });
   await page.getByRole("button", { name: "播放 迟到的风", exact: true }).click();
   await expect(page.locator(".ambient-background")).toHaveCSS(
     "--ambient-primary",
-    "rgb(110, 86, 74)",
+    "rgb(102, 118, 140)",
   );
   await page.getByRole("button", { name: "暂停", exact: true }).click();
   await page.getByRole("button", { name: "设置", exact: true }).click();

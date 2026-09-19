@@ -1,3 +1,4 @@
+import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "./Artwork";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { isAndroid } from "../platform/android";
@@ -73,7 +74,8 @@ export function TrackTable({
   }>();
   const [orderedTrackId, setOrderedTrackId] = useState<number>();
   const [orderEffect, setOrderEffect] = useState<{ trackId: number; direction: "up" | "down" }>();
-  const contextRef = useRef<HTMLDivElement>(null);
+  const contextRef = useModalBehavior(!!contextMenu, () => setContextMenu(undefined), true);
+  const selectionAnchor = useRef<number | undefined>(undefined);
   const tableRef = useRef<HTMLDivElement>(null);
   const press = useRef({ timer: 0, x: 0, y: 0, opened: false });
   const cancelPress = () => window.clearTimeout(press.current.timer);
@@ -196,25 +198,37 @@ export function TrackTable({
     window.clearTimeout(orderEffectTimer.current);
     orderEffectTimer.current = window.setTimeout(() => setOrderEffect(undefined), 460);
   };
+  const selectionKeys = (event: React.KeyboardEvent) => {
+    if (!selecting || event.defaultPrevented) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setSelecting(false);
+      setSelected(new Set());
+    } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
+      event.preventDefault();
+      setSelected(new Set(queueContext));
+    }
+  };
   const menu = (track: Track) => (
     <>
-      <button onClick={() => state.playTrack(track.id, queueContext)} type="button">
+      <button role="menuitem" onClick={() => state.playTrack(track.id, queueContext)} type="button">
         {t("立即播放")}
       </button>
-      <button onClick={() => state.playNext(track.id)} type="button">
+      <button role="menuitem" onClick={() => state.playNext(track.id)} type="button">
         {t("下一首播放")}
       </button>
-      <button onClick={() => state.enqueue(track.id)} type="button">
+      <button role="menuitem" onClick={() => state.enqueue(track.id)} type="button">
         {t("添加到队列")}
       </button>
       {
         <>
-          <button type="button" onClick={() => state.setSelectedTrack(track.id)}>
+          <button role="menuitem" type="button" onClick={() => state.setSelectedTrack(track.id)}>
             {t("查看详情")}
           </button>
           <div className="phone-rating" aria-label={t("{0} 评分", track.title)}>
             {[1, 2, 3, 4, 5].map((value) => (
               <button
+                role="menuitem"
                 key={value}
                 aria-label={t("{0} 星", value)}
                 onClick={() => state.rate(track.id, state.ratings[track.id] === value ? 0 : value)}
@@ -230,6 +244,7 @@ export function TrackTable({
       }
       {state.playlists.map((playlist) => (
         <button
+          role="menuitem"
           key={playlist.id}
           onClick={() => state.addToPlaylist(playlist.id, track.id)}
           type="button"
@@ -243,7 +258,7 @@ export function TrackTable({
 
   return (
     <>
-      <div className="table-toolbar">
+      <div className="table-toolbar" onKeyDown={selectionKeys}>
         <button
           className="text-button"
           onClick={() => {
@@ -380,6 +395,36 @@ export function TrackTable({
             <div
               className={`track-row ${active ? "is-playing" : ""} ${orderedTrackId === track.id ? "is-order-selected" : ""} ${orderEffect?.trackId === track.id ? `order-moved-${orderEffect.direction}` : ""} ${draggingTrackId !== undefined && dragTarget?.trackId === track.id && draggingTrackId !== track.id ? `is-drag-target-${dragTarget.edge}` : ""}`}
               role="row"
+              tabIndex={0}
+              aria-label={`${track.title} · ${track.artist}`}
+              aria-current={active ? "true" : undefined}
+              onKeyDown={(event) => {
+                selectionKeys(event);
+                if (event.defaultPrevented) return;
+                if (event.target !== event.currentTarget) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  if (selecting) toggleSelected(track.id);
+                  else if (event.key === " " && active) useNanoStore.getState().togglePlay();
+                  else state.playTrack(track.id, queueContext);
+                }
+                if (event.key.toLowerCase() === "m") {
+                  event.preventDefault();
+                  const bounds = event.currentTarget.getBoundingClientRect();
+                  setContextMenu({ track, x: bounds.right, y: bounds.top });
+                }
+                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                  event.preventDefault();
+                  const next =
+                    event.key === "ArrowDown"
+                      ? event.currentTarget.nextElementSibling
+                      : event.currentTarget.previousElementSibling;
+                  if (next instanceof HTMLElement && next.hasAttribute("data-track-id")) {
+                    next.focus({ preventScroll: true });
+                    next.scrollIntoView({ block: "nearest" });
+                  }
+                }
+              }}
               key={track.id}
               data-track-id={track.id}
               onPointerDown={(event) => {
@@ -429,7 +474,7 @@ export function TrackTable({
               }}
               onDoubleClick={() => playOnDoubleClick(track)}
             >
-              <div className="row-leading">
+              <div className="row-leading" role="cell">
                 {playlistId && !selecting && !phone ? (
                   <span
                     className="playlist-drag-handle"
@@ -479,7 +524,25 @@ export function TrackTable({
                   <button
                     className="row-play"
                     aria-label={`${selected.has(track.id) ? t("取消选择") : t("选择")} ${track.title}`}
-                    onClick={() => toggleSelected(track.id)}
+                    onClick={(event) => {
+                      if (event.shiftKey && selectionAnchor.current !== undefined) {
+                        const anchor = sorted.findIndex(
+                          (item) => item.id === selectionAnchor.current,
+                        );
+                        if (anchor >= 0)
+                          setSelected(
+                            (current) =>
+                              new Set([
+                                ...current,
+                                ...sorted
+                                  .slice(Math.min(anchor, index), Math.max(anchor, index) + 1)
+                                  .map((item) => item.id),
+                              ]),
+                          );
+                        else toggleSelected(track.id);
+                      } else toggleSelected(track.id);
+                      selectionAnchor.current = track.id;
+                    }}
                     type="button"
                   >
                     {selected.has(track.id) ? <CheckSquare size={15} /> : <Square size={15} />}
@@ -499,7 +562,7 @@ export function TrackTable({
                   </button>
                 )}
               </div>
-              <div className="track-title">
+              <div className="track-title" role="cell">
                 <button
                   className="track-title-button"
                   onClick={(event) => {
@@ -507,7 +570,8 @@ export function TrackTable({
                       state.playTrack(track.id, queueContext);
                       return;
                     }
-                    if (event.detail === 1) openDetails(track.id);
+                    if (event.detail === 0) state.setSelectedTrack(track.id);
+                    else if (event.detail === 1) openDetails(track.id);
                     else window.clearTimeout(detailsTimer.current);
                   }}
                   type="button"
@@ -519,7 +583,11 @@ export function TrackTable({
                 </button>
               </div>
               {playlistId ? (
-                <div className="playlist-order-actions" aria-label={t("{0} 排序", track.title)}>
+                <div
+                  role="cell"
+                  className="playlist-order-actions"
+                  aria-label={t("{0} 排序", track.title)}
+                >
                   <button
                     disabled={index === 0}
                     onClick={() => moveWithButton(track.id, "up", index)}
@@ -540,18 +608,20 @@ export function TrackTable({
                   </button>
                 </div>
               ) : (
-                <span>{popular ? (state.playCounts[track.id] ?? 0) : ""}</span>
+                <span role="cell">{popular ? (state.playCounts[track.id] ?? 0) : ""}</span>
               )}
-              <button
-                className="icon-button more-menu"
-                aria-label={t("{0} 更多操作", track.title)}
-                onClick={(event) => {
-                  const bounds = event.currentTarget.getBoundingClientRect();
-                  setContextMenu({ track, x: bounds.right - 280, y: bounds.bottom });
-                }}
-              >
-                <MoreHorizontal size={20} />
-              </button>
+              <div role="cell">
+                <button
+                  className="icon-button more-menu"
+                  aria-label={t("{0} 更多操作", track.title)}
+                  onClick={(event) => {
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    setContextMenu({ track, x: bounds.right - 280, y: bounds.bottom });
+                  }}
+                >
+                  <MoreHorizontal size={20} />
+                </button>
+              </div>
             </div>
           );
         })}
@@ -579,13 +649,12 @@ export function TrackTable({
       />
       {contextMenu ? (
         <div
-          ref={contextRef}
+          ref={(node) => {
+            contextRef.current = node;
+          }}
           className="context-menu menu-popover"
           role="menu"
-          style={{
-            left: Math.min(contextMenu.x, window.innerWidth - 210),
-            top: Math.min(contextMenu.y, window.innerHeight - 240),
-          }}
+
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => setContextMenu(undefined)}
         >

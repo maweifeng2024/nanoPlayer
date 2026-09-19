@@ -96,3 +96,55 @@ describe("Android service synchronization", () => {
     expect(invoke).toHaveBeenCalledTimes(2);
   });
 });
+
+it("keeps queue identity during polling so menus and scroll do not reset", async () => {
+  disconnect = connectAndroidPlayback();
+  await flush();
+  const queue = useNanoStore.getState().queue;
+  vi.advanceTimersByTime(500);
+  await flush();
+  expect(useNanoStore.getState().queue).toBe(queue);
+});
+
+it("adopts the native shuffle timeline and end-of-queue state", async () => {
+  vi.mocked(invoke).mockResolvedValue({
+    ...snapshot,
+    shuffle: true,
+    playbackOrder: ["2", "1"],
+    ended: true,
+    playWhenReady: false,
+  });
+  disconnect = connectAndroidPlayback();
+  await flush();
+  expect(useNanoStore.getState()).toMatchObject({
+    shuffleOrder: [2, 1],
+    orderMode: "shuffle",
+    queueEnded: true,
+    queue: [1, 2],
+  });
+  useNanoStore.getState().togglePlay();
+  await flush();
+  const calls = vi
+    .mocked(invoke)
+    .mock.calls.map((call) => (call[1] as { payload: Record<string, unknown> }).payload);
+  expect(calls.find((payload) => payload.action === "setQueue")?.queue).toContain('"id":"2"');
+});
+
+it("an in-flight old snapshot cannot undo immediate shuffle feedback", async () => {
+  disconnect = connectAndroidPlayback();
+  await flush();
+  let resolveSnapshot!: (value: typeof snapshot) => void;
+  vi.mocked(invoke).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolveSnapshot = resolve;
+      }),
+  );
+  await vi.advanceTimersByTimeAsync(500);
+  useNanoStore.getState().toggleOrderMode();
+  expect(useNanoStore.getState().orderMode).toBe("shuffle");
+  vi.mocked(invoke).mockResolvedValue({ ...snapshot, shuffle: true, playbackOrder: ["1", "2"] });
+  resolveSnapshot(snapshot);
+  await flush();
+  expect(useNanoStore.getState().orderMode).toBe("shuffle");
+});

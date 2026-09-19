@@ -19,7 +19,7 @@ export function ConfirmDialog({
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
 }) {
-  useModalBehavior(open, onClose);
+  const modalRef = useModalBehavior(open, onClose);
   if (!open) return null;
   return (
     <div
@@ -29,6 +29,9 @@ export function ConfirmDialog({
     >
       <section
         className="app-dialog compact-dialog confirm-dialog"
+        ref={(node) => {
+          modalRef.current = node;
+        }}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"

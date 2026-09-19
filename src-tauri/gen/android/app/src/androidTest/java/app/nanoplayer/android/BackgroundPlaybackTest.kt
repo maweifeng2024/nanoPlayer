@@ -8,6 +8,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.C
+import app.nanoplayer.mobile.resumeQueue
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import org.junit.Assert.*
@@ -67,6 +70,46 @@ class BackgroundPlaybackTest {
                 Thread.sleep(250)
             }
             assertEquals("Both native transitions must count once with no WebView", 2, counted)
+            instrumentation.runOnMainSync {
+                assertEquals(Player.STATE_ENDED, controller.playbackState)
+                resumeQueue(controller)
+                assertEquals("Replay must keep the full playlist", 2, controller.mediaItemCount)
+                assertEquals("Replay starts a new playlist round", first, controller.currentMediaItem?.mediaId)
+            }
+            // Repeat-off must still reach the second item on this replay.
+            Thread.sleep(2400)
+            instrumentation.runOnMainSync {
+                assertEquals(second, controller.currentMediaItem?.mediaId)
+            }
+            instrumentation.runOnMainSync {
+                controller.pause()
+                controller.setMediaItems((0 until 6).map { index ->
+                    MediaItem.Builder().setMediaId("$first-shuffle-$index").setUri(contentUri).build()
+                }, 3, 0)
+                controller.shuffleModeEnabled = true
+            }
+            val shuffleDeadline = System.currentTimeMillis() + 5000
+            var firstIndex = -1
+            while (System.currentTimeMillis() < shuffleDeadline) {
+                instrumentation.runOnMainSync {
+                    firstIndex = controller.currentTimeline.getFirstWindowIndex(true)
+                }
+                if (firstIndex == 3) break
+                Thread.sleep(50)
+            }
+            instrumentation.runOnMainSync {
+                assertEquals("Shuffle round is anchored at the current song", 3, firstIndex)
+                val indices = mutableListOf<Int>()
+                var cursor = firstIndex
+                while (cursor != C.INDEX_UNSET && indices.size < 7) {
+                    indices.add(cursor)
+                    cursor = controller.currentTimeline.getNextWindowIndex(cursor, Player.REPEAT_MODE_OFF, true)
+                }
+                assertEquals("Shuffle must visit all six queue entries once", (0 until 6).toSet(), indices.toSet())
+                assertEquals(6, indices.size)
+                controller.seekToNextMediaItem()
+                assertEquals(indices[1], controller.currentMediaItemIndex)
+            }
             assertArrayEquals("Source audio must remain byte-identical", digest,
                 MessageDigest.getInstance("SHA-256").digest(input.readBytes()))
         } finally {

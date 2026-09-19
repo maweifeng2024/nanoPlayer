@@ -1,3 +1,4 @@
+import { shortcut } from "./platform/shortcuts";
 import { chooseLibraryFolders } from "./library/importFolders";
 import {
   PhoneNavigation,
@@ -124,6 +125,10 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newPlaylistOpen, setNewPlaylistOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const modalRef = useModalBehavior(
+    isTauri() && !roots.length && !onboardingDismissed,
+    dismissOnboarding,
+  );
 
   useEffect(() => {
     if (!isTauri()) return;
@@ -234,11 +239,21 @@ export default function App() {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const typing = target.matches('input, textarea, [contenteditable="true"]');
+      if (target.closest('[role="dialog"], [role="alertdialog"], [role="menu"]')) return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         searchRef.current?.focus();
       }
-      if (event.defaultPrevented || target.closest('[role="dialog"]')) return;
+      if (
+        event.defaultPrevented ||
+        target.closest('[role="dialog"], [role="alertdialog"], [role="menu"]')
+      )
+        return;
+      if (event.key === "Escape" && !typing) {
+        const current = useNanoStore.getState();
+        if (current.drawer) current.toggleDrawer(current.drawer);
+        else if (current.page === "now-playing") current.collapsePlayer();
+      }
       if (
         !typing &&
         !target.closest("button, summary, a, select, [role='button']") &&
@@ -465,7 +480,7 @@ export default function App() {
                 <X size={14} />
               </button>
             ) : (
-              <kbd>⌘K</kbd>
+              <kbd>{shortcut("K")}</kbd>
             )}
           </label>
           {isAndroid() && <PhoneSettingsButton />}
@@ -488,6 +503,9 @@ export default function App() {
         <div className="modal-backdrop" role="presentation">
           <section
             className="onboarding"
+            ref={(node) => {
+              modalRef.current = node;
+            }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="onboarding-title"
@@ -577,7 +595,7 @@ function PlaylistNameDialog({
   onCreate: (name: string) => void;
 }) {
   const [name, setName] = useState(t("新建歌单"));
-  useModalBehavior(true, onClose);
+  const modalRef = useModalBehavior(true, onClose);
   return (
     <div
       className="modal-backdrop"
@@ -586,6 +604,9 @@ function PlaylistNameDialog({
     >
       <form
         className="app-dialog compact-dialog"
+        ref={(node) => {
+          modalRef.current = node;
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-playlist-title"
