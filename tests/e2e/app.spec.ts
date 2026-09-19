@@ -91,6 +91,20 @@ test("shows three cover home lists and cover rows with artist and album", async 
   await expect(page.getByRole("menuitem", { name: "5 星", exact: true })).toBeVisible();
 });
 
+test("desktop song rows expose aligned artist album and rating actions", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("主导航").getByRole("button", { name: "歌曲", exact: true }).click();
+  const table = page.getByRole("table", { name: "歌曲列表" });
+  await expect(table).toHaveCSS("border-top-width", "0px");
+  await expect(table.locator(".track-artist").first()).toBeVisible();
+  await expect(table.locator(".track-album").first()).toBeVisible();
+  await expect(table.locator(".track-rating").first()).toBeVisible();
+
+  const artist = await table.locator(".track-artist").first().textContent();
+  await table.locator(".track-artist").first().click();
+  await expect(page.locator(".collection-detail-hero h1")).toHaveText(artist ?? "");
+});
+
 test("keeps the core controls usable at the 720px minimum width", async ({ page }) => {
   await page.setViewportSize({ width: 720, height: 900 });
   await page.goto("/");

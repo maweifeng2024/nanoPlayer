@@ -23,6 +23,7 @@ interface NanoState {
   playerReturn?: { page: Page; playlistId?: string; query: string };
   collapsePlayer: () => void;
   selectedPlaylistId?: string;
+  selectedCollection?: { kind: "album" | "artist"; value: string };
   roots: LibraryRoot[];
   tracks: Track[];
   issues: ScanIssue[];
@@ -60,6 +61,8 @@ interface NanoState {
   onboardingDismissed: boolean;
   notice?: string;
   setPage: (page: Page, playlistId?: string) => void;
+  openCollection: (kind: "album" | "artist", value: string) => void;
+  clearSelectedCollection: () => void;
   setQuery: (query: string) => void;
   replaceLibrary: (roots: LibraryRoot[], tracks: Track[], issues: ScanIssue[]) => void;
   replacePlaylists: (playlists: Playlist[]) => void;
@@ -231,12 +234,21 @@ export const useNanoStore = create<NanoState>()(
         set((state) => ({
           page,
           selectedPlaylistId,
+          selectedCollection: undefined,
           query: "",
           playerReturn:
             page === "now-playing" && state.page !== "now-playing"
               ? { page: state.page, playlistId: state.selectedPlaylistId, query: state.query }
               : state.playerReturn,
         })),
+      openCollection: (kind, value) =>
+        set({
+          page: kind === "album" ? "albums" : "artists",
+          selectedPlaylistId: undefined,
+          selectedCollection: { kind, value },
+          query: "",
+        }),
+      clearSelectedCollection: () => set({ selectedCollection: undefined }),
       collapsePlayer: () =>
         set((state) => ({
           page: state.playerReturn?.page ?? "home",

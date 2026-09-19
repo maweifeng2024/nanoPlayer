@@ -49,7 +49,7 @@ import { trackInRoots } from "./folderFilter";
 import { UpdateSettings } from "../updates/UpdateSettings";
 import { TrackTable } from "./TrackTable";
 import { Artwork } from "./Artwork";
-import { selectPlaylistCoverTracks } from "./playlistCover";
+import { AutoPlaylistCover } from "./PlaylistArtwork";
 import {
   clearArtworkCache,
   clearOnlineLyricsCache,
@@ -517,7 +517,7 @@ function NowPlayingPage() {
         aria-label={t("收起正在播放")}
       >
         <ChevronDown size={18} />
-        {t("收起")}
+        <span>{t("收起")}</span>
       </button>
       <Artwork
         className="now-playing-art"
@@ -567,7 +567,17 @@ function NowPlayingPage() {
 }
 
 function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Track[] }) {
-  const [selected, setSelected] = useState<string>();
+  const collectionState = useNanoStore(
+    useShallow((state) => ({
+      selectedCollection: state.selectedCollection,
+      clearSelectedCollection: state.clearSelectedCollection,
+    })),
+  );
+  const [localSelected, setLocalSelected] = useState<string>();
+  const selected =
+    collectionState.selectedCollection?.kind === kind
+      ? collectionState.selectedCollection.value
+      : localSelected;
   const fields = { album: "album", artist: "artist" } as const;
   const fallback = kind === "album" ? t("未知专辑") : t("未知艺术家");
   const groups = useMemo(() => {
@@ -586,7 +596,7 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
   const openCollection = (value: string) => {
     const scroller = gridRef.current?.closest<HTMLElement>(".page-scroll");
     scrollPosition.current = scroller?.scrollTop ?? 0;
-    setSelected(value);
+    setLocalSelected(value);
     if (scroller) scroller.scrollTop = 0;
   };
 
@@ -605,7 +615,13 @@ function CollectionGrid({ kind, tracks }: { kind: "album" | "artist"; tracks: Tr
     const discs = [...new Set(items.map((track) => track.discNumber ?? 1))];
     return (
       <section>
-        <button className="text-button collection-back" onClick={() => setSelected(undefined)}>
+        <button
+          className="text-button collection-back"
+          onClick={() => {
+            setLocalSelected(undefined);
+            collectionState.clearSelectedCollection();
+          }}
+        >
           {t("← 返回")}
           {title}
         </button>
@@ -1038,24 +1054,6 @@ function PlaylistPage() {
   );
 }
 
-function AutoPlaylistCover({ items, name, seed }: { items: Track[]; name: string; seed: string }) {
-  const covers = selectPlaylistCoverTracks(items, seed);
-  return (
-    <div className={`auto-playlist-cover cover-count-${covers.length}`}>
-      {covers.length ? (
-        covers.map((track) => (
-          <Artwork
-            track={track}
-            key={`${track.artist}-${track.album}`}
-            fallback={<Music2 size={20} />}
-          />
-        ))
-      ) : (
-        <span className="playlist-letter">{name.slice(0, 1)}</span>
-      )}
-    </div>
-  );
-}
 function NameDialog({
   title,
   initial,
@@ -1279,7 +1277,7 @@ function SettingsPage() {
           </div>
           <span className="setting-status">{t("已启用")}</span>
         </article>
-        <article>
+        <article className="online-lyrics-setting">
           <span className="settings-icon">
             <Settings2 />
           </span>
@@ -1300,7 +1298,7 @@ function SettingsPage() {
             <span />
           </button>
         </article>
-        <article>
+        <article className="appearance-setting">
           <span className="settings-icon">
             <SunMoon />
           </span>

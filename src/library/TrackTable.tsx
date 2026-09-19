@@ -58,6 +58,7 @@ export function TrackTable({
       reorderPlaylist: store.reorderPlaylist,
       rate: store.rate,
       removeFromPlaylist: store.removeFromPlaylist,
+      openCollection: store.openCollection,
     })),
   );
   const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 } | null>(
@@ -220,39 +221,39 @@ export function TrackTable({
       <button role="menuitem" onClick={() => state.enqueue(track.id)} type="button">
         {t("添加到队列")}
       </button>
-      {
-        <>
-          <button role="menuitem" type="button" onClick={() => state.setSelectedTrack(track.id)}>
-            {t("查看详情")}
+      <button role="menuitem" type="button" onClick={() => state.setSelectedTrack(track.id)}>
+        {t("查看详情")}
+      </button>
+      <div className="phone-rating" aria-label={t("{0} 评分", track.title)}>
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button
+            role="menuitem"
+            key={value}
+            aria-label={t("{0} 星", value)}
+            onClick={() => state.rate(track.id, state.ratings[track.id] === value ? 0 : value)}
+          >
+            <Star
+              size={20}
+              fill={value <= (state.ratings[track.id] ?? 0) ? "currentColor" : "none"}
+            />
           </button>
-          <div className="phone-rating" aria-label={t("{0} 评分", track.title)}>
-            {[1, 2, 3, 4, 5].map((value) => (
-              <button
-                role="menuitem"
-                key={value}
-                aria-label={t("{0} 星", value)}
-                onClick={() => state.rate(track.id, state.ratings[track.id] === value ? 0 : value)}
-              >
-                <Star
-                  size={20}
-                  fill={value <= (state.ratings[track.id] ?? 0) ? "currentColor" : "none"}
-                />
-              </button>
-            ))}
-          </div>
-        </>
-      }
-      {state.playlists.map((playlist) => (
-        <button
-          role="menuitem"
-          key={playlist.id}
-          onClick={() => state.addToPlaylist(playlist.id, track.id)}
-          type="button"
-        >
-          {t("添加到“")}
-          {playlist.name}”
-        </button>
-      ))}
+        ))}
+      </div>
+      {!(playlistId && phone)
+        ? (
+        state.playlists.map((playlist) => (
+          <button
+            role="menuitem"
+            key={playlist.id}
+            onClick={() => state.addToPlaylist(playlist.id, track.id)}
+            type="button"
+          >
+            {t("添加到“")}
+            {playlist.name}”
+          </button>
+        ))
+          )
+        : null}
     </>
   );
 
@@ -320,6 +321,7 @@ export function TrackTable({
                 : t("{0} 首", tracks.length)}
           </span>
         )}
+        {toolbar}
         {!playlistId && (
           <label className="track-sort">
             {t("排序")}
@@ -359,7 +361,6 @@ export function TrackTable({
             )}
           </label>
         )}
-        {toolbar}
       </div>
       {!tracks.length && (
         <div className="table-empty">
@@ -377,7 +378,7 @@ export function TrackTable({
       <div
         hidden={!tracks.length}
         ref={tableRef}
-        className={`track-table cover-track-table ${playlistId ? "playlist-table" : ""} ${popular ? "popular-table" : ""}`}
+        className={`track-table cover-track-table ${playlistId ? "playlist-table" : ""} ${popular ? "popular-table has-stat" : ""}`}
         role="table"
         aria-label={t("歌曲列表")}
       >
@@ -582,6 +583,43 @@ export function TrackTable({
                   </small>
                 </button>
               </div>
+              {!playlistId ? (
+                <>
+                  <button
+                    className="track-collection-link track-artist"
+                    role="cell"
+                    type="button"
+                    onClick={() => state.openCollection("artist", track.artist)}
+                  >
+                    {track.artist}
+                  </button>
+                  <button
+                    className="track-collection-link track-album"
+                    role="cell"
+                    type="button"
+                    onClick={() => state.openCollection("album", track.album)}
+                  >
+                    {track.album}
+                  </button>
+                  <div className="track-rating" role="cell" aria-label={t("{0} 评分", track.title)}>
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={t("将 {0} 评为 {1} 星", track.title, value)}
+                        onClick={() =>
+                          state.rate(track.id, state.ratings[track.id] === value ? 0 : value)
+                        }
+                      >
+                        <Star
+                          size={14}
+                          fill={value <= (state.ratings[track.id] ?? 0) ? "currentColor" : "none"}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
               {playlistId ? (
                 <div
                   role="cell"
@@ -607,16 +645,25 @@ export function TrackTable({
                     <ChevronDown size={14} />
                   </button>
                 </div>
-              ) : (
-                <span role="cell">{popular ? (state.playCounts[track.id] ?? 0) : ""}</span>
-              )}
+              ) : popular ? (
+                <span className="track-stat" role="cell">
+                  {state.playCounts[track.id] ?? 0}
+                </span>
+              ) : null}
               <div role="cell">
                 <button
                   className="icon-button more-menu"
                   aria-label={t("{0} 更多操作", track.title)}
+                  aria-expanded={contextMenu?.track.id === track.id}
+                  onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => {
+                    event.stopPropagation();
                     const bounds = event.currentTarget.getBoundingClientRect();
-                    setContextMenu({ track, x: bounds.right - 280, y: bounds.bottom });
+                    setContextMenu((current) =>
+                      current?.track.id === track.id
+                        ? undefined
+                        : { track, x: bounds.right - 248, y: bounds.bottom },
+                    );
                   }}
                 >
                   <MoreHorizontal size={20} />

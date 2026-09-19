@@ -20,6 +20,7 @@ export function AmbientBackground() {
       .filter((item) => lastPlayedAt[item.id])
       .sort((a, b) => lastPlayedAt[b.id].localeCompare(lastPlayedAt[a.id]))[0];
   const [palette, setPalette] = useState(neutralPalette);
+  const [placement, setPlacement] = useState(() => randomPlacement());
   useEffect(() => {
     let active = true;
     // Placeholder artwork must never recolor the application. Keep the last
@@ -38,6 +39,7 @@ export function AmbientBackground() {
           if (!context) return;
           context.drawImage(image, 0, 0, 32, 32);
           setPalette(extractPalette(context.getImageData(0, 0, 32, 32).data));
+          setPlacement(randomPlacement());
         } catch {
           // Decode/security failures keep the existing background.
         }
@@ -71,8 +73,23 @@ export function AmbientBackground() {
         {
           "--ambient-primary": palette.primary,
           "--ambient-secondary": palette.secondary,
+          "--ambient-primary-x": `${placement.primaryX}%`,
+          "--ambient-primary-y": `${placement.primaryY}%`,
+          "--ambient-secondary-x": `${placement.secondaryX}%`,
+          "--ambient-secondary-y": `${placement.secondaryY}%`,
+          "--ambient-spread": `${placement.spread}%`,
         } as CSSProperties
       }
     />
   );
+}
+
+function randomPlacement() {
+  return {
+    primaryX: 62 + Math.round(Math.random() * 16),
+    primaryY: 18 + Math.round(Math.random() * 24),
+    secondaryX: 76 + Math.round(Math.random() * 18),
+    secondaryY: 58 + Math.round(Math.random() * 26),
+    spread: 68 + Math.round(Math.random() * 12),
+  };
 }

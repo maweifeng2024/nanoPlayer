@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { useModalBehavior } from "../useModalBehavior";
-import { Artwork } from "../library/Artwork";
 import { FolderCog, Heart, Home, Plus, Settings, Play, Pencil, Trash2 } from "lucide-react";
 import { t } from "../i18n";
 import { useNanoStore } from "../store";
+import { PlaylistListArtwork } from "../library/PlaylistArtwork";
 
 export function PhoneNavigation() {
   const page = useNanoStore((state) => state.page);
@@ -101,14 +101,11 @@ export function PhonePlaylists({ onCreate }: { onCreate: () => void }) {
       <div className="phone-playlists">
         {playlists.map((list) => {
           const ids = list.trackIds.filter((id) => trackMap.has(id));
+          const items = ids.map((id) => trackMap.get(id)!);
           return (
             <article className="playlist-list-row" key={list.id}>
               <button className="playlist-open" onClick={() => setPage("playlist", list.id)}>
-                <Artwork
-                  className="playlist-list-art"
-                  track={trackMap.get(ids[0])}
-                  fallback={<Heart size={28} />}
-                />
+                <PlaylistListArtwork playlistId={list.id} items={items} name={list.name} />
                 <span>
                   <strong>{list.name}</strong>
                   <small>{t("{0} 首", ids.length)}</small>

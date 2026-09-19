@@ -138,6 +138,59 @@ test.describe("Android touch interactions", () => {
     expect(errors).toEqual([]);
   });
 
+  test("playlist row menu keeps five action groups and settings stay compact", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await page.locator(".phone-navigation").getByRole("button", { name: "歌单" }).click();
+    await page.locator(".phone-playlists .playlist-open").first().click();
+    await page.locator(".more-menu").first().click();
+    await expect(page.locator(".context-menu > button")).toHaveCount(4);
+    await expect(page.locator(".context-menu > .phone-rating")).toBeVisible();
+
+    await page.locator(".menu-button").click();
+    await page.locator(".sidebar").getByRole("button", { name: "设置", exact: true }).click();
+    const switchBox = await page.getByRole("switch").boundingBox();
+    expect(switchBox?.height).toBeLessThanOrEqual(30);
+    const widths = await page
+      .locator(".appearance-setting .segmented button")
+      .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+  });
+
+  test("song typography matches home and more actions toggle closed", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    const homeTitleSize = await page
+      .locator(".recommendation-copy strong")
+      .first()
+      .evaluate((node) => getComputedStyle(node).fontSize);
+
+    await page.evaluate(async () => {
+      const { useNanoStore } = await import("/src/store.ts");
+      useNanoStore.getState().setPage("songs");
+    });
+    await expect(page.locator(".track-title strong").first()).toHaveCSS("font-size", homeTitleSize);
+
+    const more = page.locator(".more-menu").first();
+    await more.click();
+    await expect(more).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator(".context-menu")).toBeVisible();
+    await more.click();
+    await expect(more).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator(".context-menu")).toHaveCount(0);
+  });
+
+  test("playlist overview uses the playlist composition instead of its first track cover", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await page.locator(".phone-navigation").getByRole("button", { name: "歌单" }).click();
+    const cover = page.locator(".playlist-list-art").first();
+    await expect(cover.locator(".auto-playlist-cover")).toBeVisible();
+    await expect(cover.locator(":scope > .track-cover")).toHaveCount(0);
+  });
+
   for (const width of [390, 600, 1024]) {
     test(`cover and metadata both play, transport fits at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });

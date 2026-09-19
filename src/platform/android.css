@@ -1201,9 +1201,204 @@ html[data-platform="android"] {
 }
 [data-platform="android"] .player-bar button[aria-pressed="true"] {
   color: var(--accent);
-  background: var(--selection);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: transparent;
+  box-shadow: none;
 }
 :root[data-platform="android"] .app-shell > .sidebar {
   background: var(--frame-surface);
+}
+
+/* Reference-tuned mobile density: compact lists, calm spacing and clear hierarchy. */
+[data-platform="android"] .track-table.cover-track-table .track-row {
+  min-height: 64px;
+  padding-block: var(--space-2);
+  gap: var(--space-3);
+}
+[data-platform="android"] .cover-track-table .track-title strong {
+  font-size: var(--font-body);
+  line-height: 22px;
+  font-weight: 600;
+}
+[data-platform="android"] .cover-track-table .track-title small {
+  font-size: var(--font-caption);
+  line-height: 20px;
+}
+[data-platform="android"] .table-toolbar {
+  margin-bottom: var(--space-2);
+}
+[data-platform="android"] .context-menu.menu-popover {
+  width: 248px;
+}
+[data-platform="android"] .context-menu .phone-rating {
+  justify-content: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+}
+[data-platform="android"] .context-menu .phone-rating button {
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  min-height: 40px;
+  padding: var(--space-1);
+}
+[data-platform="android"] .playlist-list-row {
+  min-height: 72px;
+  padding-block: var(--space-2);
+}
+[data-platform="android"] .playlist-list-art .auto-playlist-cover {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+[data-platform="android"] .playlist-open strong {
+  font-size: var(--font-body);
+  line-height: 22px;
+}
+[data-platform="android"] .playlist-open small {
+  color: var(--muted);
+  font-size: var(--font-caption);
+  line-height: 20px;
+}
+[data-platform="android"] .home-track-columns {
+  gap: var(--space-6);
+}
+[data-platform="android"] .home-track-list-heading {
+  padding-bottom: var(--space-2);
+}
+[data-platform="android"] .home-track-list li button {
+  min-height: 64px;
+  padding-block: var(--space-2);
+}
+[data-device="phone"] .now-playing-page {
+  min-height: 0;
+  align-content: start;
+  justify-items: center;
+  gap: var(--space-5);
+  padding-top: calc(var(--control-md) + var(--space-1));
+}
+[data-device="phone"] .now-playing-art {
+  width: min(68vw, 320px);
+  max-height: 38dvh;
+}
+[data-device="phone"] .now-playing-copy {
+  width: min(100%, 420px);
+}
+[data-device="phone"] .now-playing-copy h1 {
+  margin-top: var(--space-2);
+  font-size: calc(var(--font-section-title) + var(--space-1));
+  line-height: 1.25;
+}
+[data-device="phone"] .now-playing-copy h2 {
+  margin-top: var(--space-1);
+  font-size: var(--font-caption);
+}
+[data-device="phone"] .immersive-lyrics {
+  max-height: 20dvh;
+  margin: var(--space-5) 0 var(--space-4);
+}
+[data-device="phone"] .immersive-lyrics p,
+[data-device="phone"] .immersive-lyrics > button {
+  margin-bottom: var(--space-2);
+  font-size: var(--font-body);
+  line-height: 1.5;
+}
+[data-device="pad"] .now-playing-page {
+  grid-template-columns: minmax(260px, 42%) minmax(280px, 1fr);
+  gap: var(--space-6);
+}
+[data-device="pad"] .now-playing-art {
+  width: min(88%, 360px);
+  justify-self: end;
+}
+
+/* Compact Android typography and controls; selected player tools change color only. */
+[data-platform="android"] {
+  --font-body: 14px;
+  --font-caption: 12px;
+  --font-small: 11px;
+  --font-section-title: 18px;
+}
+[data-platform="android"] .player-bar button.active,
+[data-platform="android"] .player-tools button.active,
+[data-platform="android"] .transport button.active {
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent);
+}
+[data-platform="android"] .track-artist,
+[data-platform="android"] .track-album,
+[data-platform="android"] .track-rating,
+[data-platform="android"] .track-stat {
+  display: none !important;
+}
+[data-platform="android"] .home-track-list-body li {
+  height: 64px;
+  background: color-mix(in srgb, var(--panel) 58%, transparent);
+  border-radius: var(--radius-sm);
+}
+[data-platform="android"] .home-track-list-body li button {
+  height: 64px;
+  min-height: 64px;
+  padding: var(--space-2);
+}
+[data-platform="android"] .recommendation-art {
+  align-self: center;
+}
+[data-platform="android"] .collection-grid,
+[data-device="phone"] .collection-grid,
+[data-device="pad"] .collection-grid {
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+}
+[data-device="pad"] .collection-grid {
+  grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+}
+[data-platform="android"] .settings-list article {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+}
+[data-platform="android"] .settings-list article p {
+  display: none;
+}
+[data-platform="android"] .online-lyrics-setting .switch {
+  width: 44px;
+  height: 30px;
+  min-width: 44px;
+  min-height: 30px;
+  padding: var(--space-1);
+}
+[data-platform="android"] .online-lyrics-setting .switch span {
+  width: 22px;
+  height: 22px;
+}
+[data-platform="android"] .online-lyrics-setting .switch.on span {
+  transform: translateX(14px);
+}
+[data-platform="android"] .appearance-setting .segmented {
+  width: min(270px, 42vw);
+}
+[data-platform="android"] .appearance-setting .segmented button {
+  width: 33.333%;
+  flex: 1 1 0;
+  padding-inline: var(--space-1);
+  white-space: nowrap;
+}
+[data-platform="android"] .collapse-player {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  overflow: hidden;
+  padding: 0;
+  justify-content: center;
+}
+[data-platform="android"] .collapse-player span {
+  display: none;
+}
+[data-platform="android"] .collapse-player svg {
+  width: 17px;
+  height: 17px;
+}
+[data-platform="android"] .now-playing-page {
+  row-gap: calc(var(--space-6) + var(--space-2));
 }
