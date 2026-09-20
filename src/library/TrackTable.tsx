@@ -33,11 +33,13 @@ export function TrackTable({
   tracks,
   playlistId,
   popular = false,
+  rated = false,
   toolbar,
 }: {
   tracks: Track[];
   playlistId?: string;
   popular?: boolean;
+  rated?: boolean;
   toolbar?: React.ReactNode;
 }) {
   const phone = isAndroid();
@@ -240,19 +242,17 @@ export function TrackTable({
         ))}
       </div>
       {!(playlistId && phone)
-        ? (
-        state.playlists.map((playlist) => (
-          <button
-            role="menuitem"
-            key={playlist.id}
-            onClick={() => state.addToPlaylist(playlist.id, track.id)}
-            type="button"
-          >
-            {t("添加到“")}
-            {playlist.name}”
-          </button>
-        ))
-          )
+        ? state.playlists.map((playlist) => (
+            <button
+              role="menuitem"
+              key={playlist.id}
+              onClick={() => state.addToPlaylist(playlist.id, track.id)}
+              type="button"
+            >
+              {t("添加到“")}
+              {playlist.name}”
+            </button>
+          ))
         : null}
     </>
   );
@@ -382,6 +382,17 @@ export function TrackTable({
         role="table"
         aria-label={t("歌曲列表")}
       >
+        {(popular || rated) && !phone ? (
+          <div className="track-row track-head" role="row">
+            <span aria-hidden="true" />
+            <span role="columnheader">{t("标题")}</span>
+            <span role="columnheader">{t("艺术家")}</span>
+            <span role="columnheader">{t("专辑")}</span>
+            <span role="columnheader">{t("评分")}</span>
+            {popular ? <span role="columnheader">{t("播放次数")}</span> : null}
+            <span aria-hidden="true" />
+          </div>
+        ) : null}
         {range.start > 0 ? (
           <div
             className="track-spacer"

@@ -67,6 +67,13 @@ test("home aligns artwork and list; most-played columns respond with other lists
     await page.setViewportSize({ width, height: 800 });
     if (width <= 760) await page.getByRole("button", { name: "打开导航", exact: true }).click();
     await page.getByLabel("主导航").getByRole("button", { name: "播放最多", exact: true }).click();
+    await expect(page.locator('.track-head [role="columnheader"]')).toHaveText([
+      "标题",
+      "艺术家",
+      "专辑",
+      "评分",
+      "播放次数",
+    ]);
     await expect(page.locator(".duration-cell")).toHaveCount(0);
     const popularWidth = await page
       .locator(".track-table")
@@ -82,4 +89,15 @@ test("home aligns artwork and list; most-played columns respond with other lists
     ).toBe(popularWidth);
     expect(await page.locator(".track-cover").first().isVisible()).toBe(popularCover);
   }
+});
+
+test("rated collection has a desktop column header", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("主导航").getByRole("button", { name: "高评分", exact: true }).click();
+  await expect(page.locator('.track-head [role="columnheader"]')).toHaveText([
+    "标题",
+    "艺术家",
+    "专辑",
+    "评分",
+  ]);
 });

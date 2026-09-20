@@ -2704,6 +2704,7 @@ html[lang="en"] .section-label {
   padding: 0;
   background: none;
   border: 0;
+  cursor: pointer;
   text-align: left;
 }
 .playlist-open > span {
@@ -3066,6 +3067,59 @@ select:focus-visible,
 :root .app-shell .player-bar button[aria-pressed="true"],
 :root .app-shell .player-bar button[aria-pressed="true"]:hover {
   color: var(--accent);
-  background: var(--selection);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Featured desktop collections keep their metadata columns explicit. */
+.track-table.cover-track-table .track-head {
+  min-height: 36px;
+  padding-block: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--font-micro);
+  font-weight: 650;
+}
+.track-table.cover-track-table .track-head > span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track-table.cover-track-table:not(.playlist-table) .track-head:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+/* Settings use a stable frame instead of the playing artwork palette. */
+.app-shell[data-page="settings"] .ambient-background {
+  opacity: 0;
+}
+.settings-list strong,
+.settings-list h3,
+.settings-list p,
+.settings-list select,
+.settings-list summary,
+.settings-list .secondary-button,
+.settings-list .primary-button,
+.settings-list .segmented button,
+.settings-list .setting-status {
+  font-size: var(--font-caption);
+}
+.appearance-setting .segmented {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(300px, 100%);
+}
+.appearance-setting .segmented button {
+  min-width: 0;
+  overflow: hidden;
+  padding-inline: var(--space-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Give the playlist identity its own breathing room below navigation. */
+.playlist-back {
+  margin-bottom: var(--space-6);
 }

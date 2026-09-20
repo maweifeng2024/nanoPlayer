@@ -22,6 +22,8 @@ for (const width of [390, 600]) {
       await shuffle.click();
       await expect(shuffle).toHaveAttribute("aria-pressed", "true");
       await expect(shuffle).toHaveCSS("color", "rgb(230, 83, 83)");
+      await expect(shuffle).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(shuffle).toHaveCSS("box-shadow", "none");
       const order = await page.evaluate(
         async () => (await import("/src/store.ts")).useNanoStore.getState().shuffleOrder,
       );
@@ -41,6 +43,8 @@ for (const width of [390, 600]) {
       const queue = page.locator('.player-bar button[aria-label="播放队列"]:visible');
       await queue.click();
       await expect(queue).toHaveAttribute("aria-pressed", "true");
+      await expect(queue).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(queue).toHaveCSS("box-shadow", "none");
       await expect(page.locator(".queue-playback-status")).toContainText("随机播放");
       await page
         .locator(".player-drawer")
@@ -51,9 +55,27 @@ for (const width of [390, 600]) {
       await lyrics.click();
       await expect(lyrics).toHaveAttribute("aria-pressed", "true");
       await expect(lyrics).toHaveCSS("color", "rgb(230, 83, 83)");
+      await expect(lyrics).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(lyrics).toHaveCSS("box-shadow", "none");
     });
   });
 }
+
+test("desktop selected player controls use color without a selection border", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { useNanoStore } = await import("/src/store.ts");
+    useNanoStore.setState({ orderMode: "shuffle", drawer: "queue" });
+  });
+  for (const control of [
+    page.getByRole("button", { name: /^\u64ad\u653e\u987a\u5e8f/ }),
+    page.locator('.player-bar button[aria-label="\u64ad\u653e\u961f\u5217"]'),
+  ]) {
+    await expect(control).toHaveCSS("color", "rgb(230, 83, 83)");
+    await expect(control).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(control).toHaveCSS("box-shadow", "none");
+  }
+});
 
 test("desktop home lists grow with their songs and only the page scrolls", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 800 });

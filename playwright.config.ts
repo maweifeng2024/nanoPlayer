@@ -12,7 +12,6 @@ export default defineConfig({
   },
   use: {
     baseURL,
-    channel: 'chrome',
     trace: 'on-first-retry',
   },
 });

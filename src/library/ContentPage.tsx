@@ -180,6 +180,7 @@ export function ContentPage() {
           key={state.page}
           tracks={filtered}
           popular={state.page === "popular"}
+          rated={state.page === "rated"}
           toolbar={
             state.page === "songs" ? (
               <details

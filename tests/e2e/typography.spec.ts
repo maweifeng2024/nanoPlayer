@@ -21,7 +21,7 @@ test("module headings and settings use a consistent type scale in both themes", 
   const titleSizes = await page
     .locator(".settings-list strong, .settings-list h3")
     .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).fontSize));
-  expect(new Set(titleSizes)).toEqual(new Set(["14px"]));
+  expect(new Set(titleSizes)).toEqual(new Set(["13px"]));
   const bodySizes = await page
     .locator(".settings-list p, .settings-list select, .settings-list .secondary-button")
     .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).fontSize));
@@ -35,8 +35,15 @@ test("module headings and settings use a consistent type scale in both themes", 
   await page.getByLabel("主导航").getByRole("button", { name: "艺术家", exact: true }).click();
   await page.getByRole("button", { name: /林岚/ }).click();
   await expect(page.locator(".collection-detail-hero h1")).toHaveCSS("font-size", "32px");
-  await page.getByLabel("主导航").getByRole("button", { name: "安静的晚上", exact: true }).click();
+  await page.evaluate(async () => {
+    (await import("/src/store.ts")).useNanoStore.getState().setPage("playlists");
+  });
+  await expect(page.locator(".playlist-open").first()).toHaveCSS("cursor", "pointer");
+  await page.locator(".playlist-open").first().click();
   await expect(page.locator(".playlist-hero h1")).toHaveCSS("font-size", "32px");
+  const back = await page.locator(".playlist-back").boundingBox();
+  const cover = await page.locator(".playlist-art").boundingBox();
+  expect(cover!.y - (back!.y + back!.height)).toBeGreaterThanOrEqual(24);
 });
 
 test("home artwork feathers into both backgrounds without a border", async ({ page }) => {

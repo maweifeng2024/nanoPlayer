@@ -185,7 +185,7 @@ test("shows only played tracks in most-played and paints playback progress", asy
     useNanoStore.setState({ playCounts: { [-1]: 14, [-3]: 8, [-6]: 21 } });
   });
   await page.getByLabel("主导航").getByRole("button", { name: "播放最多", exact: true }).click();
-  await expect(page.getByRole("row")).toHaveCount(3);
+  await expect(page.locator("[data-track-id]")).toHaveCount(3);
   await expect(page.getByRole("row", { name: /迟到的风/ })).toHaveCount(0);
   await page.getByRole("button", { name: "播放 海平面以下" }).click();
   await expect

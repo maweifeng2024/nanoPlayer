@@ -78,6 +78,16 @@ test.describe("Android touch interactions", () => {
     for (const kind of ["popular", "rated", "recent"]) {
       const list = page.locator(`.home-track-list-${kind}`);
       await expect(list.locator("li")).toHaveCount(12);
+      const card = await list.locator("li").first().boundingBox();
+      const artwork = await list.locator(".recommendation-art").first().boundingBox();
+      expect(card?.height).toBe(artwork?.height);
+      expect(card?.x).toBe(artwork?.x);
+      expect(
+        await list
+          .locator("li")
+          .first()
+          .evaluate((element) => getComputedStyle(element).backgroundColor),
+      ).toMatch(/0\.46/);
       const positions = await list.locator("li").evaluateAll((nodes) =>
         nodes.map((n) => {
           const r = n.getBoundingClientRect();
@@ -143,6 +153,10 @@ test.describe("Android touch interactions", () => {
     await page.goto("/");
     await page.locator(".phone-navigation").getByRole("button", { name: "歌单" }).click();
     await page.locator(".phone-playlists .playlist-open").first().click();
+    await expect(page.locator(".playlist-order-actions").first()).toBeVisible();
+    await expect(page.locator(".playlist-order-actions").first().getByRole("button")).toHaveCount(
+      2,
+    );
     await page.locator(".more-menu").first().click();
     await expect(page.locator(".context-menu > button")).toHaveCount(4);
     await expect(page.locator(".context-menu > .phone-rating")).toBeVisible();
@@ -155,6 +169,31 @@ test.describe("Android touch interactions", () => {
       .locator(".appearance-setting .segmented button")
       .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
     expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+    expect(
+      await page
+        .locator(".appearance-setting .segmented")
+        .evaluate((element) => element.scrollWidth <= element.clientWidth),
+    ).toBe(true);
+    await expect(page.locator(".ambient-background")).toHaveCSS("opacity", "0");
+  });
+
+  test("phone navigation and drawer typography matches song metadata", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await page
+      .locator(".phone-navigation")
+      .getByRole("button", { name: "\u8d44\u6599\u5e93" })
+      .click();
+    const metadataSize = await page
+      .locator(".track-title small")
+      .first()
+      .evaluate((element) => getComputedStyle(element).fontSize);
+    await expect(page.locator(".phone-navigation button").first()).toHaveCSS(
+      "font-size",
+      metadataSize,
+    );
+    await page.locator(".menu-button").click();
+    await expect(page.locator(".sidebar .nav-item").first()).toHaveCSS("font-size", metadataSize);
   });
 
   test("song typography matches home and more actions toggle closed", async ({ page }) => {
