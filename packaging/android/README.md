@@ -1,6 +1,6 @@
 # Android packaging
 
-One APK covers phone and Pad: `app.nanoplayer.android`, minimum API 29, arm64-v8a. Development and emulator testing are active; see [implementation status](../../docs/android/IMPLEMENTATION_STATUS.md) for missing release gates.
+One APK covers phone and Pad: `app.nanoplayer.android`, minimum API 29, arm64-v8a. Development and emulator testing are active; see [implementation status](../../docs/clients/android/STATUS.md) for missing release gates.
 
 ## Local packaging
 

@@ -1187,7 +1187,7 @@ html[data-platform="android"] {
 }
 
 :root[data-platform="android"] .app-shell {
-  --ambient-top: 70px;
+  --ambient-top: 0px;
 }
 :root[data-device="phone"] .app-shell {
   --ambient-left: 0px;
@@ -1333,7 +1333,7 @@ html[data-platform="android"] {
 }
 [data-platform="android"] .home-track-list-body li {
   height: 56px;
-  background: color-mix(in srgb, var(--panel) 46%, transparent);
+  background: color-mix(in srgb, var(--panel) 28%, transparent);
   border-radius: var(--radius-sm);
 }
 [data-platform="android"] .home-track-list-body li button {
@@ -1387,12 +1387,13 @@ html[data-platform="android"] {
   transform: translateX(14px);
 }
 [data-platform="android"] .appearance-setting .segmented {
-  grid-column: 2 / -1;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
 }
 [data-platform="android"] .appearance-setting .segmented button {
-  width: 33.333%;
-  flex: 1 1 0;
+  width: auto;
   padding-inline: var(--space-1);
   white-space: nowrap;
 }
@@ -1427,4 +1428,54 @@ html[data-platform="android"] {
 }
 [data-platform="android"] .now-playing-page {
   row-gap: calc(var(--space-6) + var(--space-2));
+}
+
+/* Carry the artwork tint behind the header and feather it into the system bars. */
+[data-platform="android"] .topbar {
+  background: transparent;
+}
+[data-platform="android"] .ambient-background {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+}
+
+/* Compact Pad navigation keeps its destinations visible at every Pad width. */
+@media (max-width: 900px) {
+  [data-device="pad"] .app-shell,
+  [data-device="pad"] .app-shell.has-drawer {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  [data-device="pad"] .sidebar {
+    position: relative;
+    grid-column: 1;
+    inset: auto;
+    width: 72px;
+    transform: none;
+    box-shadow: none;
+    padding-inline: var(--space-2);
+    z-index: 5;
+  }
+  [data-device="pad"] .content {
+    grid-column: 2;
+  }
+  [data-device="pad"] .sidebar .brand-row,
+  [data-device="pad"] .sidebar .nav-label,
+  [data-device="pad"] .menu-button,
+  [data-device="pad"] .sidebar-close,
+  [data-device="pad"] .sidebar-backdrop {
+    display: none !important;
+  }
+  [data-device="pad"] .sidebar .nav-item {
+    justify-content: center;
+    width: 48px;
+    padding-inline: 0;
+  }
+  [data-device="pad"] .sidebar .nav-item svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+  :root[data-device="pad"] .app-shell {
+    --ambient-left: 72px;
+  }
 }

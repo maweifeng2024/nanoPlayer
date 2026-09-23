@@ -1,6 +1,6 @@
-# nanoPlayer first-version implementation status
+# Desktop implementation status
 
-Updated: 2026-09-11 · Source/release version: 0.1.7
+Updated: 2026-09-22 · Repository source/tag: 0.1.12 · Detailed verification below is dated where stated
 
 This document separates implemented behavior from release qualification. “Implemented” means the path exists in code and has proportionate automated verification; it does not mean long-duration or signed-release gates have been completed.
 
@@ -24,8 +24,8 @@ This document separates implemented behavior from release qualification. “Impl
 ## Current verification and historical evidence
 
 - 2026-09-11: `pnpm check` passed lint, 30 Vitest tests, TypeScript and production frontend build; release-script regression tests passed 11/11; browser E2E passed 27/27 and the website production build passed. Version consistency check passed for 0.1.7.
-- Current browser/Rust verification and any environment limits are recorded in [the audit](DOCUMENTATION_AUDIT_2026-09-11.md); historical counts below are not current-run results.
-- Historical native evidence: macOS Debug and Release `.app` builds, window/icon inspection, lyric candidate selection, folder filtering and home artwork were recorded in `BUGFIX_AND_FEATURE_PLAN_2026-09-03.md` and `../AUTO_UPDATE.md`. This audit does not repeat audible/native installation tests.
+- The 2026-09-11 browser/Rust verification and its environment limits are recorded in [the archived audit](../../archive/audits/DOCUMENTATION_AUDIT_2026-09-11.md); historical counts below are not current-run results.
+- Historical native evidence: macOS Debug and Release `.app` builds, window/icon inspection, lyric candidate selection, folder filtering and home artwork were recorded in the [archived plan](../../archive/plans/BUGFIX_AND_FEATURE_PLAN_2026-09-03.md) and [updater record](AUTO_UPDATE.md). This status update does not repeat audible/native installation tests.
 - Historical Rust evidence: 15 passed, two explicitly ignored (live network and benchmark). The recorded 10,000-row FTS5 P95 was 1.89 ms on 2026-09-03, not a fresh performance result.
 - Current editable icon master: `docs/design/nanoplayer-app-icon-v3.png`; old v1 byte sizes/screenshots are not current-bundle verification.
 
@@ -33,7 +33,7 @@ This document separates implemented behavior from release qualification. “Impl
 
 - Folder multi-selection intersects search and remains available for zero results; most-played tables omit duration, and home artwork follows its contextual track with built-in SVG fallback.
 - Chinese/English UI, full natural-completion play counting, and automatic desktop update checking (5 seconds after startup, then every 6 hours), manual download/install/restart are present in code.
-- v0.1.7 is published for macOS universal, Windows x64 and Linux x64. GitHub release metadata verified on 2026-09-11 contains 13 assets, including eight packages, three updater signatures, updater metadata and checksums.
+- The repository and local tag are at v0.1.12. The checked-in website download manifest is still v0.1.11 as of 2026-09-22, so publication consistency must be reverified before citing a current public desktop version.
 - OS code signing remains marked false in the download manifest; updater signatures are a separate mechanism. Package publication does not prove physical-device playback or cross-version installation.
 
 ## Remaining release qualification (external/manual gates)

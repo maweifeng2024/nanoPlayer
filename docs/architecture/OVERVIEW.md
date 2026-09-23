@@ -30,7 +30,7 @@ Audio output currently uses rodio/cpal platform backends. Media controls in `src
 - `src-tauri/migrations`: five ordered migrations (`0001`–`0005`): base library, app state/caches, artist relationships, scan runs, and user features (metadata overrides, normalized playlists and custom artwork).
 - `src/updates`: desktop update checking, installation and restart; release scripts generate signed updater metadata independently of OS code signing.
 
-Playback completion/queue advance and periodic state saving currently depend on frontend timers (`PlayerBar.tsx`, `App.tsx`). A mobile background service cannot depend on these timers remaining active. The existing mobile entry-point annotation does not constitute a working mobile port; see [mobile feasibility](MOBILE_FEASIBILITY.md).
+Desktop playback completion/queue advance and periodic state saving depend on frontend timers (`PlayerBar.tsx`, `App.tsx`). Android uses its native media-service/session path instead of assuming the WebView remains active. See [mobile feasibility](../clients/MOBILE_FEASIBILITY.md) and [Android status](../clients/android/STATUS.md).
 
 ## Recovery and safety
 

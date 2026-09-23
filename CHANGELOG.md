@@ -4,6 +4,12 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-09-23
+
+- Aligned Android appearance choices and made home cards more translucent.
+- Extended cover-derived color behind the mobile header with a soft fade.
+- Kept a compact icon-only Pad sidebar visible at narrow Pad widths.
+
 ## [0.1.12] - 2026-09-20
 
 ## [0.1.11] - 2026-09-19
@@ -29,7 +35,7 @@ All notable changes will be documented here following Keep a Changelog. Versions
 - Added desktop automatic updates, signed updater manifests, folder multi-selection, responsive most-played tables, contextual home artwork/SVG fallback and simplified playlist subtitles.
 - Artifact normalization and publishing recovery fixes landed after the tag on main.
 
-> Version summaries 0.1.2–0.1.7 were reconstructed from Git tag differences on 2026-09-11. The older cumulative feature list under 0.1.1 is retained as historical documentation; current behavior and qualification are in `docs/development/FIRST_VERSION_STATUS.md`.
+> Version summaries 0.1.2–0.1.7 were reconstructed from Git tag differences on 2026-09-11. The older cumulative feature list under 0.1.1 is retained as historical documentation; current client behavior and qualification are indexed in `docs/clients/`.
 
 ## [0.1.5] - 2026-09-07
 

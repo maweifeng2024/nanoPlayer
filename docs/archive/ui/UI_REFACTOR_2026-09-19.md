@@ -34,7 +34,7 @@
 
 ## 预览和文件
 
-- [六种尺寸前后对照](design/refactor-2026-09-19/index.html)
+- [六种尺寸前后对照](refactor-2026-09-19/index.html)
 - 修改前参考：`docs/design/baseline/`
 - 修改后可复现基线：`tests/e2e/ui-visual.spec.ts-snapshots/`
 - 行为测试：`tests/e2e/ui-refactor.spec.ts`

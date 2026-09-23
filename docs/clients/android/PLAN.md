@@ -1,7 +1,7 @@
 # Android 手机与 Pad 设计及实施计划
 
-日期：2026-09-16 · 修订 3：桌面继承原则及 P1–P5 已获用户确认；完整方案已获用户批准，开发进行中；进度与验证见 IMPLEMENTATION_STATUS.md。
-依据：[移动可行性评估](../architecture/MOBILE_FEASIBILITY.md)、现有 v0.1.7 源码和桌面视觉基线。完整开发已启动；本文件描述目标范围，不代表所有验收项已完成。
+日期：2026-09-16 · 修订 3：桌面继承原则及 P1–P5 已获用户确认；完整方案已获用户批准，开发进行中；进度与验证见 STATUS.md。
+依据：[移动可行性评估](../MOBILE_FEASIBILITY.md)、当时的 v0.1.7 源码和桌面视觉基线。完整开发已启动；本文件描述目标范围，不代表所有验收项已完成。
 
 ## 0. 用户确认的强制约束
 
@@ -80,7 +80,7 @@ P1–P5 的方向已由用户确认，不再作为待决阻塞；下面的数值
 
 P5 首发 APK 更新：检查和下载可跳转可信发布页，由用户在系统安装流程确认覆盖安装；不自动申请全文件访问或静默安装。商店版后续接入所属商店。文件重授权保留曲目 ID、评分、歌单；音频路由不可用时保持播放并展示系统限制。
 
-[WIREFRAMES.html](WIREFRAMES.html) 已修订：Pad 使用仓库真实桌面截图作基准，手机继续作为布局草图。旧 Pad 简化菜单和旧配色不再是设计依据。
+[历史线框](../../archive/ui/ANDROID_WIREFRAMES_2026-09-16.html) 中，Pad 使用当时的仓库桌面截图作基准，手机作为布局草图。旧 Pad 简化菜单和旧配色不再是设计依据。
 
 ## 4. 技术边界和持久化
 
@@ -98,7 +98,7 @@ Tauri 2 + React + Rust 保留；Kotlin 原生插件负责 SAF、Media3 ExoPlayer
 
 ## 5. 目录组织
 
-当前就绪目录：`docs/android/`（方案、线框、环境记录）、`scripts/android/`（只读环境诊断）、`packaging/android/`（发布契约）。统一入口 `scripts/release/dispatch.mjs` 选择平台，旧桌面编排保留。
+当前就绪目录：`docs/clients/android/`（当前方案、状态与环境说明）、`docs/archive/`（历史线框和验收记录）、`scripts/android/`（环境诊断、构建与模拟器测试）、`packaging/android/`（发布契约）。统一入口 `scripts/release/dispatch.mjs` 选择平台，桌面编排保持兼容。
 
 确认后按功能推进，不提前搬动桌面代码：
 
@@ -152,4 +152,4 @@ Tauri 2 + React + Rust 保留；Kotlin 原生插件负责 SAF、Media3 ExoPlayer
 - [Media3 background playback](https://developer.android.com/media/media3/session/background-playback)
 - [Tauri Google Play distribution](https://v2.tauri.app/distribute/google-play/)
 
-开发已启动，按 A–F 阶段验证后推进。环境已安装并通过 doctor；实际完成度以 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) 为准，未验收的阶段不标为完成，公开发布仍需完整发布验收。
+开发已启动，按 A–F 阶段验证后推进。环境已安装并通过 doctor；实际完成度以 [STATUS.md](STATUS.md) 为准，未验收的阶段不标为完成，公开发布仍需完整发布验收。

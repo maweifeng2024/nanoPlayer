@@ -1310,7 +1310,7 @@ function SettingsPage() {
           <div className="segmented" aria-label={t("外观主题")}>
             {(
               [
-                ["system", t("跟随系统")],
+                ["system", t(isAndroid() ? "系统" : "跟随系统")],
                 ["light", t("浅色")],
                 ["dark", t("深色")],
               ] as const

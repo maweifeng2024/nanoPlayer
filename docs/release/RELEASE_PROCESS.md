@@ -29,12 +29,16 @@ The local command requires authenticated `gh` and Git access. Before choosing th
 
 Repository Actions settings must allow GitHub Actions to create releases and push the generated website manifest to `main`. If `main` is protected, grant the workflow/bot an explicit bypass for this single generated-file commit or replace that step with a reviewed pull request.
 
-## Current status and recovery boundary (2026-09-11)
+## Current status and recovery boundary (2026-09-22)
 
-v0.1.7 is published with 13 assets; the local source and download manifest agree on 0.1.7. `--resume v0.1.7` is a recovery example, not an outstanding action. Recovery checks tag/source identity and already-running/completed workflows to avoid duplicate publication. Tests use mock/local services and do not themselves publish anything. Native cross-version updater installation remains separately unverified.
+The repository source and local tag are v0.1.12. The checked-in website download manifest is v0.1.11, so live publication and source/website consistency must be verified before citing v0.1.12 as the current public download. `--resume` is only for an existing tag whose push, workflow, publication, or website update was interrupted. Recovery checks tag/source identity and already-running/completed workflows to avoid duplicate publication. Tests use mock/local services and do not themselves publish anything. Native cross-version updater installation remains separately unverified.
 
-## Android preparation (2026-09-16)
+## Android packaging
 
-`pnpm release` remains desktop by default. `pnpm release:desktop` or `pnpm release -- --platform desktop` explicitly selects it; existing version and resume arguments pass through unchanged. `pnpm release:android` / `--platform android` currently fails before any Git, version, signing or publishing operation. Unknown/duplicate platforms fail as well. This prevents an Android request from accidentally publishing desktop assets.
+`pnpm release` remains desktop by default. `pnpm release:desktop` or `pnpm release -- --platform desktop` explicitly selects it; existing version and resume arguments pass through unchanged. `pnpm release:android -- --debug` builds and locally archives a debug APK after checks. A release APK requires the private signing environment. Android packaging does not create a tag, push source, upload an APK, or update desktop updater metadata.
 
-Android design and release requirements are in `../android/PLAN.md` and `../../packaging/android/README.md`. Android will use an independent tag/workflow/channel and monotonically increasing versionCode; no Android CI or product code has been enabled in this preparation stage.
+Android behavior and release requirements are in [`../clients/android/PLAN.md`](../clients/android/PLAN.md), [`../clients/android/STATUS.md`](../clients/android/STATUS.md), and [`../../packaging/android/README.md`](../../packaging/android/README.md). Android uses the root product version plus the monotonically increasing `packaging/android/version-code.json`. Public Android publication, store/AAB delivery, production signing, and physical-device acceptance remain incomplete.
+
+## iOS/iPadOS boundary
+
+No iOS/iPadOS build or release command exists. Before the first installable build, add a monotonic iOS build-number authority, signing/export contract, simulator/device gates, and verified artifact reporting as described in [`../clients/ios/README.md`](../clients/ios/README.md). Do not route iOS through desktop or Android release behavior by default.

@@ -12,11 +12,21 @@ test.describe("Android layouts", () => {
     await expect(page.locator("html")).toHaveAttribute("data-device", "pad");
     for (const width of [840, 600, 360, 720, 390]) {
       await page.setViewportSize({ width, height: 1100 });
-      if (width >= 600) await expect(page.locator(".phone-navigation")).toBeHidden();
-      else await expect(page.locator(".phone-navigation")).toBeVisible();
-      await expect(page.locator(".menu-button")).toBeVisible();
-      await page.locator(".menu-button").click();
-      await expect(page.locator(".sidebar")).toHaveClass(/is-open/);
+      if (width >= 600) {
+        await expect(page.locator(".phone-navigation")).toBeHidden();
+        await expect(page.locator(".menu-button")).toBeHidden();
+        await expect(page.locator(".sidebar")).toBeVisible();
+        await expect(page.locator(".sidebar .nav-label").first()).toBeHidden();
+        const sidebar = await page.locator(".sidebar").boundingBox();
+        const content = await page.locator(".content").boundingBox();
+        expect(sidebar?.width).toBe(72);
+        expect(content?.x).toBeGreaterThanOrEqual(sidebar!.x + sidebar!.width);
+      } else {
+        await expect(page.locator(".phone-navigation")).toBeVisible();
+        await expect(page.locator(".menu-button")).toBeVisible();
+        await page.locator(".menu-button").click();
+        await expect(page.locator(".sidebar")).toHaveClass(/is-open/);
+      }
       await expect(page.locator(".sidebar nav .nav-item")).toHaveText([
         "首页",
         "本地资料库",
@@ -28,8 +38,10 @@ test.describe("Android layouts", () => {
         "播放最多",
         "高评分",
       ]);
-      await page.locator(".sidebar-close").click();
-      await expect(page.locator(".sidebar")).not.toHaveClass(/is-open/);
+      if (width < 600) {
+        await page.locator(".sidebar-close").click();
+        await expect(page.locator(".sidebar")).not.toHaveClass(/is-open/);
+      }
       await expect(page.locator("html")).toHaveAttribute(
         "data-device",
         width >= 600 ? "pad" : "phone",
@@ -87,7 +99,7 @@ test.describe("Android touch interactions", () => {
           .locator("li")
           .first()
           .evaluate((element) => getComputedStyle(element).backgroundColor),
-      ).toMatch(/0\.46/);
+      ).toMatch(/0\.28/);
       const positions = await list.locator("li").evaluateAll((nodes) =>
         nodes.map((n) => {
           const r = n.getBoundingClientRect();
@@ -169,6 +181,11 @@ test.describe("Android touch interactions", () => {
       .locator(".appearance-setting .segmented button")
       .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
     expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+    await expect(page.locator(".appearance-setting .segmented button")).toHaveText([
+      "系统",
+      "浅色",
+      "深色",
+    ]);
     expect(
       await page
         .locator(".appearance-setting .segmented")

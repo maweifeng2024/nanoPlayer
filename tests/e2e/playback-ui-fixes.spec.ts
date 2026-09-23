@@ -162,11 +162,15 @@ for (const android of [false, true]) {
           .evaluate((node) => getComputedStyle(node).maskImage),
       ).toContain("linear-gradient");
       const colors = await page.evaluate(() =>
-        [".app-shell", ".topbar", ".player-bar"].map(
+        [".app-shell", ".player-bar"].map(
           (selector) => getComputedStyle(document.querySelector(selector)!).backgroundColor,
         ),
       );
       expect(new Set(colors).size).toBe(1);
+      await expect(page.locator(".topbar")).toHaveCSS(
+        "background-color",
+        android ? "rgba(0, 0, 0, 0)" : colors[0],
+      );
       await page.evaluate(async () => {
         (await import("/src/store.ts")).useNanoStore.setState({ theme: "light" });
       });

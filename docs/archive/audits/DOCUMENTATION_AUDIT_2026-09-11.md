@@ -8,7 +8,7 @@
 
 nanoPlayer 已具备桌面资料库与播放器主要功能，并已发布 macOS universal、Windows x64、Linux x64 安装包。不能再将 Windows/Linux 整体记为“计划中”。但原生媒体键、设备/长时稳定性、代码签名/公证和跨版本升级验收仍须与“已发布”分开。
 
-iOS、Android 与 Pad 尚无已验收实现。新增的 [移动可行性分析](../architecture/MOBILE_FEASIBILITY.md) 仅包含技术比较和工作量估计，不是实施计划。
+iOS、Android 与 Pad 当时尚无已验收实现。新增的 [移动可行性分析](../../clients/MOBILE_FEASIBILITY.md) 仅包含技术比较和工作量估计，不是实施计划。
 
 ## 发现与修正
 

@@ -370,6 +370,7 @@ export default function App() {
             <button
               className="nav-item"
               aria-current={page === id ? "page" : undefined}
+              aria-label={t(label)}
               key={id}
               onClick={() => {
                 setPage(id);
@@ -378,7 +379,7 @@ export default function App() {
               type="button"
             >
               <Icon aria-hidden="true" size={17} />
-              {t(label)}
+              <span className="nav-label">{t(label)}</span>
             </button>
           ))}
         </nav>
@@ -410,6 +411,7 @@ export default function App() {
         <button
           className="nav-item"
           aria-current={page === "settings" ? "page" : undefined}
+          aria-label={t("设置")}
           onClick={() => {
             setPage("settings");
             setSidebarOpen(false);
@@ -417,7 +419,7 @@ export default function App() {
           type="button"
         >
           <Settings aria-hidden="true" size={17} />
-          {t("设置")}
+          <span className="nav-label">{t("设置")}</span>
         </button>
       </aside>
 

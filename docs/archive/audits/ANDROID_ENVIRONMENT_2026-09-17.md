@@ -42,4 +42,4 @@ Rust Android 目标安装已启动（`rustup target add aarch64-linux-android x8
 
 ## 修订 3：交由用户安装
 
-按用户要求，后续安装由用户在终端执行，本轮未再次执行安装或修改 shell 配置。完整分步命令见 [INSTALL.md](INSTALL.md)，包含 JDK、SDK/NDK、Rust Android 目标、模拟器及核验。等待用户安装输出后更新环境结论；不将设计批准或命令提供视为安装成功。
+按用户要求，后续安装由用户在终端执行，本轮未再次执行安装或修改 shell 配置。当前分步命令见 [Android 安装说明](../../clients/android/INSTALL.md)，包含 JDK、SDK/NDK、Rust Android 目标、模拟器及核验。等待用户安装输出后更新环境结论；不将设计批准或命令提供视为安装成功。

@@ -1,6 +1,6 @@
 # nanoPlayer 命令速查：推送、构建与发布
 
-核对日期：2026-09-17。以当前 `package.json`、`scripts/release/`、`scripts/android/` 和 `.github/workflows/` 的实际实现为准。
+核对日期：2026-09-22。以当前根目录 `package.json`、`scripts/release/`、`scripts/android/` 和 `.github/workflows/` 的实际实现为准；iOS 尚无可运行命令。
 
 ## 1. 先选对命令
 
@@ -50,7 +50,7 @@ pnpm release --platform desktop
 5. 执行 `git add --all`，提交改动，创建 `vX.Y.Z` 标签，原子推送 main 与该标签。
 6. 等待 GitHub Actions 构建桌面三平台、发布安装包/校验和/更新清单、部署官网并校验。
 
-提交范围包括新增、修改、删除的文件和安卓源码；忽略的未跟踪文件（如构建目录、密钥）不包含在内。只推送 main 和目标标签，不会推送所有分支。需要提前配置远端签名、更新器及官网部署凭据，详见 [发布流程](docs/release/RELEASE_PROCESS.md)。
+提交范围包括新增、修改、删除的文件和安卓源码；忽略的未跟踪文件（如构建目录、密钥）不包含在内。只推送 main 和目标标签，不会推送所有分支。需要提前配置远端签名、更新器及官网部署凭据，详见 [发布流程](../release/RELEASE_PROCESS.md)。
 
 ### `--resume` 的恢复边界
 
@@ -180,9 +180,9 @@ git push origin main
 
 实现来源：
 
-- [命令注册](package.json)
-- [平台分流与参数](scripts/release/platform-options.mjs)
-- [桌面发布](scripts/release/release.mjs)、[桌面参数](scripts/release/release-options.mjs)
-- [推送恢复](scripts/release/recover-push.mjs)、[发布恢复](scripts/release/resume-release.mjs)
-- [安卓打包](scripts/release/android.mjs)、[安卓工具脚本](scripts/android/)
-- [桌面构建工作流](.github/workflows/release.yml)、[发布与官网工作流](.github/workflows/publish-release.yml)
+- [命令注册](../../package.json)
+- [平台分流与参数](../../scripts/release/platform-options.mjs)
+- [桌面发布](../../scripts/release/release.mjs)、[桌面参数](../../scripts/release/release-options.mjs)
+- [推送恢复](../../scripts/release/recover-push.mjs)、[发布恢复](../../scripts/release/resume-release.mjs)
+- [安卓打包](../../scripts/release/android.mjs)、[安卓工具脚本](../../scripts/android/)
+- [桌面构建工作流](../../.github/workflows/release.yml)、[发布与官网工作流](../../.github/workflows/publish-release.yml)
