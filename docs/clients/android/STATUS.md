@@ -6,7 +6,7 @@ Updated 2026-09-23. User approved full phone/Pad development and P1–P5. Develo
 
 - Shared persisted library selection filters all browsing collections and playlist lists. Native root IDs handle opaque SAF document URIs; mixed playlist rows remain dimmed while excluded items are removed from the service queue, including recovered sessions.
 - Library details show full source URI, original added date and indexed counts on demand. Phone and Pad appearance controls are inline; light-mode cover tint is reduced. A/B/C comparisons were reviewed and A (16% tint, no blur) selected.
-- 49 Vitest tests and 68 browser E2E tests pass. Browser views at 390px and 800px have been visually checked for settings alignment and overflow. This is browser evidence; installation, native rendering and playback for the new APK require separate device verification.
+- 49 Vitest tests and 68 browser E2E tests pass. Browser views at 390px and 800px have been visually checked for settings alignment and overflow. Browser evidence is separate from the native package checks below.
 
 ## Implemented
 
@@ -39,6 +39,14 @@ Updated 2026-09-23. User approved full phone/Pad development and P1–P5. Develo
 - SHA-256: `086e82fbb5ecc3ba961cc9439c6362492190b943292c20f4859f7c1b9170c4b2`; Android debug certificate and APK v2 signature verified. This is a local test package, not a signed production release.
 - `pnpm check` passed (44 Vitest tests); `pnpm test:e2e` passed (66 tests), including 600/840px fixed Pad sidebar and phone theme choices; `pnpm website:build`, version consistency, Rust tests and Android build passed.
 - No emulator or physical device was connected for this build. Installation, rotation and split-screen on device remain to be checked.
+
+## 2026-09-27 package and emulator evidence
+
+- `v0.1.14-b1012` arm64-v8a debug APK: `artifacts/android/v0.1.14-b1012/debug/nanoPlayer-0.1.14-b1012-arm64-debug.apk`, 209,218,878 bytes.
+- SHA-256: `d98f5922dcc77a8ca69771e5c34d0fea1fce7f2fe4ea19e0bc2ab291015060be`. APK manifest versionName/versionCode/ABI and APK v2 Android Debug signature verified. This is a local test artifact, not a production-signed or publicly published Android release.
+- API 36 arm64 phone and Pad emulators installed the package. Phone instrumentation: 3/3 passed, including playback without the WebView, sequential replay, shuffle traversal, journal recovery and source WAV byte identity. The fixture now explicitly resets persisted shuffle/repeat before the sequential scenario; the first attempt inherited shuffle and failed its sequential expectation. Application code did not change in this test repair.
+- The test helper's rebuilt APK is byte-identical to the archived package above. Pad native WebView inspection verified inline appearance controls, original library creation date/URI details, and selection filtering from one fixture song to zero and back.
+- Screenshots and detailed local evidence: `artifacts/verification/v0.1.14/`. Physical-device, manufacturer/background-duration and production-signing acceptance remain open.
 
 ## Remaining acceptance and work
 

@@ -40,7 +40,7 @@ This document separates implemented behavior from release qualification. “Impl
 
 - Folder multi-selection intersects search and remains available for zero results; most-played tables omit duration, and home artwork follows its contextual track with built-in SVG fallback.
 - Chinese/English UI, full natural-completion play counting, and automatic desktop update checking (5 seconds after startup, then every 6 hours), manual download/install/restart are present in code.
-- The latest GitHub release verified on 2026-09-27 is v0.1.13, published 2026-09-23. The changes described above are prepared for v0.1.14; do not infer published artifact acceptance from local test results.
+- v0.1.14 was published on 2026-09-27. Workflow 36312551912 passed all three platform builds, publication, website deployment and live v0.1.14 manifest checks. The macOS archive was independently checked for version 0.1.14, x86_64 + arm64, published SHA-256 and updater signature validity. macOS remains ad-hoc signed (no Apple Developer ID/notarization acceptance). Windows/Linux native installation remains separately unverified.
 - OS code signing remains marked false in the download manifest; updater signatures are a separate mechanism. Package publication does not prove physical-device playback or cross-version installation.
 
 ## Remaining release qualification (external/manual gates)

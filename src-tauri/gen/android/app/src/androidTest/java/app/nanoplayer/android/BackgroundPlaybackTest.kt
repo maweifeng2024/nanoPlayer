@@ -45,6 +45,10 @@ class BackgroundPlaybackTest {
         val controller = future.get(30, TimeUnit.SECONDS)
         try {
             instrumentation.runOnMainSync {
+                // A previous app session can persist shuffle/repeat. This scenario
+                // verifies sequential replay before testing shuffle explicitly below.
+                controller.shuffleModeEnabled = false
+                controller.repeatMode = Player.REPEAT_MODE_OFF
                 controller.setMediaItems(listOf(
                     MediaItem.Builder().setMediaId(first).setUri(contentUri).build(),
                     MediaItem.Builder().setMediaId(second).setUri(contentUri).build()))

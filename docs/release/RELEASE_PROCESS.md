@@ -31,7 +31,7 @@ Repository Actions settings must allow GitHub Actions to create releases and pus
 
 ## Current status and recovery boundary (2026-09-27)
 
-The latest GitHub release verified on 2026-09-27 is v0.1.13 (published 2026-09-23). The next intended release is v0.1.14; verify its workflow and artifacts before reporting it as published. `--resume` is only for an existing tag whose push, workflow, publication, or website update was interrupted. Recovery checks tag/source identity and already-running/completed workflows to avoid duplicate publication. Tests use mock/local services and do not themselves publish anything. Native cross-version updater installation remains separately unverified.
+v0.1.14 was published on 2026-09-27. Workflow 36312551912 completed all three desktop builds, release publication, website deployment and live metadata verification. Android v0.1.14-b1012 is a local arm64 debug package; public Android distribution and production signing remain unaccepted. `--resume` is only for an existing tag whose push, workflow, publication, or website update was interrupted. Recovery checks tag/source identity and already-running/completed workflows to avoid duplicate publication. Tests use mock/local services and do not themselves publish anything. Native cross-version updater installation remains separately unverified.
 
 ## Android packaging
 
