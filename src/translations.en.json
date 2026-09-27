@@ -419,5 +419,8 @@
   "收起正在播放": "Collapse now playing",
   "收起": "Collapse",
   "重命名 {0}": "Rename {0}",
-  "删除 {0}": "Delete {0}"
+  "删除 {0}": "Delete {0}",
+  "勾选资源库 {0}": "Select library {0}",
+  "更多信息 {0}": "More information about {0}",
+  "未勾选此歌曲的资源库，播放时将跳过": "This track’s library is not selected; playback will skip it"
 }

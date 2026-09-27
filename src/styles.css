@@ -2450,7 +2450,7 @@ a:focus-visible {
   background: #f8f7f5cc;
 }
 [data-theme="light"] .ambient-background {
-  opacity: 0.68;
+  opacity: 0.28;
 }
 .popular-table .duration-cell {
   display: none;
@@ -3049,8 +3049,14 @@ select:focus-visible,
       color-mix(in srgb, var(--ambient-secondary) 36%, transparent),
       transparent calc(var(--ambient-spread, 74%) + 4%)
     );
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 24%, #000 96%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 24%, #000 96%, transparent);
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 24%, #000 96%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 82%, transparent);
+  mask-image:
+    linear-gradient(to right, transparent, #000 24%, #000 96%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 82%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 .queue-playback-status {
   margin: 0;
@@ -3123,3 +3129,19 @@ select:focus-visible,
 .playlist-back {
   margin-bottom: var(--space-6);
 }
+
+/* Keep the switch thumb centered within its track at either state. */
+.online-lyrics-setting .switch {
+  display: flex;
+  align-items: center;
+  flex: none;
+  width: 42px;
+  height: 26px;
+  min-width: 42px;
+  padding: var(--space-1);
+}
+.online-lyrics-setting .switch.on span { transform: translateX(16px); }
+.root-card:has(> input) { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; }
+.root-card > input { accent-color: var(--accent); width: 18px; height: 18px; }
+.root-info p { overflow-wrap: anywhere; white-space: normal; }
+.track-row.is-excluded { opacity: 0.38; }

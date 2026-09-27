@@ -21,6 +21,7 @@ pub const USER_FEATURES_MIGRATION: &str = include_str!("../../migrations/0005_us
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryRootDto {
+    pub added_at: String,
     pub id: i64,
     pub path: String,
     pub name: String,
@@ -33,6 +34,7 @@ pub struct LibraryRootDto {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackDto {
+    pub root_id: i64,
     pub id: i64,
     pub path: String,
     pub title: String,
@@ -420,8 +422,8 @@ impl LibraryDatabase {
     }
 
     pub fn snapshot(&self) -> Result<LibrarySnapshot, String> {
-        let roots = collect(&self.connection, "SELECT r.id, r.canonical_path, r.display_name, r.availability, COUNT(CASE WHEN m.availability='available' THEN 1 END), COALESCE(SUM(CASE WHEN m.availability='available' THEN m.size_bytes ELSE 0 END), 0), r.last_scanned_at FROM library_roots r LEFT JOIN media_files m ON m.library_root_id=r.id GROUP BY r.id ORDER BY r.created_at", |row| Ok(LibraryRootDto { id: row.get(0)?, path: row.get(1)?, name: row.get(2)?, availability: row.get(3)?, song_count: row.get(4)?, size_bytes: row.get(5)?, last_scanned_at: row.get(6)? }))?;
-        let tracks = collect(&self.connection, "SELECT t.id, COALESCE((SELECT content_uri FROM document_resources dr WHERE dr.media_file_id=m.id), r.canonical_path || '/' || m.relative_path), COALESCE(o.title, t.title), COALESCE(o.artist, a.name, '未知艺术家'), COALESCE(o.album, al.title), t.duration_ms, m.format, COALESCE(o.year, json_extract(t.raw_tags_json, '$.year')), COALESCE(o.genre, json_extract(t.raw_tags_json, '$.genre')), t.track_number, t.disc_number, r.created_at, ly.content, ly.source, ly.kind, EXISTS(SELECT 1 FROM artwork_cache ac WHERE ac.track_id=t.id), (SELECT content_hash FROM artwork_cache ac WHERE ac.track_id=t.id), json_extract(t.raw_tags_json, '$.trackTotal'), json_extract(t.raw_tags_json, '$.discTotal'), json_extract(t.raw_tags_json, '$.albumArtist'), COALESCE(o.composer, json_extract(t.raw_tags_json, '$.composer')), json_extract(t.raw_tags_json, '$.bitrate'), json_extract(t.raw_tags_json, '$.sampleRate'), json_extract(t.raw_tags_json, '$.channels'), json_extract(t.raw_tags_json, '$.musicbrainzRecordingId') FROM tracks t JOIN media_files m ON m.id=t.media_file_id JOIN library_roots r ON r.id=m.library_root_id JOIN albums al ON al.id=t.album_id LEFT JOIN track_artists ta ON ta.track_id=t.id AND ta.position=0 LEFT JOIN artists a ON a.id=ta.artist_id LEFT JOIN track_metadata_overrides o ON o.track_id=t.id LEFT JOIN lyrics ly ON ly.id=(SELECT id FROM lyrics WHERE track_id=t.id ORDER BY CASE WHEN source='manual' THEN 0 WHEN source='embedded' AND kind='synchronized' THEN 1 WHEN source='sidecar' AND kind='synchronized' THEN 2 WHEN source='lrclib' AND kind='synchronized' THEN 3 WHEN source='embedded' THEN 4 WHEN source='sidecar' THEN 5 WHEN source='lrclib' THEN 6 ELSE 7 END, id DESC LIMIT 1) WHERE m.availability='available' ORDER BY COALESCE(o.title, t.title) COLLATE NOCASE", |row| Ok(TrackDto { id: row.get(0)?, path: row.get(1)?, title: row.get(2)?, artist: row.get(3)?, album: row.get(4)?, duration_ms: row.get(5)?, format: row.get(6)?, year: row.get(7)?, genre: row.get(8)?, track_number: row.get(9)?, disc_number: row.get(10)?, added_at: row.get(11)?, lyrics: row.get(12)?, lyrics_source: row.get(13)?, lyrics_kind: row.get(14)?, has_artwork: row.get(15)?, artwork_hash: row.get(16)?, track_total: row.get(17)?, disc_total: row.get(18)?, album_artist: row.get(19)?, composer: row.get(20)?, bitrate: row.get(21)?, sample_rate: row.get(22)?, channels: row.get(23)?, musicbrainz_recording_id: row.get(24)? }))?;
+        let roots = collect(&self.connection, "SELECT r.id, r.canonical_path, r.display_name, r.availability, COUNT(CASE WHEN m.availability='available' THEN 1 END), COALESCE(SUM(CASE WHEN m.availability='available' THEN m.size_bytes ELSE 0 END), 0), r.last_scanned_at, r.created_at FROM library_roots r LEFT JOIN media_files m ON m.library_root_id=r.id GROUP BY r.id ORDER BY r.created_at", |row| Ok(LibraryRootDto { id: row.get(0)?, path: row.get(1)?, name: row.get(2)?, availability: row.get(3)?, song_count: row.get(4)?, size_bytes: row.get(5)?, last_scanned_at: row.get(6)?, added_at: row.get(7)? }))?;
+        let tracks = collect(&self.connection, "SELECT t.id, COALESCE((SELECT content_uri FROM document_resources dr WHERE dr.media_file_id=m.id), r.canonical_path || '/' || m.relative_path), COALESCE(o.title, t.title), COALESCE(o.artist, a.name, '未知艺术家'), COALESCE(o.album, al.title), t.duration_ms, m.format, COALESCE(o.year, json_extract(t.raw_tags_json, '$.year')), COALESCE(o.genre, json_extract(t.raw_tags_json, '$.genre')), t.track_number, t.disc_number, r.created_at, ly.content, ly.source, ly.kind, EXISTS(SELECT 1 FROM artwork_cache ac WHERE ac.track_id=t.id), (SELECT content_hash FROM artwork_cache ac WHERE ac.track_id=t.id), json_extract(t.raw_tags_json, '$.trackTotal'), json_extract(t.raw_tags_json, '$.discTotal'), json_extract(t.raw_tags_json, '$.albumArtist'), COALESCE(o.composer, json_extract(t.raw_tags_json, '$.composer')), json_extract(t.raw_tags_json, '$.bitrate'), json_extract(t.raw_tags_json, '$.sampleRate'), json_extract(t.raw_tags_json, '$.channels'), json_extract(t.raw_tags_json, '$.musicbrainzRecordingId'), m.library_root_id FROM tracks t JOIN media_files m ON m.id=t.media_file_id JOIN library_roots r ON r.id=m.library_root_id JOIN albums al ON al.id=t.album_id LEFT JOIN track_artists ta ON ta.track_id=t.id AND ta.position=0 LEFT JOIN artists a ON a.id=ta.artist_id LEFT JOIN track_metadata_overrides o ON o.track_id=t.id LEFT JOIN lyrics ly ON ly.id=(SELECT id FROM lyrics WHERE track_id=t.id ORDER BY CASE WHEN source='manual' THEN 0 WHEN source='embedded' AND kind='synchronized' THEN 1 WHEN source='sidecar' AND kind='synchronized' THEN 2 WHEN source='lrclib' AND kind='synchronized' THEN 3 WHEN source='embedded' THEN 4 WHEN source='sidecar' THEN 5 WHEN source='lrclib' THEN 6 ELSE 7 END, id DESC LIMIT 1) WHERE m.availability='available' ORDER BY COALESCE(o.title, t.title) COLLATE NOCASE", |row| Ok(TrackDto { id: row.get(0)?, path: row.get(1)?, title: row.get(2)?, artist: row.get(3)?, album: row.get(4)?, duration_ms: row.get(5)?, format: row.get(6)?, year: row.get(7)?, genre: row.get(8)?, track_number: row.get(9)?, disc_number: row.get(10)?, added_at: row.get(11)?, lyrics: row.get(12)?, lyrics_source: row.get(13)?, lyrics_kind: row.get(14)?, has_artwork: row.get(15)?, artwork_hash: row.get(16)?, track_total: row.get(17)?, disc_total: row.get(18)?, album_artist: row.get(19)?, composer: row.get(20)?, bitrate: row.get(21)?, sample_rate: row.get(22)?, channels: row.get(23)?, musicbrainz_recording_id: row.get(24)?, root_id: row.get(25)? }))?;
         let issues = collect(&self.connection, "SELECT id, library_root_id, path, category, COALESCE(detail, '') FROM scan_issues WHERE resolved_at IS NULL ORDER BY observed_at DESC", |row| Ok(IssueDto { id: row.get(0)?, root_id: row.get(1)?, path: row.get(2)?, category: row.get(3)?, detail: row.get(4)? }))?;
         let mut playlist_statement = self
             .connection
@@ -1076,6 +1078,8 @@ mod tests {
         let first = database.snapshot().unwrap();
         let id = first.tracks[0].id;
         let root = first.roots[0].id;
+        assert_eq!(first.tracks[0].root_id, root);
+        assert!(!first.roots[0].added_at.is_empty());
         assert_eq!(database.track_path(id).unwrap().as_deref(), Some(uri));
         database.save_user_state(&format!(r#"{{"ratings":{{"{id}":5}},"playlists":[{{"id":"fixture","name":"Test","trackIds":[{id}]}}]}}"#)).unwrap();
         database
@@ -1087,6 +1091,8 @@ mod tests {
         assert_eq!(restored.tracks.len(), 1);
         assert_eq!(restored.tracks[0].id, id);
         assert_eq!(restored.tracks[0].path, uri);
+        assert_eq!(restored.tracks[0].root_id, root);
+        assert_eq!(restored.roots[0].added_at, first.roots[0].added_at);
         assert_eq!(restored.playlists[0].track_ids, vec![id]);
         assert_eq!(restored.user_state.unwrap()["ratings"][id.to_string()], 5);
         assert_eq!(restored.roots[0].availability, "available");

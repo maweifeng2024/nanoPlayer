@@ -1,6 +1,6 @@
 import { chooseLibraryFolders } from "./importFolders";
 import { t } from "../i18n";
-import { AlertTriangle, Folder, FolderCheck, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertTriangle, Folder, FolderCheck, Info, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ConfirmDialog } from "../ConfirmDialog";
@@ -9,6 +9,9 @@ import { useNanoStore } from "../store";
 import { cancelScan, isTauri, removeLibraryRoot, rescanLibraryRoot } from "../tauriBridge";
 
 export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
+  const [expandedRootId, setExpandedRootId] = useState<number>();
+  const selectedRootIds = useNanoStore((state) => state.selectedRootIds);
+  const setSelectedRootIds = useNanoStore((state) => state.setSelectedRootIds);
   const [removeTarget, setRemoveTarget] = useState<{ id: number; name: string }>();
   const {
     roots,
@@ -177,6 +180,18 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
           <div className="root-list">
             {roots.map((root) => (
               <article className="root-card" key={root.id}>
+                <input
+                  type="checkbox"
+                  aria-label={t("勾选资源库 {0}", root.name)}
+                  checked={selectedRootIds === null || selectedRootIds.includes(root.id)}
+                  onChange={(event) => {
+                    const ids = selectedRootIds ?? roots.map((item) => item.id);
+                    const next = event.target.checked
+                      ? [...ids, root.id]
+                      : ids.filter((id) => id !== root.id);
+                    setSelectedRootIds(next.length === roots.length ? null : next);
+                  }}
+                />
                 <div className="root-icon">
                   {root.availability === "available" ? (
                     <FolderCheck size={22} />
@@ -193,20 +208,41 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
                       {root.availability === "available" ? t("可用") : t("不可用")}
                     </span>
                   </div>
-                  <p title={root.path}>{root.path}</p>
-                  <div className="root-meta">
-                    <span>
-                      {root.songCount}
-                      {t("首歌曲")}
-                    </span>
-                    <span>{formatBytes(root.sizeBytes)}</span>
-                    <span>
-                      {t("上次扫描")}
-                      {root.lastScannedAt ? formatDate(root.lastScannedAt, true) : t("尚未扫描")}
-                    </span>
-                  </div>
+                  {expandedRootId === root.id && (
+                    <div id={`root-info-${root.id}`} className="root-info">
+                      <p>{root.path}</p>
+                      <p>
+                        {t("添加日期")} ·{" "}
+                        {root.addedAt ? formatDate(root.addedAt, true) : t("未知")}
+                      </p>
+                      <div className="root-meta">
+                        <span>
+                          {root.songCount}
+                          {t("首歌曲")}
+                        </span>
+                        <span>{formatBytes(root.sizeBytes)}</span>
+                        <span>
+                          {t("上次扫描")}
+                          {root.lastScannedAt
+                            ? formatDate(root.lastScannedAt, true)
+                            : t("尚未扫描")}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="root-actions">
+                  <button
+                    className="icon-button"
+                    aria-label={t("更多信息 {0}", root.name)}
+                    aria-expanded={expandedRootId === root.id}
+                    aria-controls={`root-info-${root.id}`}
+                    onClick={() =>
+                      setExpandedRootId(expandedRootId === root.id ? undefined : root.id)
+                    }
+                  >
+                    <Info size={17} />
+                  </button>
                   <button
                     className="icon-button"
                     disabled={scanning}

@@ -45,7 +45,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useNanoStore } from "../store";
 import type { Track } from "../domain";
 import { formatBytes, formatDuration } from "../domain";
-import { trackInRoots } from "./folderFilter";
+import { trackIsSelected } from "./folderFilter";
 import { UpdateSettings } from "../updates/UpdateSettings";
 import { TrackTable } from "./TrackTable";
 import { Artwork } from "./Artwork";
@@ -91,12 +91,14 @@ export function ContentPage() {
       page: store.page,
       tracks: store.tracks,
       roots: store.roots,
+      selectedRootIds: store.selectedRootIds,
+      setSelectedRootIds: store.setSelectedRootIds,
       lastPlayedAt: store.lastPlayedAt,
       playCounts: store.playCounts,
       ratings: store.ratings,
     })),
   );
-  const [selectedRootIds, setSelectedRootIds] = useState<number[] | null>(null);
+  const { selectedRootIds, setSelectedRootIds } = state;
   const selectedRoots = state.roots.filter((root) => selectedRootIds?.includes(root.id));
   const [nativeSearchIds, setNativeSearchIds] = useState<number[] | null>(null);
   useEffect(() => {
@@ -134,13 +136,7 @@ export function ContentPage() {
               field?.toLocaleLowerCase().includes(query),
             )),
     );
-    if (state.page === "songs" && selectedRootIds !== null)
-      tracks = tracks.filter((track) =>
-        trackInRoots(
-          track.path,
-          state.roots.filter((root) => selectedRootIds.includes(root.id)),
-        ),
-      );
+    tracks = tracks.filter((track) => trackIsSelected(track, state));
     if (state.page === "recent" || state.page === "popular" || state.page === "rated")
       tracks = collectionTracks(tracks, state.page, state);
     if (state.page === "played")
@@ -220,10 +216,7 @@ export function ContentPage() {
                           );
                         }}
                       />
-                      <span>
-                        {root.name}
-                        <small>{root.path}</small>
-                      </span>
+                      <span>{root.name}</span>
                     </label>
                   ))}
                   {!state.roots.length && <p>{t("尚未添加文件夹")}</p>}
@@ -805,6 +798,8 @@ function CollectionPortrait({
 }
 
 function PlaylistPage() {
+  const roots = useNanoStore((state) => state.roots);
+  const selectedRootIds = useNanoStore((state) => state.selectedRootIds);
   const {
     playlists,
     selectedPlaylistId,
@@ -845,6 +840,7 @@ function PlaylistPage() {
   const items = playlist.trackIds
     .map((id) => tracks.find((track) => track.id === id))
     .filter(Boolean) as Track[];
+  const playableItems = items.filter((track) => trackIsSelected(track, { roots, selectedRootIds }));
   const chooseCover = async () => {
     if (!isTauri()) return setNotice(t("自定义歌单图片可在 Tauri 桌面版中选择。"));
     const chosen = isAndroid()
@@ -868,6 +864,7 @@ function PlaylistPage() {
   };
   const available = tracks.filter(
     (track) =>
+      trackIsSelected(track, { roots, selectedRootIds }) &&
       !playlist.trackIds.includes(track.id) &&
       (!query ||
         [track.title, track.artist, track.album].some((value) =>
@@ -924,11 +921,11 @@ function PlaylistPage() {
           <div className="inline-actions">
             <button
               className="primary-button"
-              disabled={!items.length}
+              disabled={!playableItems.length}
               onClick={() =>
                 playTrack(
-                  items[0].id,
-                  items.map((track) => track.id),
+                  playableItems[0].id,
+                  playableItems.map((track) => track.id),
                 )
               }
             >
@@ -1293,6 +1290,7 @@ function SettingsPage() {
           <button
             className={`switch ${onlineLyrics ? "on" : ""}`}
             role="switch"
+            aria-label={t("在线歌词")}
             aria-checked={onlineLyrics}
             onClick={() => setOnlineLyrics(!onlineLyrics)}
           >

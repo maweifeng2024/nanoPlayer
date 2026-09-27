@@ -34,13 +34,13 @@ test("folder multi-select survives empty results and combines with search", asyn
   await page.getByRole("button", { name: "歌曲", exact: true }).click();
   await page.getByLabel("按文件夹筛选", { exact: true }).click();
   await expect(page.getByLabel("所有文件夹", { exact: true })).toBeChecked();
-  await page.getByRole("checkbox", { name: "Rock /Music/Rock" }).uncheck();
+  await page.getByRole("checkbox", { name: "Rock" }).uncheck();
   await expect(page.locator(".track-row:not(.track-head)")).toHaveCount(4);
-  await page.getByRole("checkbox", { name: "Jazz /Music/Jazz" }).uncheck();
+  await page.getByRole("checkbox", { name: "Jazz" }).uncheck();
   await expect(page.getByText("这里还没有歌曲", { exact: true })).toBeVisible();
-  await page.getByRole("checkbox", { name: "Rock /Music/Rock" }).check();
+  await page.getByRole("checkbox", { name: "Rock" }).check();
   await expect(page.locator(".track-row:not(.track-head)")).toHaveCount(4);
-  await page.getByRole("checkbox", { name: "Jazz /Music/Jazz" }).check();
+  await page.getByRole("checkbox", { name: "Jazz" }).check();
   await expect(page.locator(".track-row:not(.track-head)")).toHaveCount(8);
   await page.getByLabel("所有文件夹", { exact: true }).check();
   await page.keyboard.press("Escape");

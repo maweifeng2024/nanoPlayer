@@ -1,3 +1,5 @@
+import { useShallow } from "zustand/react/shallow";
+import { visiblePlaylists } from "../library/folderFilter";
 import { useState, useMemo } from "react";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { useModalBehavior } from "../useModalBehavior";
@@ -79,7 +81,7 @@ export function PhoneSettingsButton() {
 }
 export function PhonePlaylists({ onCreate }: { onCreate: () => void }) {
   const tracks = useNanoStore((state) => state.tracks);
-  const playlists = useNanoStore((state) => state.playlists);
+  const playlists = useNanoStore(useShallow((state) => visiblePlaylists(state)));
   const setPage = useNanoStore((state) => state.setPage);
   const playTrack = useNanoStore((state) => state.playTrack);
   const renamePlaylist = useNanoStore((state) => state.renamePlaylist);

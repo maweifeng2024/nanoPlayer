@@ -1,3 +1,4 @@
+import { trackIsSelected } from "./library/folderFilter";
 import { t, setActiveLanguage } from "./i18n";
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
@@ -24,6 +25,8 @@ interface NanoState {
   collapsePlayer: () => void;
   selectedPlaylistId?: string;
   selectedCollection?: { kind: "album" | "artist"; value: string };
+  selectedRootIds: number[] | null;
+  setSelectedRootIds: (ids: number[] | null) => void;
   roots: LibraryRoot[];
   tracks: Track[];
   issues: ScanIssue[];
@@ -127,6 +130,7 @@ export function migratePlaybackStatistics(source: Record<string, unknown>) {
 const nativeStateKeys = [
   "visualDesignVersion",
   "statisticsVersion",
+  "selectedRootIds",
   "playlists",
   "ratings",
   "playCounts",
@@ -199,6 +203,35 @@ export const useNanoStore = create<NanoState>()(
       visualDesignVersion: currentVisualDesignVersion,
       statisticsVersion: 1,
       page: "home",
+      selectedRootIds: null,
+      setSelectedRootIds: (selectedRootIds) =>
+        set((state) => {
+          const selection = { ...state, selectedRootIds };
+          const ids = new Set(
+            state.tracks
+              .filter((track) => trackIsSelected(track, selection))
+              .map((track) => track.id),
+          );
+          const queue = state.queue.filter((id) => ids.has(id));
+          const keepCurrent = state.currentTrackId !== undefined && ids.has(state.currentTrackId);
+          const oldIndex = state.queue.indexOf(state.currentTrackId!);
+          const currentTrackId = keepCurrent
+            ? state.currentTrackId
+            : (state.queue.slice(oldIndex + 1).find((id) => ids.has(id)) ?? queue[0]);
+          return {
+            selectedRootIds,
+            queue,
+            shuffleOrder: state.shuffleOrder.filter((id) => ids.has(id)),
+            currentTrackId,
+            playing: state.playing && currentTrackId !== undefined,
+            queueEnded: false,
+            progressMs: keepCurrent ? state.progressMs : 0,
+            listenedSessionMs: keepCurrent ? state.listenedSessionMs : 0,
+            sessionCounted: keepCurrent ? state.sessionCounted : false,
+            sessionSeeked: keepCurrent ? state.sessionSeeked : false,
+            playbackRevision: state.playbackRevision + (keepCurrent ? 0 : 1),
+          };
+        }),
       roots: [demoRoot],
       tracks: demoTracks,
       issues: [],
@@ -259,7 +292,11 @@ export const useNanoStore = create<NanoState>()(
       setQuery: (query) => set({ query }),
       replaceLibrary: (roots, tracks, issues) =>
         set((state) => {
-          const ids = new Set(tracks.map((track) => track.id));
+          const ids = new Set(
+            tracks
+              .filter((track) => trackIsSelected(track, { ...state, roots }))
+              .map((track) => track.id),
+          );
           const keepPlayback = state.currentTrackId !== undefined && ids.has(state.currentTrackId);
           const preservedQueue = state.queue.filter((id) => ids.has(id));
           const fallbackTrackId = preservedQueue[0];
@@ -267,7 +304,7 @@ export const useNanoStore = create<NanoState>()(
             roots,
             tracks,
             issues,
-            queue: preservedQueue.length ? preservedQueue : tracks.map((track) => track.id),
+            queue: preservedQueue.length ? preservedQueue : [...ids],
             currentTrackId: keepPlayback ? state.currentTrackId : fallbackTrackId,
             playing: keepPlayback ? state.playing : Boolean(fallbackTrackId && state.playing),
             progressMs: keepPlayback ? state.progressMs : 0,
@@ -295,7 +332,16 @@ export const useNanoStore = create<NanoState>()(
         }),
       playTrack: (currentTrackId, context) =>
         set((state) => {
-          const queue = context?.length ? context : state.queue;
+          const allowed = new Set(
+            state.tracks.filter((track) => trackIsSelected(track, state)).map((track) => track.id),
+          );
+          if (!allowed.has(currentTrackId)) {
+            if (!context) return {};
+            const first = context.find((id) => allowed.has(id));
+            if (first === undefined) return {};
+            currentTrackId = first;
+          }
+          const queue = (context?.length ? context : state.queue).filter((id) => allowed.has(id));
           return {
             currentTrackId,
             playbackRevision: state.playbackRevision + 1,
@@ -314,17 +360,17 @@ export const useNanoStore = create<NanoState>()(
         if (state.queueEnded && state.queue.length) {
           const order = state.orderMode === "shuffle" ? shuffleTracks(state.queue) : state.queue;
           state.playTrack(order[0], state.queue);
-        } else if (state.currentTrackId === undefined && state.tracks.length) {
-          const currentTrackId = state.tracks[0].id;
-          const queue = state.tracks.map((track) => track.id);
-          set({
-            currentTrackId,
-            playing: true,
-            queue,
-            shuffleOrder: state.orderMode === "shuffle" ? shuffleTracks(queue, currentTrackId) : [],
-            queueEnded: false,
-          });
-        } else set({ playing: !state.playing });
+        } else if (state.currentTrackId === undefined) {
+          const tracks = state.tracks.filter((track) => trackIsSelected(track, state));
+          if (tracks.length)
+            state.playTrack(
+              tracks[0].id,
+              tracks.map((track) => track.id),
+            );
+        } else {
+          const track = state.tracks.find((item) => item.id === state.currentTrackId);
+          if (track && trackIsSelected(track, state)) set({ playing: !state.playing });
+        }
       },
       next: (automatic = false) => {
         const state = get();
@@ -451,6 +497,8 @@ export const useNanoStore = create<NanoState>()(
       toggleDrawer: (drawer) => set({ drawer: get().drawer === drawer ? null : drawer }),
       enqueue: (id) =>
         set((state) => {
+          const track = state.tracks.find((item) => item.id === id);
+          if (!track || !trackIsSelected(track, state)) return {};
           const queue = [...state.queue, id];
           return {
             queue,
@@ -460,6 +508,8 @@ export const useNanoStore = create<NanoState>()(
         }),
       playNext: (id) => {
         const state = get();
+        const track = state.tracks.find((item) => item.id === id);
+        if (!track || !trackIsSelected(track, state)) return;
         const index = Math.max(0, state.queue.indexOf(state.currentTrackId ?? state.queue[0]));
         const queue = [...state.queue.slice(0, index + 1), id, ...state.queue.slice(index + 1)];
         set({
@@ -585,6 +635,7 @@ export const useNanoStore = create<NanoState>()(
       partialize: ({
         visualDesignVersion,
         statisticsVersion,
+        selectedRootIds,
         playlists,
         ratings,
         playCounts,
@@ -605,6 +656,7 @@ export const useNanoStore = create<NanoState>()(
       }) => ({
         visualDesignVersion,
         statisticsVersion,
+        selectedRootIds,
         playlists,
         ratings,
         playCounts,

@@ -1,3 +1,4 @@
+import { trackIsSelected } from "./folderFilter";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "./Artwork";
 import { ConfirmDialog } from "../ConfirmDialog";
@@ -45,6 +46,8 @@ export function TrackTable({
   const phone = isAndroid();
   const state = useNanoStore(
     useShallow((store) => ({
+      roots: store.roots,
+      selectedRootIds: store.selectedRootIds,
       ratings: store.ratings,
       playCounts: store.playCounts,
       lastPlayedAt: store.lastPlayedAt,
@@ -171,7 +174,7 @@ export function TrackTable({
   };
   const playOnDoubleClick = (track: Track) => {
     window.clearTimeout(detailsTimer.current);
-    if (!selecting) state.playTrack(track.id, queueContext);
+    if (!selecting && trackIsSelected(track, state)) state.playTrack(track.id, queueContext);
   };
   const dropTargetAt = (x: number, y: number) => {
     const row = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-track-id]");
@@ -214,13 +217,28 @@ export function TrackTable({
   };
   const menu = (track: Track) => (
     <>
-      <button role="menuitem" onClick={() => state.playTrack(track.id, queueContext)} type="button">
+      <button
+        role="menuitem"
+        disabled={!trackIsSelected(track, state)}
+        onClick={() => trackIsSelected(track, state) && state.playTrack(track.id, queueContext)}
+        type="button"
+      >
         {t("立即播放")}
       </button>
-      <button role="menuitem" onClick={() => state.playNext(track.id)} type="button">
+      <button
+        role="menuitem"
+        disabled={!trackIsSelected(track, state)}
+        onClick={() => state.playNext(track.id)}
+        type="button"
+      >
         {t("下一首播放")}
       </button>
-      <button role="menuitem" onClick={() => state.enqueue(track.id)} type="button">
+      <button
+        role="menuitem"
+        disabled={!trackIsSelected(track, state)}
+        onClick={() => state.enqueue(track.id)}
+        type="button"
+      >
         {t("添加到队列")}
       </button>
       <button role="menuitem" type="button" onClick={() => state.setSelectedTrack(track.id)}>
@@ -241,7 +259,7 @@ export function TrackTable({
           </button>
         ))}
       </div>
-      {!(playlistId && phone)
+      {!playlistId
         ? state.playlists.map((playlist) => (
             <button
               role="menuitem"
@@ -405,10 +423,13 @@ export function TrackTable({
           const active = state.currentTrackId === track.id;
           return (
             <div
-              className={`track-row ${active ? "is-playing" : ""} ${orderedTrackId === track.id ? "is-order-selected" : ""} ${orderEffect?.trackId === track.id ? `order-moved-${orderEffect.direction}` : ""} ${draggingTrackId !== undefined && dragTarget?.trackId === track.id && draggingTrackId !== track.id ? `is-drag-target-${dragTarget.edge}` : ""}`}
+              className={`track-row ${!trackIsSelected(track, state) ? "is-excluded" : ""} ${active ? "is-playing" : ""} ${orderedTrackId === track.id ? "is-order-selected" : ""} ${orderEffect?.trackId === track.id ? `order-moved-${orderEffect.direction}` : ""} ${draggingTrackId !== undefined && dragTarget?.trackId === track.id && draggingTrackId !== track.id ? `is-drag-target-${dragTarget.edge}` : ""}`}
               role="row"
               tabIndex={0}
               aria-label={`${track.title} · ${track.artist}`}
+              title={
+                !trackIsSelected(track, state) ? t("未勾选此歌曲的资源库，播放时将跳过") : undefined
+              }
               aria-current={active ? "true" : undefined}
               onKeyDown={(event) => {
                 selectionKeys(event);
@@ -418,7 +439,7 @@ export function TrackTable({
                   event.preventDefault();
                   if (selecting) toggleSelected(track.id);
                   else if (event.key === " " && active) useNanoStore.getState().togglePlay();
-                  else state.playTrack(track.id, queueContext);
+                  else if (trackIsSelected(track, state)) state.playTrack(track.id, queueContext);
                 }
                 if (event.key.toLowerCase() === "m") {
                   event.preventDefault();
@@ -563,7 +584,9 @@ export function TrackTable({
                   <button
                     className="row-play"
                     aria-label={t("播放 {0}", track.title)}
-                    onClick={() => state.playTrack(track.id, queueContext)}
+                    onClick={() =>
+                      trackIsSelected(track, state) && state.playTrack(track.id, queueContext)
+                    }
                     type="button"
                   >
                     <Artwork
@@ -579,7 +602,7 @@ export function TrackTable({
                   className="track-title-button"
                   onClick={(event) => {
                     if (phone) {
-                      state.playTrack(track.id, queueContext);
+                      if (trackIsSelected(track, state)) state.playTrack(track.id, queueContext);
                       return;
                     }
                     if (event.detail === 0) state.setSelectedTrack(track.id);

@@ -1333,7 +1333,11 @@ html[data-platform="android"] {
 }
 [data-platform="android"] .home-track-list-body li {
   height: 56px;
-  background: color-mix(in srgb, var(--panel) 28%, transparent);
+  background: color-mix(in srgb, var(--panel) 16%, transparent);
+  border: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-radius: var(--radius-sm);
 }
 [data-platform="android"] .home-track-list-body li button {
@@ -1387,10 +1391,10 @@ html[data-platform="android"] {
   transform: translateX(14px);
 }
 [data-platform="android"] .appearance-setting .segmented {
-  grid-column: 1 / -1;
+  grid-column: 3;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 100%;
+  width: auto;
 }
 [data-platform="android"] .appearance-setting .segmented button {
   width: auto;
@@ -1398,7 +1402,7 @@ html[data-platform="android"] {
   white-space: nowrap;
 }
 [data-platform="android"] .appearance-setting {
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr) auto;
 }
 [data-device="phone"] .phone-navigation button,
 [data-platform="android"] .app-shell > .sidebar .nav-item {
@@ -1478,4 +1482,19 @@ html[data-platform="android"] {
   :root[data-device="pad"] .app-shell {
     --ambient-left: 72px;
   }
+}
+
+[data-platform="android"] .appearance-setting .segmented button {
+  min-width: 42px;
+  min-height: 32px;
+  height: 32px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-small);
+}
+[data-platform="android"] .root-card:has(> input) {
+  grid-template-columns: auto auto minmax(0, 1fr);
+}
+[data-platform="android"] .root-card .root-actions {
+  grid-column: 3;
+  justify-self: end;
 }

@@ -32,3 +32,5 @@ local.properties
 .android-local/
 
 /artifacts/
+
+/.preview/

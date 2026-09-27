@@ -29,9 +29,9 @@ The local command requires authenticated `gh` and Git access. Before choosing th
 
 Repository Actions settings must allow GitHub Actions to create releases and push the generated website manifest to `main`. If `main` is protected, grant the workflow/bot an explicit bypass for this single generated-file commit or replace that step with a reviewed pull request.
 
-## Current status and recovery boundary (2026-09-22)
+## Current status and recovery boundary (2026-09-27)
 
-The repository source and local tag are v0.1.12. The checked-in website download manifest is v0.1.11, so live publication and source/website consistency must be verified before citing v0.1.12 as the current public download. `--resume` is only for an existing tag whose push, workflow, publication, or website update was interrupted. Recovery checks tag/source identity and already-running/completed workflows to avoid duplicate publication. Tests use mock/local services and do not themselves publish anything. Native cross-version updater installation remains separately unverified.
+The latest GitHub release verified on 2026-09-27 is v0.1.13 (published 2026-09-23). The next intended release is v0.1.14; verify its workflow and artifacts before reporting it as published. `--resume` is only for an existing tag whose push, workflow, publication, or website update was interrupted. Recovery checks tag/source identity and already-running/completed workflows to avoid duplicate publication. Tests use mock/local services and do not themselves publish anything. Native cross-version updater installation remains separately unverified.
 
 ## Android packaging
 

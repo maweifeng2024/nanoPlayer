@@ -4,6 +4,13 @@ Updated: 2026-09-22 · Repository source/tag: 0.1.12 · Detailed verification be
 
 This document separates implemented behavior from release qualification. “Implemented” means the path exists in code and has proportionate automated verification; it does not mean long-duration or signed-release gates have been completed.
 
+## 2026-09-27 implementation update
+
+- Library selection is persisted in local/native user state and applied to home, songs, search, albums, artists and statistics. Mixed playlists remain visible with excluded rows dimmed; their playback queue excludes those rows. Changing selection prunes the current queue and advances an excluded current track, or stops if nothing remains.
+- Library cards default to folder names, with expandable path, original added date, song count, size and scan date. Native snapshots expose root identity independently of paths.
+- Playlist row menus no longer offer adding to another playlist. The online-lyrics switch is centered, light-mode artwork tint is reduced, and the desktop ambient layer fades vertically into the header.
+- Current verification: 49 Vitest tests, 68 browser E2E tests, Rust formatting/clippy, 16 Rust tests, the explicit 10,000-row search benchmark and the website build pass. Browser selection coverage includes desktop and Android. Published artifact evidence remains separate from local checks. No source-media writes were introduced.
+
 ## Implemented vertical slice
 
 - Multi-folder selection, canonical read-only roots, cancellable recursive scans, startup differential scans with progress, scan-run history, explicit unsupported/damaged/permission issues, stable file identity across moves, and debounced live filesystem reconciliation.
@@ -33,7 +40,7 @@ This document separates implemented behavior from release qualification. “Impl
 
 - Folder multi-selection intersects search and remains available for zero results; most-played tables omit duration, and home artwork follows its contextual track with built-in SVG fallback.
 - Chinese/English UI, full natural-completion play counting, and automatic desktop update checking (5 seconds after startup, then every 6 hours), manual download/install/restart are present in code.
-- The repository and local tag are at v0.1.12. The checked-in website download manifest is still v0.1.11 as of 2026-09-22, so publication consistency must be reverified before citing a current public desktop version.
+- The latest GitHub release verified on 2026-09-27 is v0.1.13, published 2026-09-23. The changes described above are prepared for v0.1.14; do not infer published artifact acceptance from local test results.
 - OS code signing remains marked false in the download manifest; updater signatures are a separate mechanism. Package publication does not prove physical-device playback or cross-version installation.
 
 ## Remaining release qualification (external/manual gates)

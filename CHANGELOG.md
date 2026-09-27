@@ -4,6 +4,13 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.14] - 2026-09-27
+
+- Persist library selection across clients; filter songs, albums, artists, home collections and playlists, retaining excluded playlist rows in gray and skipping them during playback.
+- Return native root IDs for Android document URIs and original library creation dates; show folder names with expandable details.
+- Remove add-to-other-playlist items from desktop playlist song menus; align the online-lyrics switch and soften desktop header/background transitions.
+- Reduce artwork tint contrast in light appearance. Keep Android appearance controls inline and use the selected light-transparency card treatment (16% panel tint, no blur).
+
 ## [0.1.13] - 2026-09-23
 
 - Aligned Android appearance choices and made home cards more translucent.

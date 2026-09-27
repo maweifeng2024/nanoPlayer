@@ -2,6 +2,12 @@
 
 Updated 2026-09-23. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
 
+## 2026-09-27 implementation update
+
+- Shared persisted library selection filters all browsing collections and playlist lists. Native root IDs handle opaque SAF document URIs; mixed playlist rows remain dimmed while excluded items are removed from the service queue, including recovered sessions.
+- Library details show full source URI, original added date and indexed counts on demand. Phone and Pad appearance controls are inline; light-mode cover tint is reduced. A/B/C comparisons were reviewed and A (16% tint, no blur) selected.
+- 49 Vitest tests and 68 browser E2E tests pass. Browser views at 390px and 800px have been visually checked for settings alignment and overflow. This is browser evidence; installation, native rendering and playback for the new APK require separate device verification.
+
 ## Implemented
 
 - Independent Android entry point/application ID `app.nanoplayer.android`, API 29 minimum; shared Rust database and library/lyrics/metadata/backup commands. Desktop audio/window/menu/updater initialization stays in `desktop.rs`.
@@ -10,7 +16,7 @@ Updated 2026-09-23. User approved full phone/Pad development and P1–P5. Develo
 - Media3 foreground service owns queue, playback, focus, headset disconnect handling and durable SQLite session journal. Activity/WebView destruction does not stop a playing queue. Process restoration does not autoplay.
 - Frontend native adapter serializes commands and applies native snapshots without feedback. Library refresh cannot replace the service queue. Rust merges session events by unique session ID; acknowledgements check the exact listened/count values. UI preference saves cannot overwrite native counts.
 - Shared desktop visuals and components. Phone has home/library/playlists navigation, library tabs and compact player; Pad keeps desktop menu names/order, with a fixed icon-only sidebar at 600–900px, scrollable wide tables, touch sizes and long-press More menu.
-- Android appearance choices read 系统/浅色/深色 and occupy equal cells. Home song cards use a 28% panel tint. Cover-derived background now extends behind the transparent header and fades into the system-bar surface.
+- Android appearance choices read 系统/浅色/深色 and occupy compact equal cells inline with the label. Home song cards use the user-selected A treatment: 16% panel tint, a subtle inset outline and no blur. Cover-derived background now extends behind the transparent header and fades into the system-bar surface.
 - Android safe-area/keyboard insets, system Back handling, native document selection and system sound settings; desktop updater and window dragging excluded.
 - Android packaging entry supports local debug/signed-release APK, separate versionCode, signature verification, SHA-256 and local manifest. It does not tag, upload, or change desktop update metadata.
 

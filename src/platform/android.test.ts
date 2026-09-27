@@ -148,3 +148,34 @@ it("an in-flight old snapshot cannot undo immediate shuffle feedback", async () 
   await flush();
   expect(useNanoStore.getState().orderMode).toBe("shuffle");
 });
+
+it("removes excluded roots from the native service queue including a restored session", async () => {
+  useNanoStore.setState({
+    selectedRootIds: [1],
+    tracks: useNanoStore
+      .getState()
+      .tracks.map((track) => ({ ...track, rootId: track.id === 2 ? 2 : 1 })),
+  });
+  vi.mocked(invoke).mockImplementation(async (_command, args) => {
+    const payload = (args as { payload: { action: string; queue?: string } }).payload;
+    if (payload.action === "setQueue" || payload.action === "updateQueue") {
+      const items = JSON.parse(payload.queue!) as Array<{ id: string }>;
+      return { ...snapshot, queue: items.map((item) => item.id), trackId: items[0]?.id };
+    }
+    return snapshot;
+  });
+  disconnect = connectAndroidPlayback();
+  await flush();
+  expect(useNanoStore.getState().queue).toEqual([1]);
+  const updates = vi
+    .mocked(invoke)
+    .mock.calls.filter(
+      (call) => (call[1] as { payload: { action: string } }).payload.action === "updateQueue",
+    );
+  expect(updates).toHaveLength(1);
+  expect(
+    JSON.parse((updates[0][1] as { payload: { queue: string } }).payload.queue).map(
+      (item: { id: string }) => item.id,
+    ),
+  ).toEqual(["1"]);
+});

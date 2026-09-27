@@ -1,3 +1,4 @@
+import { trackIsSelected } from "../library/folderFilter";
 import { invoke } from "@tauri-apps/api/core";
 import { useNanoStore } from "../store";
 
@@ -82,6 +83,14 @@ export function connectAndroidPlayback() {
       ...(snapshot.error ? { notice: snapshot.error } : {}),
     });
     applying = false;
+    if (
+      current.selectedRootIds !== null &&
+      queue.some((id) => {
+        const track = current.tracks.find((item) => item.id === id);
+        return !track || !trackIsSelected(track, current);
+      })
+    )
+      useNanoStore.getState().setSelectedRootIds(current.selectedRootIds);
   };
   const send = (action: string, args: Record<string, unknown> = {}) => {
     pending++;

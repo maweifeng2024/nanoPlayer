@@ -19,6 +19,7 @@ export type RepeatMode = "off" | "all" | "one";
 export type ThemeMode = "system" | "light" | "dark";
 
 export interface Track {
+  rootId?: number;
   id: number;
   path: string;
   title: string;
@@ -48,6 +49,7 @@ export interface Track {
 }
 
 export interface LibraryRoot {
+  addedAt?: string;
   id: number;
   path: string;
   name: string;

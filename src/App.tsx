@@ -1,3 +1,4 @@
+import { visiblePlaylists } from "./library/folderFilter";
 import { shortcut } from "./platform/shortcuts";
 import { chooseLibraryFolders } from "./library/importFolders";
 import {
@@ -77,7 +78,6 @@ export default function App() {
   const {
     page,
     setPage,
-    playlists,
     createPlaylist,
     query,
     setQuery,
@@ -98,7 +98,6 @@ export default function App() {
     useShallow((state) => ({
       page: state.page,
       setPage: state.setPage,
-      playlists: state.playlists,
       createPlaylist: state.createPlaylist,
       query: state.query,
       setQuery: state.setQuery,
@@ -117,6 +116,7 @@ export default function App() {
       selectedPlaylistId: state.selectedPlaylistId,
     })),
   );
+  const playlists = useNanoStore(useShallow((state) => visiblePlaylists(state)));
   const language = useNanoStore((state) => state.language);
   useEffect(() => {
     document.documentElement.lang = language;
@@ -153,6 +153,9 @@ export default function App() {
           });
         replaceLibrary(roots, tracks, issues);
         applyNativeUserState(userState);
+        const restored = useNanoStore.getState();
+        if (restored.selectedRootIds !== null)
+          restored.setSelectedRootIds(restored.selectedRootIds);
         if (nativePlaylists?.length) replacePlaylists(nativePlaylists);
         if (isAndroid()) {
           const loaded = useNanoStore.getState();

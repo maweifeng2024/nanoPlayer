@@ -99,7 +99,7 @@ test.describe("Android touch interactions", () => {
           .locator("li")
           .first()
           .evaluate((element) => getComputedStyle(element).backgroundColor),
-      ).toMatch(/0\.28/);
+      ).toMatch(/0\.16/);
       const positions = await list.locator("li").evaluateAll((nodes) =>
         nodes.map((n) => {
           const r = n.getBoundingClientRect();
