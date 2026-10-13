@@ -19,6 +19,41 @@ import java.util.UUID
 
 /** Owns the queue, natural transitions and durable progress even with no Activity/WebView. */
 class PlaybackService : MediaSessionService() {
+    companion object {
+        private val sleepTimer = SleepTimerState()
+        val sleepDeadline get() = sleepTimer.deadline
+        val sleepFinishTrack get() = sleepTimer.finishTrack
+        val sleepWaiting get() = sleepTimer.waiting
+    }
+    private val sleepTick = object : Runnable {
+        override fun run() {
+            when (sleepTimer.expire(SystemClock.elapsedRealtime(), player.mediaItemCount > 0, player.playbackState == Player.STATE_ENDED)) {
+                SleepTimerState.Expiry.FINISH_TRACK -> player.pauseAtEndOfMediaItems = true
+                SleepTimerState.Expiry.PAUSE -> { player.pause(); cancelSleepTimer() }
+                SleepTimerState.Expiry.NONE -> Unit
+            }
+            if (sleepDeadline > 0 && !sleepWaiting) handler.postDelayed(this, 250)
+        }
+    }
+
+    private fun cancelSleepTimer() {
+        handler.removeCallbacks(sleepTick)
+        sleepTimer.cancel()
+        player.pauseAtEndOfMediaItems = false
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == "app.nanoplayer.SLEEP_TIMER") {
+            val minutes = intent.getIntExtra("minutes", 0)
+            if (minutes in 0..1440) {
+                cancelSleepTimer()
+                sleepTimer.start(minutes, intent.getBooleanExtra("finishTrack", false), SystemClock.elapsedRealtime())
+                if (minutes > 0) handler.post(sleepTick)
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     private lateinit var player: ExoPlayer
     private lateinit var journal: PlaybackJournal
     private var session: MediaSession? = null
@@ -52,6 +87,7 @@ class PlaybackService : MediaSessionService() {
                 if (enabled) resetShuffleOrder()
             }
             override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
+                if (sleepWaiting && reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK) { player.pause(); cancelSleepTimer() }
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED && player.shuffleModeEnabled) resetShuffleOrder()
                 checkpoint()
                 trackId = item?.mediaId ?: ""
@@ -69,7 +105,10 @@ class PlaybackService : MediaSessionService() {
                 checkpoint()
             }
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_ENDED) { checkpoint(); accounting.complete(durationMs); checkpoint() }
+                if (state == Player.STATE_ENDED) { checkpoint(); accounting.complete(durationMs); checkpoint(); if (sleepWaiting) { player.pause(); cancelSleepTimer() } }
+            }
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (!playWhenReady && sleepWaiting && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) cancelSleepTimer()
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) { checkpoint(); wasPlaying = isPlaying }
             override fun onEvents(p: Player, events: Player.Events) { revision++; if (player.duration > 0) durationMs = player.duration; checkpoint() }
@@ -137,6 +176,7 @@ class PlaybackService : MediaSessionService() {
         if (!player.playWhenReady || player.mediaItemCount == 0) stopSelf()
     }
     override fun onDestroy() {
+        cancelSleepTimer()
         handler.removeCallbacksAndMessages(null)
         checkpoint()
         session?.release()

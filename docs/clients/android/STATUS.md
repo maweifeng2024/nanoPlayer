@@ -1,6 +1,16 @@
 # Android implementation status
 
-Updated 2026-09-23. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+Updated 2026-10-13; local source version 0.1.15. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+
+
+## 2026-10-13 local implementation (0.1.15)
+
+- Shared UI: 12px auxiliary text, 44px medium controls and Android minimum touch targets; all shared song-list rows reserve an artwork-safe playback-accent gutter.
+- Shared lyrics: memoized plain/enhanced LRC parsing, progressive word fill, synchronized multiline display, persistent 16–40px font size and per-song ±10-second correction. The drawer and expanded player share word rendering. Online lookup remains opt-in LRCLIB; macOS system overlays, translation generation and additional providers are not implemented by this change.
+- Upgrade safety: transactional SQLite schema migration/adoption (user_version 6), failed-upgrade rollback and newer-schema rejection; frontend/native preference schema 4 defaults, numeric/shape validation, future-version guard and immediate write-back.
+- Verified locally: 54 Vitest tests, 76 browser E2E tests (including visual baselines at desktop/phone/Pad sizes), Rust format/clippy, 18 Rust tests plus the explicit 10,000-row FTS benchmark, source-byte preservation test, 15 release-script tests and website build pass. Android plugin compilation and all 10 native unit tests pass (five cover sleep timing).
+- Android sleep timing: expanded now-playing page offers 15/30/60 minutes or custom 1–1440 minutes, immediate/end-of-song modes, cancel/replace, remaining time and waiting feedback. The service uses monotonic time and pause-at-end; UI suspension does not own the timer. Service/process shutdown cancels it. No emulator or physical device was attached during this run; real lockscreen, long-duration, repeat behavior and battery-policy acceptance remain open.
+- Verified local debug package: `artifacts/android/v0.1.15-b1013/debug/nanoPlayer-0.1.15-b1013-arm64-debug.apk`; applicationId `app.nanoplayer.android`, versionName 0.1.15 / versionCode 1013, arm64-v8a, minSdk 29, 209233054 bytes. aapt metadata, ZIP integrity and APK v2 debug signing pass. SHA-256: `3a0098a25210b20eec78f688a16bf493c9658d409a9aba16e51e3c29b4e3cfdf`. Local verification report: `artifacts/verification/v0.1.15/summary.md`. APK installation/launch and device gates were not run because no device was attached.
 
 ## 2026-09-27 implementation update
 

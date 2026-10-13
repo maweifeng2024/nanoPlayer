@@ -91,3 +91,11 @@ The user confirmed retaining navigation while improving existing screens. Deskto
 Home lists grow with their contents and use the page scroller. All themes have a stable frame color; artwork-derived colors fade to that same color at content boundaries. Placeholder artwork retains the previous real cover's palette. Button pressed states remain visible in both themes.
 
 Current evidence and limitations are recorded in the [Android status](../clients/android/STATUS.md). The dated shared-UI implementation report is archived at [`../archive/ui/UI_REFACTOR_2026-09-19.md`](../archive/ui/UI_REFACTOR_2026-09-19.md). Reproducible Chrome screenshots are in `tests/e2e/ui-visual.spec.ts-snapshots/`; the six durable references are in `docs/design/baseline/`. Native Android queue replay/shuffle is covered by emulator instrumentation; this is not physical-device acceptance.
+
+## October 2026 sizing and lyrics
+
+The shared micro type token is 12px and medium control token is 44px. Android icon, secondary, text and context-menu buttons have a 44px minimum target. Song rows retain a 12px inline gutter on desktop, phone and Pad to keep the inset playback accent clear of artwork. The 600–900px icon-only Pad sidebar remains unchanged.
+
+The lyric drawer supports a persistent 16–40px font size (24px default) and per-track ±10-second offset in 0.2-second steps. Positive user adjustment advances the display; seeking subtracts the same adjustment. Enhanced LRC `<mm:ss.xxx>` markers support progressive word fill. Plain LRC remains line-synchronized, and same-time lines can display original/translation together. Both the drawer and immersive now-playing page share word rendering. No synthetic word timing or translation is generated. Manual lyric choices and offline caches keep their existing priority; online queries remain opt-in.
+
+Android sleep timing is accessed from the expanded now-playing page. It offers 15, 30 and 60 minutes or a custom integer from 1–1440, with immediate expiry or end-of-current-song behavior. Closing the panel restores focus; Escape and Android back close it.

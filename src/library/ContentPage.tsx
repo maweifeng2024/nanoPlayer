@@ -1,3 +1,5 @@
+import { LyricText } from "../lyrics/LyricText";
+import { SleepTimer } from "../player/SleepTimer";
 import { shortcut } from "../platform/shortcuts";
 import { isAndroid, androidCommand } from "../platform/android";
 import { collectionTracks } from "./collectionTracks";
@@ -486,6 +488,7 @@ function NoResults() {
 function NowPlayingPage() {
   const state = useNanoStore();
   const track = state.tracks.find((item) => item.id === state.currentTrackId);
+  const parsed = useMemo(() => parseLyrics(track?.lyrics), [track?.lyrics]);
   if (!track)
     return (
       <div className="empty-state">
@@ -499,8 +502,8 @@ function NowPlayingPage() {
         </button>
       </div>
     );
-  const parsed = parseLyrics(track.lyrics);
-  const active = activeLyricIndex(parsed.lines, state.progressMs);
+  const offset = state.lyricOffsets[track.id] ?? 0;
+  const active = activeLyricIndex(parsed.lines, state.progressMs + offset);
   const start = Math.max(0, active - 2);
   const lyrics = parsed.lines.slice(start, Math.max(8, active + 6));
   return (
@@ -527,23 +530,31 @@ function NowPlayingPage() {
         <h2>
           {track.artist} · {track.album}
         </h2>
-        <div className="immersive-lyrics">
+        <div
+          className="immersive-lyrics"
+          style={{ "--font-lyric": `${state.lyricFontSize}px` } as CSSProperties}
+        >
           {lyrics.length ? (
             lyrics.map((line, index) => {
               const originalIndex = start + index;
               return (
                 <button
-                  className={originalIndex === active ? "active" : ""}
+                  className={active >= 0 && line.at === parsed.lines[active].at ? "active" : ""}
                   disabled={line.at === null}
                   onClick={() => {
                     if (line.at !== null) {
-                      state.seekPlayback(line.at);
-                      if (isAndroid()) void androidCommand("seek", { positionMs: line.at });
+                      state.seekPlayback(Math.max(0, line.at - offset));
+                      if (isAndroid())
+                        void androidCommand("seek", { positionMs: Math.max(0, line.at - offset) });
                     }
                   }}
                   key={`${line.at}-${index}`}
                 >
-                  {line.text}
+                  <LyricText
+                    line={line}
+                    progressMs={state.progressMs + offset}
+                    endMs={parsed.lines[originalIndex + 1]?.at}
+                  />
                 </button>
               );
             })
@@ -551,6 +562,7 @@ function NowPlayingPage() {
             <p>{t("暂无歌词，可在右侧歌词抽屉查找本地或在线匹配。")}</p>
           )}
         </div>
+        {isAndroid() && <SleepTimer />}
         <button className="secondary-button" onClick={() => state.toggleDrawer("lyrics")}>
           <Mic2 size={15} />
           {t("打开歌词抽屉")}

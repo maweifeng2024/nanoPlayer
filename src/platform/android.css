@@ -1498,3 +1498,18 @@ html[data-platform="android"] {
   grid-column: 3;
   justify-self: end;
 }
+
+/* Shared gutter keeps the active stripe clear of artwork on phone and Pad. */
+[data-platform="android"] .track-table.cover-track-table .track-row {
+  padding-inline: var(--space-3);
+}
+[data-platform="android"] :is(.icon-button, .text-button, .secondary-button, .context-menu button) {
+  min-height: 44px;
+  min-width: 44px;
+}
+[data-device="phone"] .mobile-player-actions {
+  gap: var(--space-1);
+}
+[data-device="phone"] .lyrics-panel > button {
+  font-size: var(--font-lyric);
+}

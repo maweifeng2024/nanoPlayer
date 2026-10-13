@@ -7,6 +7,7 @@ export const androidCommand = <T = unknown>(action: string, args: Record<string,
   invoke<T>(
     [
       "snapshot",
+      "sleepTimer",
       "setQueue",
       "updateQueue",
       "play",
@@ -42,6 +43,10 @@ interface NativePlayback {
   playCounts: Record<number, number>;
   lastPlayedAt?: Record<number, string>;
   error?: string;
+  sleepRemainingMs?: number;
+  sleepActive?: boolean;
+  sleepWaiting?: boolean;
+  sleepFinishTrack?: boolean;
 }
 
 /** One serialized command stream; native snapshots never feed back as user commands. */
@@ -69,6 +74,13 @@ export function connectAndroidPlayback() {
       ...(order
         ? { shuffleOrder: sameIds(order, current.shuffleOrder) ? current.shuffleOrder : order }
         : {}),
+      sleepTimer: snapshot.sleepActive
+        ? {
+            remainingMs: snapshot.sleepRemainingMs ?? 0,
+            waiting: snapshot.sleepWaiting ?? false,
+            finishTrack: snapshot.sleepFinishTrack ?? false,
+          }
+        : undefined,
       queueEnded: snapshot.ended ?? false,
       currentTrackId:
         snapshot.trackId && Number.isFinite(Number(snapshot.trackId))

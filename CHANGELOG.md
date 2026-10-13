@@ -4,6 +4,13 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.15] - 2026-10-13
+
+- Separate playing-row accents from artwork in all shared desktop/Android song lists; increase small text and unify 44px touch controls.
+- Add Enhanced LRC word timing with progressive karaoke fill, per-song timing adjustment, persistent lyric font size, and shared drawer/now-playing rendering.
+- Upgrade SQLite schemas transactionally with `user_version`, legacy adoption, rollback on failure and newer-schema rejection; version and validate lyric preferences in local/native state.
+- Add Android service-owned sleep timers (15/30/60 minutes and custom 1–1440 minutes), immediate expiry or finish-current-song mode, cancellation and countdown restoration after reopening the UI.
+
 ## [0.1.14] - 2026-09-27
 
 - Persist library selection across clients; filter songs, albums, artists, home collections and playlists, retaining excluded playlist rows in gray and skipping them during playback.

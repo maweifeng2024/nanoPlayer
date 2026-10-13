@@ -24,3 +24,5 @@ Start here instead of relying on dated files discovered by search.
 ## Archive
 
 [`archive/`](archive/README.md) contains dated audits, proposals, implementation notes, and superseded visual evidence. These files explain earlier decisions but are not current status or command authority.
+
+Latest dated review: [2026-10-13 UI, lyrics and upgrade review](archive/2026-10-13-ui-lyrics-upgrade-review.md).

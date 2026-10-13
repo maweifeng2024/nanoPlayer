@@ -25,3 +25,14 @@ describe("LRC parser", () => {
     });
   });
 });
+
+it("keeps enhanced LRC word times with global offsets", () => {
+  const result = parseLyrics("[offset:100]\n[00:01.00]<00:01.00>Hello <00:02.00>world<00:03.00>");
+  expect(result.lines[0].text).toBe("Hello world");
+  expect(result.lines[0].words).toEqual([
+    { at: 1100, text: "Hello " },
+    { at: 2100, text: "world" },
+    { at: 3100, text: "" },
+  ]);
+  expect(activeLyricIndex(result.lines, 1099)).toBe(-1);
+});

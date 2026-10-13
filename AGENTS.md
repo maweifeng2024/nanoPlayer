@@ -52,17 +52,23 @@ See `docs/development/COMMANDS.md` for arguments and boundaries.
 
 ## Versioning and Release Completion
 
-Every completed product, runtime, packaging, or release-script change must leave the repository with a new installable version unless the user explicitly requests a local-only experiment or says not to release. A documentation-only or file-organization-only change that does not alter executable inputs, packaging, or published metadata does not allocate a version or trigger a release.
+The user runs commands that push to GitHub, create or publish release tags, trigger remote workflows, build desktop installers, or publish/deploy desktop releases and the website. The agent must not run these operations automatically, including through equivalent Git, GitHub CLI, API, or helper-script calls. Unless the user explicitly authorizes execution for the current task, finish the local changes and checks, then provide the exact commands for the user to run. This execution boundary takes precedence over automated release instructions elsewhere in the repository.
 
-1. Root `package.json` is the single shared `versionName` authority. Choose a new unused stable semantic version and pass it explicitly to the release command; never recreate or move an existing tag.
+The agent may still run local development checks, frontend builds, tests and toolchain diagnosis. Android and other non-desktop clients continue to build and verify locally; the agent should produce their local test artifacts when the required toolchain is available. Do not wait for the user's desktop publication before completing these local builds. Production signing or public distribution remains a separate, explicitly authorized action.
+
+Every completed product, runtime, packaging, or release-script change must be prepared for a new installable version unless the user explicitly requests a local-only experiment or says not to release. Agent completion means local implementation/checks, applicable local client artifacts, and a desktop release command handoff; it does not require executing or waiting for the user's desktop release. A documentation-only or file-organization-only change that does not alter executable inputs, packaging, or published metadata does not allocate a version or trigger a release.
+
+1. Root `package.json` is the single shared `versionName` authority. Choose a new unused stable semantic version and include it explicitly in the command handed to the user; never recreate or move an existing tag. If local Android packaging needs the version first, synchronize local version files with `node scripts/release/set-version.mjs <new-version>` and verify with `node scripts/release/check-version.mjs`. Hand off that same version for desktop release.
 2. Android `packaging/android/version-code.json` increments exactly once per intended Android build. Reuse that allocated code only when retrying the same failed build.
 3. A future iOS client must add a tracked monotonically increasing build-number authority under `packaging/ios/` before its first installable build. Never derive or silently reuse it from Android `versionCode`.
-4. Before desktop publication, run the gates in `docs/release/RELEASE_PROCESS.md` without `--skip-checks`.
-5. Publish desktop code and artifacts from `main` with `pnpm release <new-version>`. If checks fail before tag creation, fix and rerun the same version. Use `pnpm release --resume vX.Y.Z` only after a tag exists and push/workflow/publication was interrupted.
-6. After the shared version is synchronized and desktop succeeds, generate Android test artifacts with `pnpm release:android -- --debug`; production signing requires the private signing environment.
+4. Run applicable local gates in `docs/release/RELEASE_PROCESS.md` and report their results. The desktop release command also runs its required gates; never recommend `--skip-checks` for publication.
+5. Tell the user to run `pnpm release <new-version>` from `main` to push code, build desktop installers and publish artifacts. Do not run it on the user's behalf by default. If checks fail before tag creation, fix locally and hand back the same version command. Recommend `pnpm release --resume vX.Y.Z` only after a tag exists and push/workflow/publication was interrupted. Do not create, push, resume or monitor a remote release merely to finish an implementation task.
+6. After synchronizing the shared version locally, generate Android test artifacts with `pnpm release:android -- --debug`; desktop publication is not a prerequisite. Verify the local APK and report its path, version/build number, ABI, checksum and signing status. Other non-desktop clients follow their existing local lifecycle commands; do not invent commands for clients that are not yet executable.
 7. Do not claim a client release until its artifact, version/build number, architecture, checksum, signature, and required workflow/device gates are verified. State external blockers explicitly.
 
 One intended release uses one semantic version and one per-client build number. An older artifact path is never evidence for the current build.
+
+The final handoff must distinguish completed local work from user-run publication. List only the commands still needed, in execution order, with a brief explanation of their effects. Do not recommend a separate `git push` when `pnpm release <new-version>` already performs it. Do not claim desktop publication or remote workflow success before it has been verified.
 
 ## Documentation Rules
 

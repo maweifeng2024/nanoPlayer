@@ -42,3 +42,7 @@ Android behavior and release requirements are in [`../clients/android/PLAN.md`](
 ## iOS/iPadOS boundary
 
 No iOS/iPadOS build or release command exists. Before the first installable build, add a monotonic iOS build-number authority, signing/export contract, simulator/device gates, and verified artifact reporting as described in [`../clients/ios/README.md`](../clients/ios/README.md). Do not route iOS through desktop or Android release behavior by default.
+
+## 2026-10-13 local version preparation
+
+0.1.15 is synchronized locally, with Android versionCode 1013 allocated once for this build (reuse only on retries). Local UI/lyrics/upgrade/sleep-timer behavior and verification boundaries are in the current client STATUS documents. Desktop publication remains user-run with `pnpm release 0.1.15` from `main`; this preparation does not mean that desktop artifacts or a remote release exist.

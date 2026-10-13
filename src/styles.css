@@ -24,7 +24,7 @@
   --radius-lg: 16px;
   --radius-pill: 999px;
   --control-sm: 32px;
-  --control-md: 40px;
+  --control-md: 44px;
   --cover-xs: 32px;
   --cover-sm: 40px;
   --cover-md: 48px;
@@ -36,7 +36,7 @@
   --duration-base: 180ms;
   --duration-slow: 280ms;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
-  --font-micro: 11px;
+  --font-micro: 12px;
   --font-page-title: 32px;
   --font-section-title: 17px;
   --font-body: 14px;
@@ -3140,8 +3140,121 @@ select:focus-visible,
   min-width: 42px;
   padding: var(--space-1);
 }
-.online-lyrics-setting .switch.on span { transform: translateX(16px); }
-.root-card:has(> input) { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; }
-.root-card > input { accent-color: var(--accent); width: 18px; height: 18px; }
-.root-info p { overflow-wrap: anywhere; white-space: normal; }
-.track-row.is-excluded { opacity: 0.38; }
+.online-lyrics-setting .switch.on span {
+  transform: translateX(16px);
+}
+.root-card:has(> input) {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+.root-card > input {
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+.root-info p {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.track-row.is-excluded {
+  opacity: 0.38;
+}
+
+/* Playback stripe has its own gutter across every shared song list. */
+.track-table.cover-track-table .track-row:not(.track-header) {
+  padding-inline: var(--space-3);
+}
+.sleep-timer-panel {
+  position: fixed;
+  z-index: 100;
+  bottom: calc(var(--player-height) + var(--navigation-height) + var(--space-3));
+  right: var(--space-4);
+  width: min(340px, calc(100vw - var(--space-6)));
+  max-height: 70dvh;
+  overflow: auto;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: 0 8px 40px #0008;
+  font-size: var(--font-body);
+}
+.sleep-timer-panel label {
+  display: grid;
+  gap: var(--space-2);
+}
+.sleep-timer-panel :is(button, select, input) {
+  min-height: 44px;
+}
+.sleep-presets {
+  display: flex;
+  gap: var(--space-2);
+}
+.sleep-timer > button {
+  display: flex;
+  gap: var(--space-1);
+}
+.lyrics-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.lyrics-controls label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.lyrics-controls input {
+  width: 100px;
+}
+.lyrics-panel {
+  --font-lyric: 24px;
+}
+.lyrics-panel > button {
+  font-size: var(--font-lyric);
+  line-height: 1.65;
+  transition: color 180ms ease;
+}
+.lyric-word {
+  color: var(--muted);
+}
+.lyric-word.sung {
+  color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lyrics-panel > button {
+    transition: none;
+  }
+}
+
+.immersive-lyrics > button {
+  font-size: var(--font-lyric, var(--font-section-title));
+}
+.now-playing-copy > .sleep-timer {
+  margin-bottom: var(--space-3);
+}
+.now-playing-copy .sleep-timer > button {
+  width: auto;
+  padding-inline: var(--space-3);
+  min-height: 44px;
+}
+
+.lyric-word {
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--word-fill),
+    var(--muted) var(--word-fill)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@media (forced-colors: active) {
+  .lyric-word {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}

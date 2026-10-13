@@ -104,37 +104,52 @@ pub struct LibraryDatabase {
     path: PathBuf,
 }
 
+const SCHEMA_VERSION: i64 = 6;
+
+/// Upgrade old installations atomically before any query uses the new schema.
+fn migrate_database(connection: &mut Connection) -> Result<(), String> {
+    let version: i64 = connection
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .map_err(to_string)?;
+    if version > SCHEMA_VERSION {
+        return Err(
+            "Database was created by a newer nanoPlayer; update the application before opening it."
+                .into(),
+        );
+    }
+    let transaction = connection.transaction().map_err(to_string)?;
+    let has_schema: bool = transaction.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='library_roots')",
+        [], |row| row.get(0),
+    ).map_err(to_string)?;
+    let migrations = [
+        INITIAL_MIGRATION,
+        APP_STATE_MIGRATION,
+        ARTIST_RELATIONS_MIGRATION,
+        SCAN_RUNS_MIGRATION,
+        USER_FEATURES_MIGRATION,
+        include_str!("../../migrations/0006_android_resources.sql"),
+    ];
+    for (index, sql) in migrations.iter().enumerate() {
+        let target = index as i64 + 1;
+        if target <= version || (target == 1 && has_schema) {
+            continue;
+        }
+        transaction.execute_batch(sql).map_err(to_string)?;
+    }
+    transaction
+        .pragma_update(None, "user_version", SCHEMA_VERSION)
+        .map_err(to_string)?;
+    transaction.commit().map_err(to_string)
+}
+
 impl LibraryDatabase {
     pub fn open(path: &Path) -> Result<Self, String> {
-        let connection = Connection::open(path).map_err(to_string)?;
+        let mut connection = Connection::open(path).map_err(to_string)?;
         connection
             .execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
             .map_err(to_string)?;
-        let has_schema: bool = connection.query_row(
-            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='library_roots')",
-            [],
-            |row| row.get(0),
-        ).map_err(to_string)?;
-        if !has_schema {
-            connection
-                .execute_batch(INITIAL_MIGRATION)
-                .map_err(to_string)?;
-        }
-        connection
-            .execute_batch(APP_STATE_MIGRATION)
-            .map_err(to_string)?;
-        connection
-            .execute_batch(ARTIST_RELATIONS_MIGRATION)
-            .map_err(to_string)?;
-        connection
-            .execute_batch(SCAN_RUNS_MIGRATION)
-            .map_err(to_string)?;
-        connection
-            .execute_batch(USER_FEATURES_MIGRATION)
-            .map_err(to_string)?;
-        connection
-            .execute_batch(include_str!("../../migrations/0006_android_resources.sql"))
-            .map_err(to_string)?;
+        migrate_database(&mut connection)?;
         Ok(Self {
             connection,
             path: path.to_owned(),
@@ -1018,10 +1033,12 @@ fn to_string(error: impl std::fmt::Display) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::{migrate_database, APP_STATE_MIGRATION, SCHEMA_VERSION};
     use super::{
         LibraryDatabase, ARTIST_RELATIONS_MIGRATION, INITIAL_MIGRATION, SCAN_RUNS_MIGRATION,
         USER_FEATURES_MIGRATION,
     };
+    use rusqlite::Connection;
 
     #[test]
     fn document_uri_rescan_preserves_identity_and_recovers_permission() {
@@ -1116,6 +1133,52 @@ mod tests {
         );
         drop(database);
         std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn legacy_schema_upgrade_preserves_state_and_is_idempotent() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        connection.execute_batch(INITIAL_MIGRATION).unwrap();
+        connection.execute_batch(APP_STATE_MIGRATION).unwrap();
+        connection
+            .execute(
+                "INSERT INTO app_state VALUES ('settings', '{\"rating\":5}', 'today')",
+                [],
+            )
+            .unwrap();
+        migrate_database(&mut connection).unwrap();
+        migrate_database(&mut connection).unwrap();
+        let version: i64 = connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(version, SCHEMA_VERSION);
+        let state: String = connection
+            .query_row("SELECT value_json FROM app_state", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(state, "{\"rating\":5}");
+    }
+
+    #[test]
+    fn upgrade_failure_rolls_back_and_future_schema_is_rejected() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        connection
+            .execute_batch("CREATE TABLE tracks(bad INTEGER);")
+            .unwrap();
+        assert!(migrate_database(&mut connection).is_err());
+        let roots: bool = connection
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name='library_roots')",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(!roots);
+        connection
+            .pragma_update(None, "user_version", SCHEMA_VERSION + 1)
+            .unwrap();
+        assert!(migrate_database(&mut connection)
+            .unwrap_err()
+            .contains("newer"));
     }
 
     #[test]

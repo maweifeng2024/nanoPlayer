@@ -180,10 +180,13 @@ export default function App() {
           if (
             state.playlists !== previous.playlists ||
             state.language !== previous.language ||
+            state.lyricOffsets !== previous.lyricOffsets ||
+            state.lyricFontSize !== previous.lyricFontSize ||
             state.playCounts !== previous.playCounts
           )
             saveUserState(getNativeUserState()).catch(() => undefined);
         });
+        saveUserState(getNativeUserState()).catch((error) => setNotice(t(String(error))));
         saveTimer = window.setInterval(
           () => saveUserState(getNativeUserState()).catch(() => undefined),
           5000,

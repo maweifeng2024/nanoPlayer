@@ -422,5 +422,20 @@
   "删除 {0}": "Delete {0}",
   "勾选资源库 {0}": "Select library {0}",
   "更多信息 {0}": "More information about {0}",
-  "未勾选此歌曲的资源库，播放时将跳过": "This track’s library is not selected; playback will skip it"
+  "未勾选此歌曲的资源库，播放时将跳过": "This track’s library is not selected; playback will skip it",
+  "定时停止播放": "Sleep timer",
+  "本曲结束": "End of song",
+  "将在当前歌曲结束后停止": "Playback will stop when the current song ends",
+  "剩余 {0} 分钟": "{0} minutes remaining",
+  "停止方式": "Stop mode",
+  "到时立即停止": "Stop immediately at the deadline",
+  "当前歌曲结束后停止": "Finish the current song",
+  "{0} 分钟": "{0} minutes",
+  "自定义分钟（1–1440）": "Custom minutes (1–1440)",
+  "开始计时": "Start timer",
+  "取消定时": "Cancel timer",
+  "歌词字号": "Lyric font size",
+  "歌词延后 0.2 秒": "Delay lyrics by 0.2 seconds",
+  "歌词提前 0.2 秒": "Advance lyrics by 0.2 seconds",
+  "歌词偏移": "Lyric offset"
 }

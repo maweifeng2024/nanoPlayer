@@ -37,6 +37,8 @@ class NativeArgs {
     var volume: Float = 1f
     var kind: String = "lyrics"
     var events: String = "[]"
+    var minutes: Int = 0
+    var finishTrack: Boolean = false
 }
 
 @TauriPlugin
@@ -138,6 +140,12 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                                 player.playWhenReady = args.enabled
                             }
                         }
+                        "sleepTimer" -> {
+                            require(args.minutes in 0..1440) { "Timer must be between 1 and 1440 minutes" }
+                            activity.startService(Intent(activity, PlaybackService::class.java)
+                                .setAction("app.nanoplayer.SLEEP_TIMER").putExtra("minutes", args.minutes)
+                                .putExtra("finishTrack", args.finishTrack))
+                        }
                         "play" -> resumeQueue(player)
                         "pause" -> player.pause()
                         "seek" -> player.seekTo(args.positionMs.coerceAtLeast(0))
@@ -171,6 +179,9 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                         .put("playbackOrder", playbackOrder).put("ended", player.playbackState == Player.STATE_ENDED)
                         .put("shuffle", player.shuffleModeEnabled).put("repeatMode", player.repeatMode)
                         .put("playWhenReady", player.playWhenReady && player.playbackState != Player.STATE_ENDED).put("positionMs", player.currentPosition.coerceAtLeast(0))
+                        .put("sleepRemainingMs", (PlaybackService.sleepDeadline - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0))
+                        .put("sleepActive", PlaybackService.sleepDeadline > 0).put("sleepWaiting", PlaybackService.sleepWaiting)
+                        .put("sleepFinishTrack", PlaybackService.sleepFinishTrack)
                         .put("playing", player.isPlaying).put("trackId", player.currentMediaItem?.mediaId)
                         .put("index", player.currentMediaItemIndex).put("queueSize", player.mediaItemCount)
                         .put("durationMs", player.duration.coerceAtLeast(0))

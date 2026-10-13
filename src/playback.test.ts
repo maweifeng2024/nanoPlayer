@@ -3,6 +3,7 @@ import {
   applyNativeUserState,
   getNativeUserState,
   migratePlaybackStatistics,
+  migrateUserState,
   useNanoStore,
 } from "./store";
 import { demoTracks } from "./domain";
@@ -137,4 +138,53 @@ describe("playlist rounds", () => {
     state().togglePlay();
     expect(state()).toMatchObject({ currentTrackId: -2, progressMs: 42000, queueEnded: false });
   });
+});
+
+it("migrates old user settings without losing ratings or restoring timers", () => {
+  const old = {
+    ratings: { 10: 5 },
+    queue: [10],
+    lyricFontSize: 500,
+    lyricOffsets: { 10: 20000, 11: "bad" },
+  };
+  const migrated = migrateUserState(old);
+  expect(migrated).toMatchObject({
+    ratings: { 10: 5 },
+    queue: [10],
+    lyricFontSize: 40,
+    lyricOffsets: { 10: 10000 },
+    stateSchemaVersion: 4,
+  });
+  expect(migrateUserState(migrated)).toEqual(migrated);
+  applyNativeUserState({ ratings: { 10: 5 } });
+  expect(state().lyricOffsets).toEqual({});
+  expect(state().lyricFontSize).toBe(24);
+});
+
+it("normalizes older malformed playback shapes before hydration", () => {
+  const migrated = migrateUserState({
+    queue: "old-format",
+    shuffleOrder: [10, "11", null],
+    volume: 2,
+    progressMs: -100,
+    onlineLyrics: "yes",
+    repeatMode: "invalid",
+    ratings: { 10: 5, 11: "bad" },
+    sleepTimer: { remainingMs: 1 },
+    playing: true,
+  });
+  expect(migrated).toMatchObject({
+    queue: [],
+    shuffleOrder: [10],
+    volume: 1,
+    progressMs: 0,
+    ratings: { 10: 5 },
+  });
+  expect(migrated).not.toHaveProperty("onlineLyrics");
+  expect(migrated).not.toHaveProperty("sleepTimer");
+  expect(migrated).not.toHaveProperty("playing");
+});
+
+it("refuses to overwrite settings from a future state schema", () => {
+  expect(() => migrateUserState({ stateSchemaVersion: 5 })).toThrow("newer nanoPlayer");
 });

@@ -1,9 +1,11 @@
 export interface LyricLine {
   at: number | null;
   text: string;
+  words?: { at: number; text: string }[];
 }
 
 const timestamp = /\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;
+const wordTimestamp = /<(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?>/g;
 const offsetTag = /^\[offset:([+-]?\d+)\]$/i;
 const metadataTag = /^\[(ar|al|ti|by|re|ve|length):/i;
 
@@ -21,12 +23,24 @@ export function parseLyrics(content?: string): { lines: LyricLine[]; synchronize
     }
     if (metadataTag.test(line)) continue;
     const times = [...line.matchAll(timestamp)];
-    const text = line.replace(timestamp, "").trim();
+    const body = line.replace(timestamp, "").trim();
+    const markers = [...body.matchAll(wordTimestamp)];
+    const words = markers.map((match, index) => ({
+      at:
+        (Number(match[1]) * 60 + Number(match[2])) * 1000 +
+        (match[3] ? Number(match[3].padEnd(3, "0").slice(0, 3)) : 0),
+      text: body.slice(match.index! + match[0].length, markers[index + 1]?.index ?? body.length),
+    }));
+    const text = body.replace(wordTimestamp, "").trim();
     if (times.length) {
       if (!text) continue;
       for (const match of times) {
         const fraction = match[3] ? Number(match[3].padEnd(3, "0").slice(0, 3)) : 0;
-        pending.push({ at: (Number(match[1]) * 60 + Number(match[2])) * 1000 + fraction, text });
+        pending.push({
+          at: (Number(match[1]) * 60 + Number(match[2])) * 1000 + fraction,
+          text,
+          ...(words.length ? { words } : {}),
+        });
       }
     } else {
       pending.push({ at: null, text: line });
@@ -36,6 +50,9 @@ export function parseLyrics(content?: string): { lines: LyricLine[]; synchronize
   const lines = pending.map((line) => ({
     ...line,
     at: line.at === null ? null : Math.max(0, line.at + offset),
+    ...(line.words
+      ? { words: line.words.map((word) => ({ ...word, at: Math.max(0, word.at + offset) })) }
+      : {}),
   }));
   if (synchronized)
     lines.sort(

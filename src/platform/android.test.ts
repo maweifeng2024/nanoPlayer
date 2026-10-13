@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
-import { connectAndroidPlayback } from "./android";
+import { connectAndroidPlayback, sendAndroidPlayback } from "./android";
 import { useNanoStore } from "../store";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
@@ -179,3 +179,33 @@ it("removes excluded roots from the native service queue including a restored se
     ),
   ).toEqual(["1"]);
 });
+
+it("routes native sleep timers and restores their service-owned countdown", async () => {
+  vi.mocked(invoke).mockResolvedValue({
+    ...snapshot,
+    sleepActive: true,
+    sleepRemainingMs: 20000,
+    sleepWaiting: false,
+    sleepFinishTrack: true,
+  });
+  disconnect = connectAndroidPlayback();
+  await flush();
+  expect(useNanoStore.getState().sleepTimer).toEqual({
+    remainingMs: 20000,
+    waiting: false,
+    finishTrack: true,
+  });
+  sendAndroidPlayback("sleepTimer", { minutes: 15, finishTrack: true });
+  await flush();
+  expect(invoke).toHaveBeenLastCalledWith("android_playback", {
+    payload: { action: "sleepTimer", minutes: 15, finishTrack: true },
+  });
+  expect(getPersistedTimer()).toBeUndefined();
+});
+function getPersistedTimer() {
+  const saved = useNanoStore.persist.getOptions().partialize?.(useNanoStore.getState()) as Record<
+    string,
+    unknown
+  >;
+  return saved.sleepTimer;
+}

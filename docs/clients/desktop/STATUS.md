@@ -1,8 +1,17 @@
 # Desktop implementation status
 
-Updated: 2026-09-22 · Repository source/tag: 0.1.12 · Detailed verification below is dated where stated
+Updated: 2026-10-13 · Local source: 0.1.15 · Published desktop: 0.1.14 · Detailed verification below is dated where stated
 
 This document separates implemented behavior from release qualification. “Implemented” means the path exists in code and has proportionate automated verification; it does not mean long-duration or signed-release gates have been completed.
+
+
+## 2026-10-13 local implementation (0.1.15)
+
+- Shared UI: 12px auxiliary text, 44px medium controls and Android minimum touch targets; all shared song-list rows reserve an artwork-safe playback-accent gutter.
+- Shared lyrics: memoized plain/enhanced LRC parsing, progressive word fill, synchronized multiline display, persistent 16–40px font size and per-song ±10-second correction. The drawer and expanded player share word rendering. Online lookup remains opt-in LRCLIB; macOS system overlays, translation generation and additional providers are not implemented by this change.
+- Upgrade safety: transactional SQLite schema migration/adoption (user_version 6), failed-upgrade rollback and newer-schema rejection; frontend/native preference schema 4 defaults, numeric/shape validation, future-version guard and immediate write-back.
+- Verified locally: 54 Vitest tests, 76 browser E2E tests (including visual baselines at desktop/phone/Pad sizes), Rust format/clippy, 18 Rust tests plus the explicit 10,000-row FTS benchmark, source-byte preservation test, 15 release-script tests and website build pass. Android plugin compilation and all 10 native unit tests pass (five cover sleep timing).
+- Desktop publication and installers remain user-run: `pnpm release 0.1.15` from main. No tag/push/desktop publication was performed for this change. Native desktop appearance and cross-version installer testing remain release acceptance work.
 
 ## 2026-09-27 implementation update
 

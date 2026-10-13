@@ -18,6 +18,11 @@ import { demoRoot, demoTracks } from "./domain";
 type Drawer = "queue" | "lyrics" | null;
 
 interface NanoState {
+  sleepTimer?: { remainingMs: number; waiting: boolean; finishTrack: boolean };
+  lyricOffsets: Record<number, number>;
+  lyricFontSize: number;
+  setLyricOffset: (id: number, value: number) => void;
+  setLyricFontSize: (value: number) => void;
   visualDesignVersion: number;
   statisticsVersion: number;
   page: Page;
@@ -127,7 +132,97 @@ export function migratePlaybackStatistics(source: Record<string, unknown>) {
   }
   return { ...source, playCounts, lastPlayedAt, statisticsVersion: 1 };
 }
+export function migrateUserState(value: unknown): Record<string, unknown> {
+  const input =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  if (typeof input.stateSchemaVersion === "number" && input.stateSchemaVersion > 4) {
+    throw new Error("Saved settings require a newer nanoPlayer version.");
+  }
+  const source: Record<string, unknown> = { ...migratePlaybackStatistics(input) };
+  const ids = (value: unknown) =>
+    Array.isArray(value)
+      ? value.filter((id): id is number => typeof id === "number" && Number.isSafeInteger(id))
+      : [];
+  for (const key of ["queue", "shuffleOrder"] as const) {
+    if (key in source) source[key] = ids(source[key]);
+  }
+  if ("selectedRootIds" in source && source.selectedRootIds !== null)
+    source.selectedRootIds = ids(source.selectedRootIds);
+  for (const [key, lower, upper] of [
+    ["volume", 0, 1],
+    ["progressMs", 0, Number.MAX_SAFE_INTEGER],
+  ] as const) {
+    if (key in source) {
+      const value = source[key];
+      if (typeof value === "number" && Number.isFinite(value))
+        source[key] = Math.max(lower, Math.min(upper, value));
+      else delete source[key];
+    }
+  }
+  for (const key of ["muted", "onlineLyrics", "onboardingDismissed"] as const) {
+    if (key in source && typeof source[key] !== "boolean") delete source[key];
+  }
+  for (const [key, valid] of [
+    ["theme", ["system", "light", "dark"]],
+    ["language", ["en", "zh-CN"]],
+    ["orderMode", ["sequence", "shuffle"]],
+    ["repeatMode", ["off", "one", "all"]],
+  ] as const) {
+    if (key in source && !(valid as readonly unknown[]).includes(source[key])) delete source[key];
+  }
+  for (const key of ["ratings", "playCounts"] as const) {
+    if (!(key in source)) continue;
+    const map = source[key];
+    source[key] =
+      map && typeof map === "object" && !Array.isArray(map)
+        ? Object.fromEntries(
+            Object.entries(map).filter(
+              ([id, number]) =>
+                Number.isSafeInteger(Number(id)) &&
+                typeof number === "number" &&
+                Number.isFinite(number) &&
+                number >= 0,
+            ),
+          )
+        : {};
+  }
+  if ("currentTrackId" in source && !Number.isSafeInteger(source.currentTrackId))
+    delete source.currentTrackId;
+  // Runtime-only fields must never be restored from older saved snapshots.
+  delete source.sleepTimer;
+  delete source.playing;
+
+  const offsets =
+    source.lyricOffsets &&
+    typeof source.lyricOffsets === "object" &&
+    !Array.isArray(source.lyricOffsets)
+      ? Object.fromEntries(
+          Object.entries(source.lyricOffsets)
+            .filter(
+              ([id, offset]) =>
+                Number.isFinite(Number(id)) &&
+                typeof offset === "number" &&
+                Number.isFinite(offset),
+            )
+            .map(([id, offset]) => [id, Math.max(-10000, Math.min(10000, offset as number))]),
+        )
+      : {};
+  return {
+    ...source,
+    stateSchemaVersion: 4,
+    lyricOffsets: offsets,
+    lyricFontSize:
+      typeof source.lyricFontSize === "number" && Number.isFinite(source.lyricFontSize)
+        ? Math.max(16, Math.min(40, source.lyricFontSize))
+        : 24,
+  };
+}
+
 const nativeStateKeys = [
+  "lyricOffsets",
+  "lyricFontSize",
   "visualDesignVersion",
   "statisticsVersion",
   "selectedRootIds",
@@ -152,7 +247,7 @@ const nativeStateKeys = [
 
 export function applyNativeUserState(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return;
-  const source = migratePlaybackStatistics(value as Record<string, unknown>);
+  const source = migrateUserState(value);
   const allowed: Partial<NanoState> = {};
   for (const key of nativeStateKeys) {
     if (key in source) Object.assign(allowed, { [key]: source[key] });
@@ -178,7 +273,10 @@ export function applyNativeUserState(value: unknown) {
 
 export function getNativeUserState(): Record<string, unknown> {
   const state = useNanoStore.getState();
-  return Object.fromEntries(nativeStateKeys.map((key) => [key, state[key]]));
+  return {
+    stateSchemaVersion: 4,
+    ...Object.fromEntries(nativeStateKeys.map((key) => [key, state[key]])),
+  };
 }
 
 const shuffleTracks = (ids: number[], currentId?: number) => {
@@ -200,6 +298,13 @@ const memoryStorage: StateStorage = {
 export const useNanoStore = create<NanoState>()(
   persist(
     (set, get) => ({
+      lyricOffsets: {},
+      lyricFontSize: 24,
+      setLyricOffset: (id, value) =>
+        set((state) => ({
+          lyricOffsets: { ...state.lyricOffsets, [id]: Math.max(-10000, Math.min(10000, value)) },
+        })),
+      setLyricFontSize: (value) => set({ lyricFontSize: Math.max(16, Math.min(40, value)) }),
       visualDesignVersion: currentVisualDesignVersion,
       statisticsVersion: 1,
       page: "home",
@@ -620,19 +725,24 @@ export const useNanoStore = create<NanoState>()(
     }),
     {
       name: "nanoplayer-state-v1",
-      version: 3,
-      migrate: (persisted, version) =>
-        version < currentVisualDesignVersion
+      version: 4,
+      migrate: (persisted, version) => {
+        if (version > 4) throw new Error("Saved settings require a newer nanoPlayer version.");
+        return version < currentVisualDesignVersion
           ? {
-              ...migratePlaybackStatistics(persisted as Record<string, unknown>),
+              ...migrateUserState(persisted),
               visualDesignVersion: currentVisualDesignVersion,
               theme: "dark",
             }
-          : migratePlaybackStatistics(persisted as Record<string, unknown>),
+          : migrateUserState(persisted);
+      },
+      merge: (persisted, current) => ({ ...current, ...migrateUserState(persisted) }) as NanoState,
       storage: createJSONStorage(() =>
         typeof window === "undefined" ? memoryStorage : window.localStorage,
       ),
       partialize: ({
+        lyricOffsets,
+        lyricFontSize,
         visualDesignVersion,
         statisticsVersion,
         selectedRootIds,
@@ -654,6 +764,8 @@ export const useNanoStore = create<NanoState>()(
         progressMs,
         onboardingDismissed,
       }) => ({
+        lyricOffsets,
+        lyricFontSize,
         visualDesignVersion,
         statisticsVersion,
         selectedRootIds,

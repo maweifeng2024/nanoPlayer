@@ -39,3 +39,11 @@ Desktop playback completion/queue advance and periodic state saving depend on fr
 - Database backups use SQLite backup APIs and pass integrity checks before restore.
 - Diagnostics contain platform/version/count/integrity/category data, not paths, filenames, titles, or lyrics.
 - No command writes tags, moves media, deletes source files, or lets the UI execute SQL.
+
+## Upgrade and playback timing contract
+
+SQLite `PRAGMA user_version` is the shared schema authority (currently 6). Startup applies only pending migrations in one transaction before exposing a library snapshot. Existing pre-versioned installations are adopted by detecting `library_roots` and applying the idempotent supplemental migrations. Failure rolls back the whole upgrade and prevents startup queries against a partial schema. Databases with a newer schema are rejected with a compatibility error. A product version change does not itself require a schema increment; every schema change must append a migration and increment the schema authority. Never modify already-applied migration SQL to change an installed schema.
+
+Frontend preference schema 4 migrates both Zustand/localStorage and native app-state restoration. Future state schemas are rejected before write-back. Lyric offsets and font size receive defaults and numeric bounds; malformed queue, mode, numeric and boolean preference shapes are normalized; valid ratings, queues and existing preferences are retained. Native saved state includes `stateSchemaVersion`; localStorage uses Zustand's version. Transient sleep timer state is excluded from saved preferences.
+
+Android `PlaybackService` owns sleep timers using `SystemClock.elapsedRealtime`, so an Activity/WebView suspension cannot stop the countdown. At expiry, immediate mode pauses; finish-song mode enables ExoPlayer's pause-at-end behavior, including repeat playback. A manual skip while waiting also pauses. Cancellation or replacement clears the pending pause-at-end flag. Snapshots restore the visible remaining time when the UI returns. Service destruction cancels the timer; restarting the process never restarts playback or an old timer. Physical-device battery/lockscreen acceptance remains separate from unit tests.

@@ -1,3 +1,4 @@
+import { LyricText } from "../lyrics/LyricText";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "../library/Artwork";
 import { isAndroid, androidCommand } from "../platform/android";
@@ -14,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { LyricsCandidate, LyricsSearchInput } from "../domain";
 import { useNanoStore } from "../store";
@@ -224,9 +225,22 @@ export function PlayerDrawer() {
 }
 
 function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["tracks"][number] }) {
-  const { progressMs, onlineLyrics, replaceLibrary, setNotice } = useNanoStore(
+  const {
+    progressMs,
+    onlineLyrics,
+    replaceLibrary,
+    setNotice,
+    lyricOffsets,
+    lyricFontSize,
+    setLyricOffset,
+    setLyricFontSize,
+  } = useNanoStore(
     useShallow((state) => ({
       progressMs: state.progressMs,
+      lyricOffsets: state.lyricOffsets,
+      lyricFontSize: state.lyricFontSize,
+      setLyricOffset: state.setLyricOffset,
+      setLyricFontSize: state.setLyricFontSize,
       onlineLyrics: state.onlineLyrics,
       replaceLibrary: state.replaceLibrary,
       setNotice: state.setNotice,
@@ -240,12 +254,18 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
     album: track?.album ?? "",
   });
   const activeLine = useRef<HTMLButtonElement>(null);
-  const parsed = parseLyrics(track?.lyrics);
+  const parsed = useMemo(() => parseLyrics(track?.lyrics), [track?.lyrics]);
+  const offset = track ? (lyricOffsets[track.id] ?? 0) : 0;
   const lines = parsed.lines;
-  const activeIndex = activeLyricIndex(lines, progressMs);
+  const activeIndex = activeLyricIndex(lines, progressMs + offset);
   useEffect(() => {
-    activeLine.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [activeIndex]);
+    activeLine.current?.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+  }, [activeIndex, track?.id]);
   useEffect(() => {
     setSearchInput({
       title: track?.title ?? "",
@@ -374,7 +394,7 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
       track.lyricsSource ?? ""
     ] ?? t("本地");
   return (
-    <div className="lyrics-panel">
+    <div className="lyrics-panel" style={{ "--font-lyric": `${lyricFontSize}px` } as CSSProperties}>
       <div className="lyrics-meta">
         <strong>{track.title}</strong>
         <span>
@@ -404,21 +424,54 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
           ) : null}
         </div>
       </div>
+      <div className="lyrics-controls">
+        <label>
+          {t("歌词字号")}
+          <input
+            type="range"
+            min="16"
+            max="40"
+            value={lyricFontSize}
+            onChange={(event) => setLyricFontSize(Number(event.target.value))}
+          />
+        </label>
+        <button
+          className="text-button"
+          onClick={() => setLyricOffset(track.id, offset - 200)}
+          aria-label={t("歌词延后 0.2 秒")}
+        >
+          −
+        </button>
+        <span>
+          {t("歌词偏移")} {(offset / 1000).toFixed(1)}s
+        </span>
+        <button
+          className="text-button"
+          onClick={() => setLyricOffset(track.id, offset + 200)}
+          aria-label={t("歌词提前 0.2 秒")}
+        >
+          +
+        </button>
+        <button className="text-button" onClick={() => setLyricOffset(track.id, 0)}>
+          {t("重置")}
+        </button>
+      </div>
       <LyricsCandidates candidates={candidates} onChoose={choose} inline />
       {lines.map((line, index) => (
         <button
           ref={index === activeIndex ? activeLine : undefined}
-          className={index === activeIndex ? "active" : ""}
+          className={activeIndex >= 0 && line.at === lines[activeIndex].at ? "active" : ""}
           key={`${line.at}-${index}`}
           disabled={line.at === null}
           onClick={() => {
             if (line.at !== null) {
-              useNanoStore.getState().seekPlayback(line.at);
-              if (isAndroid()) void androidCommand("seek", { positionMs: line.at });
+              useNanoStore.getState().seekPlayback(Math.max(0, line.at - offset));
+              if (isAndroid())
+                void androidCommand("seek", { positionMs: Math.max(0, line.at - offset) });
             }
           }}
         >
-          {line.text}
+          <LyricText line={line} progressMs={progressMs + offset} endMs={lines[index + 1]?.at} />
         </button>
       ))}
     </div>

@@ -7,3 +7,5 @@ This directory contains dated investigations, proposals, audits, implementation 
 - `ui/`: dated UI review/implementation evidence and old wireframes.
 
 When archiving a document, first carry any still-valid rule into a current document and update `docs/README.md`. Archived records remain historically accurate; avoid rewriting them merely to match today's file layout.
+
+- [2026-10-13 UI, lyrics and upgrade review](2026-10-13-ui-lyrics-upgrade-review.md): implementation decisions and research boundaries.
