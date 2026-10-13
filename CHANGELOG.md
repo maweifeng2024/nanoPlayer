@@ -4,6 +4,11 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.17] - 2026-10-13
+
+- Replace empty artist initials with a local music illustration and full artist name.
+- Cache Android queue track lookups and library selection membership; avoid filtering the music collection while viewing library/settings pages.
+
 ## [0.1.16] - 2026-10-13
 
 - Fix lyric request error handling rejected by CI's newer Rust Clippy, restoring desktop build verification.

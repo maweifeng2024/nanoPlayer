@@ -88,3 +88,18 @@ for (const android of [false, true]) {
     });
   });
 }
+
+test("artist fallback shows a complete name and music illustration", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { useNanoStore } = await import("/src/store.ts");
+    const { demoTracks } = await import("/src/domain.ts");
+    useNanoStore.setState({ page: "artists", selectedRootIds: null,
+      tracks: [{ ...demoTracks[0], artist: "没有专辑的音乐人", hasArtwork: false }] });
+  });
+  const cover = page.getByRole("img", { name: "没有专辑的音乐人封面" });
+  await expect(cover).toBeVisible();
+  await expect(cover).toContainText("没有专辑的音乐人");
+  await expect(cover.locator("svg")).toHaveCount(1);
+  await cover.screenshot({ path: "/tmp/nanoplayer-artist-cover.png" });
+});

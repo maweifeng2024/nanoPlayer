@@ -12,14 +12,26 @@ export function trackInRoots(path: string, roots: Pick<LibraryRoot, "path">[]) {
 }
 
 export type LibrarySelection = { roots: LibraryRoot[]; selectedRootIds: number[] | null };
+const selectionCache = new WeakMap<number[], WeakMap<LibraryRoot[], {
+  ids: Set<number>;
+  roots: LibraryRoot[];
+}>>();
 export function trackIsSelected(track: Track, state: LibrarySelection) {
   if (state.selectedRootIds === null) return true;
+  let byRoots = selectionCache.get(state.selectedRootIds);
+  if (!byRoots) {
+    byRoots = new WeakMap();
+    selectionCache.set(state.selectedRootIds, byRoots);
+  }
+  let selection = byRoots.get(state.roots);
+  if (!selection) {
+    const ids = new Set(state.selectedRootIds);
+    selection = { ids, roots: state.roots.filter((root) => ids.has(root.id)) };
+    byRoots.set(state.roots, selection);
+  }
   return track.rootId !== undefined
-    ? state.selectedRootIds.includes(track.rootId)
-    : trackInRoots(
-        track.path,
-        state.roots.filter((root) => state.selectedRootIds!.includes(root.id)),
-      );
+    ? selection.ids.has(track.rootId)
+    : trackInRoots(track.path, selection.roots);
 }
 export function visiblePlaylists(
   state: LibrarySelection & { tracks: Track[]; playlists: Playlist[] },

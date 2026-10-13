@@ -127,6 +127,8 @@ export function ContentPage() {
     };
   }, [state.query]);
   const filtered = useMemo(() => {
+    if (["library", "issues", "settings", "now-playing", "playlist"].includes(state.page))
+      return [];
     const query = state.query.trim().toLocaleLowerCase();
     const nativeMatches = nativeSearchIds ? new Set(nativeSearchIds) : null;
     let tracks = state.tracks.filter(
@@ -803,7 +805,24 @@ function CollectionPortrait({
           <Artwork track={track} key={`${track.id}-${track.album}`} fallback={label.slice(0, 1)} />
         ))
       ) : (
-        <span>{label.slice(0, 1)}</span>
+        <div className="artist-generated-cover" role="img" aria-label={t("{0}封面", label)}>
+          <svg viewBox="0 0 240 240" aria-hidden="true">
+            <rect width="240" height="240" fill="currentColor" />
+            <path d="M0 170 240 40v200H0Z" fill="#ffffff" opacity=".08" />
+            <circle cx="146" cy="98" r="69" fill="#101820" />
+            <g fill="none" stroke="#ffffff" opacity=".18">
+              <circle cx="146" cy="98" r="57" />
+              <circle cx="146" cy="98" r="46" />
+              <circle cx="146" cy="98" r="35" />
+            </g>
+            <circle cx="146" cy="98" r="21" fill="#e6bc91" />
+            <circle cx="146" cy="98" r="5" fill="#101820" />
+            <path d="M38 35v94m0-71 32-9v67" stroke="#e6bc91" strokeWidth="7" fill="none" />
+            <ellipse cx="28" cy="129" rx="14" ry="9" fill="#e6bc91" />
+            <ellipse cx="60" cy="116" rx="14" ry="9" fill="#e6bc91" />
+          </svg>
+          <strong>{label}</strong>
+        </div>
       )}
     </div>
   );

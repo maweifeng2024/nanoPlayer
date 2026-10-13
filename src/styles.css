@@ -3258,3 +3258,23 @@ select:focus-visible,
     -webkit-text-fill-color: currentColor;
   }
 }
+
+.artist-generated-cover {
+  position: relative;
+  color: #354d5b;
+}
+.artist-generated-cover svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.artist-generated-cover strong {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 12%;
+  background: linear-gradient(transparent, #101820);
+  color: #fff4e5;
+  font-size: var(--font-section-title);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}

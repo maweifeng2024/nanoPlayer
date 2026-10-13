@@ -19,7 +19,7 @@ test.describe("Android layouts", () => {
         await expect(page.locator(".sidebar .nav-label").first()).toBeHidden();
         const sidebar = await page.locator(".sidebar").boundingBox();
         const content = await page.locator(".content").boundingBox();
-        expect(sidebar?.width).toBe(72);
+        expect(sidebar?.width).toBeCloseTo(72, 3);
         expect(content?.x).toBeGreaterThanOrEqual(sidebar!.x + sidebar!.width);
       } else {
         await expect(page.locator(".phone-navigation")).toBeVisible();

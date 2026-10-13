@@ -1,6 +1,12 @@
 # Android implementation status
 
-Updated 2026-10-13; local source version 0.1.16. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+Updated 2026-10-13; local source version 0.1.17. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+
+## 2026-10-13 artist artwork and library selection (0.1.17)
+
+- Implemented: full-name artist fallback with a local music illustration; cached root selection membership; library/settings pages skip unused collection filtering. Android queue synchronization now indexes tracks instead of repeatedly scanning the library.
+- Verified: 56 unit tests, 77 browser tests, Rust fmt/Clippy/tests, explicit 10,000-track FTS benchmark and source-byte preservation fixture; cover screenshot visually inspected. Local evidence: `artifacts/verification/v0.1.17/summary.md`.
+- Android test artifact: `artifacts/android/v0.1.17-b1015/debug/nanoPlayer-0.1.17-b1015-arm64-debug.apk`, arm64-v8a, APK v2 debug signature verified. No device connected; real-library responsiveness and installation remain acceptance work. Desktop publication is user-run with `pnpm release 0.1.17` from main.
 
 ## 2026-10-13 release repair (0.1.16)
 

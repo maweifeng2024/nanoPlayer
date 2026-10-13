@@ -209,3 +209,25 @@ function getPersistedTimer() {
   >;
   return saved.sleepTimer;
 }
+
+it("synchronizes a 10,000-track selection without repeated library scans", async () => {
+  const tracks = Array.from({ length: 10000 }, (_, index) => ({
+    ...original.tracks[0], id: index + 1, rootId: index % 2 + 1,
+    path: `content://fixture/${index + 1}`,
+  }));
+  const linearLookup = vi.spyOn(tracks, "find");
+  useNanoStore.setState({ tracks, selectedRootIds: null });
+  vi.mocked(invoke).mockImplementation(async (_command, args) => {
+    const payload = (args as { payload: { action: string; queue?: string } }).payload;
+    return { ...snapshot, queue: payload.queue
+      ? (JSON.parse(payload.queue) as { id: string }[]).map((item) => item.id)
+      : tracks.map((track) => String(track.id)) };
+  });
+  disconnect = connectAndroidPlayback();
+  await flush();
+  useNanoStore.getState().setSelectedRootIds([1]);
+  await flush();
+  expect(useNanoStore.getState().queue).toHaveLength(5000);
+  expect(linearLookup).not.toHaveBeenCalled();
+  linearLookup.mockRestore();
+});

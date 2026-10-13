@@ -55,6 +55,15 @@ export function connectAndroidPlayback() {
   let applying = false;
   let pending = 0;
   let chain = Promise.resolve();
+  let indexedTracks = useNanoStore.getState().tracks;
+  let trackIndex = new Map(indexedTracks.map((track) => [track.id, track]));
+  const tracksById = (tracks: typeof indexedTracks) => {
+    if (tracks !== indexedTracks) {
+      indexedTracks = tracks;
+      trackIndex = new Map(tracks.map((track) => [track.id, track]));
+    }
+    return trackIndex;
+  };
   const apply = (snapshot: NativePlayback) => {
     if (disposed) return;
     applying = true;
@@ -98,7 +107,7 @@ export function connectAndroidPlayback() {
     if (
       current.selectedRootIds !== null &&
       queue.some((id) => {
-        const track = current.tracks.find((item) => item.id === id);
+        const track = tracksById(current.tracks).get(id);
         return !track || !trackIsSelected(track, current);
       })
     )
@@ -140,7 +149,7 @@ export function connectAndroidPlayback() {
       next.queue !== previous.queue
     ) {
       const queue = next.queue.flatMap((id) => {
-        const track = next.tracks.find((item) => item.id === id);
+        const track = tracksById(next.tracks).get(id);
         return track && track.path.startsWith("content://")
           ? [{ id: String(id), uri: track.path, title: track.title, artist: track.artist }]
           : [];
