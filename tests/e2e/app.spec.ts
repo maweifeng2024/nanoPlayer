@@ -99,6 +99,17 @@ test("desktop song rows expose aligned artist album and rating actions", async (
   await expect(table.locator(".track-artist").first()).toBeVisible();
   await expect(table.locator(".track-album").first()).toBeVisible();
   await expect(table.locator(".track-rating").first()).toBeVisible();
+  const rating = table.locator(".track-rating").first();
+  await rating.getByRole("button").nth(3).click();
+  await expect(rating.locator('button[aria-pressed="true"]')).toHaveCount(4);
+  await expect(rating.getByRole("button").nth(0)).toHaveCSS("color", "rgb(209, 168, 79)");
+  await expect(rating.locator("svg").first()).toHaveAttribute("fill", "currentColor");
+  await page.screenshot({ path: "test-results/rating-visible.png" });
+  await page.reload();
+  await page.getByLabel("主导航").getByRole("button", { name: "歌曲", exact: true }).click();
+  await expect(rating.locator('button[aria-pressed="true"]')).toHaveCount(4);
+  await rating.getByRole("button").nth(3).click();
+  await expect(rating.locator('button[aria-pressed="true"]')).toHaveCount(0);
 
   const artist = await table.locator(".track-artist").first().textContent();
   await table.locator(".track-artist").first().click();

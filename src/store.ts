@@ -1,7 +1,8 @@
+import { changedStorage } from "./state/changedStorage";
 import { trackIsSelected } from "./library/folderFilter";
 import { t, setActiveLanguage } from "./i18n";
 import { create } from "zustand";
-import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
+import { persist, type StateStorage } from "zustand/middleware";
 import type {
   LibraryRoot,
   Page,
@@ -737,7 +738,7 @@ export const useNanoStore = create<NanoState>()(
           : migrateUserState(persisted);
       },
       merge: (persisted, current) => ({ ...current, ...migrateUserState(persisted) }) as NanoState,
-      storage: createJSONStorage(() =>
+      storage: changedStorage(() =>
         typeof window === "undefined" ? memoryStorage : window.localStorage,
       ),
       partialize: ({

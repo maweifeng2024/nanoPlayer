@@ -641,6 +641,7 @@ export function TrackTable({
                         key={value}
                         type="button"
                         aria-label={t("将 {0} 评为 {1} 星", track.title, value)}
+                        aria-pressed={value <= (state.ratings[track.id] ?? 0)}
                         onClick={() =>
                           state.rate(track.id, state.ratings[track.id] === value ? 0 : value)
                         }

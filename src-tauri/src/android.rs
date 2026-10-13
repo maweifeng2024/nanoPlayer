@@ -42,11 +42,15 @@ async fn android_playback(app: tauri::AppHandle, payload: Value) -> Result<Value
     Ok(snapshot)
 }
 
-async fn scan(app: tauri::AppHandle, uri: String) -> Result<(), String> {
+async fn scan(
+    app: tauri::AppHandle,
+    uri: String,
+    known: std::collections::HashMap<String, String>,
+) -> Result<(), String> {
     if !uri.starts_with("content://") {
         return Err("请选择 Android 授权文件夹".into());
     }
-    let result = native(app.clone(), json!({"action":"scanTree", "uri":uri})).await?;
+    let result = native(app.clone(), json!({"action":"scanTree", "uri":uri, "fingerprints":serde_json::to_string(&known).map_err(|e| e.to_string())?})).await?;
     if result["cancelled"].as_bool() == Some(true) {
         return Ok(());
     }
@@ -80,8 +84,12 @@ async fn scan(app: tauri::AppHandle, uri: String) -> Result<(), String> {
             size_bytes: item["sizeBytes"].as_u64().unwrap_or(0),
             modified_at: item["modifiedAt"].as_u64().unwrap_or(0),
             format: text("format"),
-            content_fingerprint: format!("{}:{}", item["sizeBytes"], item["modifiedAt"]),
-            metadata: Some(metadata),
+            content_fingerprint: text("fingerprint"),
+            metadata: if item["unchanged"].as_bool() == Some(true) {
+                None
+            } else {
+                Some(metadata)
+            },
             embedded_artwork: item["artworkPath"].as_str().and_then(|path| {
                 let path = std::path::Path::new(path);
                 let cache = app.path().app_cache_dir().ok()?.join("scan-artwork");
@@ -121,7 +129,7 @@ async fn add_library_roots(
     app: tauri::AppHandle,
 ) -> Result<LibrarySnapshot, String> {
     for uri in paths {
-        scan(app.clone(), uri).await?;
+        scan(app.clone(), uri, std::collections::HashMap::new()).await?;
     }
     app.state::<LibraryState>()
         .database
@@ -141,7 +149,13 @@ async fn rescan_library_root(
         .map_err(|e| e.to_string())?
         .root_path(root_id)?
         .ok_or("文件夹不存在")?;
-    if let Err(error) = scan(app.clone(), uri).await {
+    let known = app
+        .state::<LibraryState>()
+        .database
+        .lock()
+        .map_err(|e| e.to_string())?
+        .root_fingerprints(root_id)?;
+    if let Err(error) = scan(app.clone(), uri, known).await {
         app.state::<LibraryState>()
             .database
             .lock()

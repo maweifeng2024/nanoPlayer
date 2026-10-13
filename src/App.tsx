@@ -122,11 +122,12 @@ export default function App() {
     document.documentElement.lang = language;
     if (isTauri()) void setNativeLanguage(language).catch((error) => setNotice(t(String(error))));
   }, [language, setNotice]);
+  const [libraryLoaded, setLibraryLoaded] = useState(() => !isTauri());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newPlaylistOpen, setNewPlaylistOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const modalRef = useModalBehavior(
-    isTauri() && !roots.length && !onboardingDismissed,
+    libraryLoaded && isTauri() && !roots.length && !onboardingDismissed,
     dismissOnboarding,
   );
 
@@ -175,10 +176,12 @@ export default function App() {
             ),
           });
         }
+        setLibraryLoaded(true);
         if (isAndroid()) disconnectAndroid = connectAndroidPlayback();
         unsubscribePlaylists = useNanoStore.subscribe((state, previous) => {
           if (
             state.playlists !== previous.playlists ||
+            state.ratings !== previous.ratings ||
             state.language !== previous.language ||
             state.lyricOffsets !== previous.lyricOffsets ||
             state.lyricFontSize !== previous.lyricFontSize ||
@@ -495,7 +498,7 @@ export default function App() {
         </header>
         <div className="page-scroll">
           {isAndroid() && <PhoneLibraryTabs />}
-          {page === "playlists" ? (
+          {!libraryLoaded ? null : page === "playlists" ? (
             <PhonePlaylists onCreate={addPlaylist} />
           ) : page === "library" || page === "issues" ? (
             <LibraryPage issuesOnly={page === "issues"} />
@@ -507,7 +510,7 @@ export default function App() {
       <PlayerDrawer />
       <PlayerBar />
       {isAndroid() && <PhoneNavigation />}
-      {isTauri() && !roots.length && !onboardingDismissed && (
+      {libraryLoaded && isTauri() && !roots.length && !onboardingDismissed && (
         <div className="modal-backdrop" role="presentation">
           <section
             className="onboarding"

@@ -3019,6 +3019,7 @@ select:focus-visible,
   color: #656871;
   cursor: pointer;
 }
+.track-rating button[aria-pressed="true"],
 .track-rating button:hover,
 .track-rating button:has(~ button:hover) {
   color: #d1a84f;

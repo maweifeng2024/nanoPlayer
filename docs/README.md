@@ -10,6 +10,7 @@ Start here instead of relying on dated files discovered by search.
 - [`design/DESIGN_SYSTEM.md`](design/DESIGN_SYSTEM.md): current visual baseline and regression assets.
 - [`development/SETUP.md`](development/SETUP.md): local setup and validation workflow.
 - [`development/COMMANDS.md`](development/COMMANDS.md): development, build, test, and release command reference.
+- [`development/REGRESSION_CHECKLIST.md`](development/REGRESSION_CHECKLIST.md): mandatory review and recurring-risk tests by change scope and client.
 - [`release/RELEASE_PROCESS.md`](release/RELEASE_PROCESS.md): versioning and publication workflow.
 - [`release/DISTRIBUTION_MATRIX.md`](release/DISTRIBUTION_MATRIX.md): client/package support and qualification boundaries.
 - [`clients/README.md`](clients/README.md): current desktop, Android, iOS, and website lifecycle matrix.
@@ -25,4 +26,4 @@ Start here instead of relying on dated files discovered by search.
 
 [`archive/`](archive/README.md) contains dated audits, proposals, implementation notes, and superseded visual evidence. These files explain earlier decisions but are not current status or command authority.
 
-Latest dated review: [2026-10-13 UI, lyrics and upgrade review](archive/2026-10-13-ui-lyrics-upgrade-review.md).
+Latest dated review: [2026-10-14 ratings, scanning and startup review](archive/2026-10-14-ratings-scan-startup-review.md).

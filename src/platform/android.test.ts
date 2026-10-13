@@ -37,6 +37,19 @@ afterEach(() => {
 });
 
 describe("Android service synchronization", () => {
+  it("preserves statistics references on unchanged polling snapshots", async () => {
+    vi.mocked(invoke).mockResolvedValue({ ...snapshot, lastPlayedAt: { 1: "1700000000" } });
+    disconnect = connectAndroidPlayback();
+    await flush();
+    const before = useNanoStore.getState();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(useNanoStore.getState().lastPlayedAt).toBe(before.lastPlayedAt);
+    expect(useNanoStore.getState().playCounts).toBe(before.playCounts);
+    vi.mocked(invoke).mockResolvedValue({ ...snapshot, lastPlayedAt: { 1: "1700000001" } });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(useNanoStore.getState().lastPlayedAt[1]).toBe("1700000001");
+  });
+
   it("restores the live native queue without issuing playback or counting in JavaScript", async () => {
     disconnect = connectAndroidPlayback();
     await flush();

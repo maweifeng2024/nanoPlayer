@@ -87,3 +87,9 @@ This document separates implemented behavior from release qualification. “Impl
 ## Safety boundary
 
 Only paths returned by the native folder picker are passed to the Rust scanner. The scanner canonicalizes roots, ignores symbolic links, opens media only for metadata reads, and records failures without stopping the rest of the import. Removing a root deletes its application index in a transaction and never calls a filesystem deletion API.
+
+## 2026-10-14 local 0.1.19 verification
+
+- Saved ratings now use visibly filled gold stars; rating changes are saved immediately to native state. Unchanged persisted fields skip serialization during navigation.
+- Local shared checks, Rust formatting/Clippy/tests, 10k FTS gate, release-script tests and website build passed. Browser screenshot confirms ratings; desktop installers/publication remain user-run with `pnpm release 0.1.19` from `main`.
+- [Detailed verification and client boundaries](../../archive/2026-10-14-ratings-scan-startup-review.md).

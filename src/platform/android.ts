@@ -74,6 +74,10 @@ export function connectAndroidPlayback() {
     const sameCounts =
       Object.keys(counts).length === Object.keys(current.playCounts).length &&
       Object.entries(counts).every(([id, count]) => current.playCounts[Number(id)] === count);
+    const lastPlayedAt = snapshot.lastPlayedAt;
+    const sameLastPlayed = lastPlayedAt &&
+      Object.keys(lastPlayedAt).length === Object.keys(current.lastPlayedAt).length &&
+      Object.entries(lastPlayedAt).every(([id, date]) => current.lastPlayedAt[Number(id)] === date);
     const queue = snapshot.queue.map(Number).filter(Number.isFinite);
     const order = snapshot.playbackOrder?.map(Number).filter(Number.isFinite);
     const sameIds = (left: number[], right: number[]) =>
@@ -100,7 +104,7 @@ export function connectAndroidPlayback() {
       orderMode: snapshot.shuffle ? "shuffle" : "sequence",
       repeatMode: snapshot.repeatMode === 1 ? "one" : snapshot.repeatMode === 2 ? "all" : "off",
       playCounts: sameCounts ? current.playCounts : counts,
-      ...(snapshot.lastPlayedAt ? { lastPlayedAt: snapshot.lastPlayedAt } : {}),
+      ...(lastPlayedAt ? { lastPlayedAt: sameLastPlayed ? current.lastPlayedAt : lastPlayedAt } : {}),
       ...(snapshot.error ? { notice: snapshot.error } : {}),
     });
     applying = false;

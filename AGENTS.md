@@ -50,6 +50,14 @@ Do not document a command before it exists. A client README must state unsupport
 
 See `docs/development/COMMANDS.md` for arguments and boundaries.
 
+## Mandatory Regression Review
+
+Read [the regression review checklist](docs/development/REGRESSION_CHECKLIST.md) before implementing changes. For every executable change, run its common checks and select the additional checks by affected behavior and client; shared UI/state changes require desktop, phone and Pad coverage. Record commands, outcomes, visual/device evidence and remaining acceptance work. Historical passing counts or an older APK never qualify a new change.
+
+Repeated-risk areas are responsive layout and artwork/playback-marker overlap, menu toggle/focus behavior, library selection across all collections and native queues, large-library Android responsiveness, persisted-data migrations, lyrics timing, background playback/counting/sleep timers, and release-source validation. A browser or frontend performance pass cannot establish native Android responsiveness; queue changes need native checks and device reproduction when a device is available. Add a regression at the layer where a reproduced defect occurs.
+
+Documentation-only changes require diff/path checks and confirmation that executable inputs, tests, packaging, versions and published metadata remain unchanged; do not allocate a version, build an APK or trigger publication for such changes.
+
 ## Versioning and Release Completion
 
 The user runs commands that push to GitHub, create or publish release tags, trigger remote workflows, build desktop installers, or publish/deploy desktop releases and the website. The agent must not run these operations automatically, including through equivalent Git, GitHub CLI, API, or helper-script calls. Unless the user explicitly authorizes execution for the current task, finish the local changes and checks, then provide the exact commands for the user to run. This execution boundary takes precedence over automated release instructions elsewhere in the repository.

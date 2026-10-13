@@ -29,6 +29,7 @@ class NativeArgs {
     var color: String = "#18181b"
     var light: Boolean = false
     var queue: String = "[]"
+    var fingerprints: String = "{}"
     var uri: String = ""
     var index: Int = 0
     var positionMs: Long = 0
@@ -107,7 +108,7 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
             "cancelScan" -> { scanCancelled.set(true); invoke.resolve(JSObject()) }
             "scanTree" -> worker.execute {
                 scanCancelled.set(false)
-                try { invoke.resolve(scan(args.uri)) } catch (e: Exception) { invoke.reject(e.message ?: "Unable to read folder") }
+                try { invoke.resolve(scan(args.uri, org.json.JSONObject(args.fingerprints))) } catch (e: Exception) { invoke.reject(e.message ?: "Unable to read folder") }
             }
             else -> playbackWorker.execute {
                 try {
@@ -239,35 +240,65 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
         }
     }
 
-    private fun scan(uriString: String): JSObject {
+    private data class ScanDocument(val id: String, val uri: Uri, val name: String, val isDirectory: Boolean, val size: Long, val modified: Long)
+
+    // One provider query per directory, rather than a query for every property of every child.
+    private fun scanChildren(directory: Uri): List<ScanDocument> {
+        val columns = arrayOf(android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID, android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            android.provider.DocumentsContract.Document.COLUMN_MIME_TYPE, android.provider.DocumentsContract.Document.COLUMN_SIZE, android.provider.DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+        val childrenUri = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(directory, android.provider.DocumentsContract.getDocumentId(directory))
+        val result = ArrayList<ScanDocument>()
+        val cursor = activity.contentResolver.query(childrenUri, columns, null, null, null)
+            ?: error("Folder permission expired or provider unavailable")
+        cursor.use {
+            while (it.moveToNext()) {
+                val id = it.getString(0)
+                result.add(ScanDocument(id, android.provider.DocumentsContract.buildDocumentUriUsingTree(directory, id), it.getString(1) ?: "",
+                    it.getString(2) == android.provider.DocumentsContract.Document.MIME_TYPE_DIR, it.getLong(3), it.getLong(4)))
+            }
+        }
+        return result
+    }
+
+    private fun scan(uriString: String, known: org.json.JSONObject): JSObject {
         val uri = Uri.parse(uriString)
         require(uri.scheme == "content")
         require(activity.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission }) {
             "Folder access expired; select it again"
         }
         val root = DocumentFile.fromTreeUri(activity, uri) ?: error("Folder unavailable")
-        val pending = java.util.ArrayDeque<DocumentFile>(); pending.add(root)
+        val pending = java.util.ArrayDeque<Uri>(); pending.add(root.uri)
         val seen = HashSet<String>(); val tracks = JSONArray(); val issues = JSONArray()
         while (pending.isNotEmpty()) {
             if (scanCancelled.get() || Thread.currentThread().isInterrupted) {
                 val response = JSObject(); response.put("cancelled", true); return response
             }
             val directory = pending.removeFirst()
-            require(directory.exists() && directory.canRead()) { "Folder permission expired or provider unavailable" }
-            if (!seen.add(directory.uri.toString())) continue
+            if (!seen.add(directory.toString())) continue
             require(seen.size <= 10000) { "Folder limit exceeded" }
-            val children = directory.listFiles()
-            val lyrics = children.filter { it.name?.endsWith(".lrc", ignoreCase = true) == true }.associateBy { it.name!!.substringBeforeLast('.').lowercase() }
+            val children = scanChildren(directory)
+            val lyrics = children.filter { it.name.endsWith(".lrc", ignoreCase = true) }.associateBy { it.name.substringBeforeLast('.').lowercase() }
             for (file in children) {
-                if (file.isDirectory) pending.add(file)
-                else if (file.name?.substringAfterLast('.')?.lowercase() in setOf("mp3", "m4a", "aac", "flac", "wav", "ogg", "opus", "aiff", "aif", "alac")) {
+                if (scanCancelled.get() || Thread.currentThread().isInterrupted) {
+                    val response = JSObject(); response.put("cancelled", true); return response
+                }
+                if (file.isDirectory) pending.add(file.uri)
+                else if (file.name.substringAfterLast('.').lowercase() in setOf("mp3", "m4a", "aac", "flac", "wav", "ogg", "opus", "aiff", "aif", "alac")) {
                     require(tracks.length() < 100000) { "Track limit exceeded" }
                     val entry = org.json.JSONObject().put("uri", file.uri.toString()).put("name", file.name)
                         .put("documentId", android.provider.DocumentsContract.getDocumentId(file.uri))
-                        .put("title", file.name?.substringBeforeLast('.') ?: "未知歌曲")
+                        .put("title", file.name.substringBeforeLast('.'))
                         .put("artist", "未知艺术家").put("albumArtist", "未知艺术家").put("album", "未知专辑")
-                        .put("format", file.name?.substringAfterLast('.')?.lowercase())
-                        .put("sizeBytes", file.length()).put("modifiedAt", file.lastModified())
+                        .put("format", file.name.substringAfterLast('.').lowercase())
+                        .put("sizeBytes", file.size).put("modifiedAt", file.modified)
+                    val sidecar = lyrics[file.name.substringBeforeLast('.').lowercase()]
+                    val fingerprint = scanFingerprint(file.size, file.modified, sidecar?.id, sidecar?.size, sidecar?.modified)
+                    entry.put("fingerprint", fingerprint)
+                    if (canReuseScan(file.modified, sidecar?.modified, known.optString(file.id), fingerprint)) {
+                        entry.put("unchanged", true)
+                        tracks.put(entry)
+                        continue
+                    }
                     val metadata = android.media.MediaMetadataRetriever()
                     try {
                         metadata.setDataSource(activity, file.uri)
@@ -288,9 +319,10 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                         entry.put("durationMs", metadata.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0)
                         metadata.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_YEAR)?.toIntOrNull()?.let { entry.put("year", it) }
                     } catch (e: Exception) {
+                        entry.put("fingerprint", "")
                         issues.put(org.json.JSONObject().put("uri", file.uri.toString()).put("detail", e.message ?: "无法读取音频元数据"))
                     } finally { metadata.release() }
-                    lyrics[file.name?.substringBeforeLast('.')?.lowercase()]?.let { sidecar ->
+                    sidecar?.let { sidecar ->
                         try {
                             activity.contentResolver.openInputStream(sidecar.uri)?.use { input ->
                                 val output = java.io.ByteArrayOutputStream()
@@ -305,6 +337,7 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                                 entry.put("lyrics", bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF"))
                             }
                         } catch (e: Exception) {
+                            entry.put("fingerprint", "")
                             issues.put(org.json.JSONObject().put("uri", sidecar.uri.toString()).put("detail", e.message ?: "无法读取歌词"))
                         }
                     }

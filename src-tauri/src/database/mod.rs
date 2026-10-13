@@ -1104,7 +1104,22 @@ mod tests {
             .unwrap();
         database.upsert_source_scan(tree, "Music", scan()).unwrap();
         database.upsert_source_scan(tree, "Music", scan()).unwrap();
+        let mut unchanged = track.clone();
+        unchanged.metadata = None;
+        unchanged.sidecar_lyrics = None;
+        database
+            .upsert_source_scan(
+                tree,
+                "Music",
+                ScanResult {
+                    tracks: vec![unchanged],
+                    ..ScanResult::default()
+                },
+            )
+            .unwrap();
         let restored = database.snapshot().unwrap();
+        assert_eq!(restored.tracks[0].title, first.tracks[0].title);
+        assert_eq!(restored.tracks[0].lyrics, first.tracks[0].lyrics);
         assert_eq!(restored.tracks.len(), 1);
         assert_eq!(restored.tracks[0].id, id);
         assert_eq!(restored.tracks[0].path, uri);

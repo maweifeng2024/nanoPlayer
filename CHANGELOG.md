@@ -4,6 +4,13 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.19] - 2026-10-14
+
+- Highlight saved song ratings and persist rating changes immediately to native state.
+- Batch Android SAF directory queries and reuse unchanged audio metadata, artwork and lyrics during rescans.
+- Wait for the native library snapshot before showing first-run onboarding.
+- Skip unchanged persisted-state serialization during navigation and preserve statistics references during Android playback polling.
+
 ## [0.1.18] - 2026-10-13
 
 - Fix device-confirmed Android ANRs during library selection: replace per-item controller moves with at most two bulk queue replacements while retaining the current source; parse queues and check URI permissions off the UI thread.
