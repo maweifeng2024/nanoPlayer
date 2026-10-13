@@ -17,6 +17,8 @@ First configure CI deployment credentials with `node scripts/release/setup-verce
 
 `pnpm release` now waits for the tag's GitHub workflow and exits nonzero if builds, asset publishing, or deployment fails. After committing and pushing a publishing-script fix, use `pnpm release --resume vX.Y.Z`: it reuses the original tag artifacts with the current main publishing workflow. A rerun of an old build still uses its old source; never move an existing tag.
 
+Before dispatching publication recovery, the local command requires successful original verification and all three platform builds. If original source compilation failed, fix the source and release a new unused version. Retrying publication cannot create the missing installers. For transient build failures, rerun the failed original jobs before retrying recovery.
+
 Run `pnpm release` from `main`. It increments the patch version by default, runs the local quality gates, commits every tracked and untracked change, creates and pushes the version tag, and starts `.github/workflows/release.yml`. Pass an explicit version for a minor or major release, for example `pnpm release -- 0.2.0`.
 
 The GitHub workflow builds on macOS, Windows, and Linux, publishes one GitHub Release with checksums, updates `website/public/downloads/latest.json` from the actual uploaded artifacts, deploys the static website to Vercel, verifies it, then writes the generated manifest back to `main`. Configure these GitHub Actions repository secrets before the first run:
@@ -45,4 +47,4 @@ No iOS/iPadOS build or release command exists. Before the first installable buil
 
 ## 2026-10-13 local version preparation
 
-0.1.15 is synchronized locally, with Android versionCode 1013 allocated once for this build (reuse only on retries). Local UI/lyrics/upgrade/sleep-timer behavior and verification boundaries are in the current client STATUS documents. Desktop publication remains user-run with `pnpm release 0.1.15` from `main`; this preparation does not mean that desktop artifacts or a remote release exist.
+The v0.1.15 tag build failed Rust Clippy verification (run 38362786908); no desktop bundles were built, and recovery run 38363315079 correctly rejected its source. 0.1.16 contains the source fix and local recovery preflight, with Android versionCode 1014 allocated once (reuse only on retries). Desktop publication remains user-run with `pnpm release 0.1.16` from `main`; local preparation does not establish remote publication.

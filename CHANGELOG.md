@@ -4,6 +4,11 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.16] - 2026-10-13
+
+- Fix lyric request error handling rejected by CI's newer Rust Clippy, restoring desktop build verification.
+- Reject publishing recovery before dispatch when original verification or platform builds failed; source fixes require a new version instead of retrying publication.
+
 ## [0.1.15] - 2026-10-13
 
 - Separate playing-row accents from artwork in all shared desktop/Android song lists; increase small text and unify 44px touch controls.

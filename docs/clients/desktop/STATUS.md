@@ -1,6 +1,11 @@
 # Desktop implementation status
 
-Updated: 2026-10-13 · Local source: 0.1.15 · Published desktop: 0.1.14 · Detailed verification below is dated where stated
+Updated: 2026-10-13 · Local source: 0.1.16 · Published desktop: 0.1.14 · Detailed verification below is dated where stated
+
+## 2026-10-13 release repair (0.1.16)
+
+- v0.1.15 tag build 38362786908 failed verification before any desktop platform build: CI Rust 1.99 Clippy rejected three unnecessary closure borrows in lyric requests. Publishing recovery 38363315079 therefore failed provenance validation; retrying publication cannot repair this tagged source.
+- 0.1.16 removes those borrows and adds local recovery preflight for unsuccessful verification/platform jobs, covered by four regression tests. Publication remains user-run with `pnpm release 0.1.16` from main. Local Rust is 1.98; CI 1.99 and desktop installers remain remote acceptance work. See `artifacts/verification/v0.1.16/summary.md`.
 
 This document separates implemented behavior from release qualification. “Implemented” means the path exists in code and has proportionate automated verification; it does not mean long-duration or signed-release gates have been completed.
 

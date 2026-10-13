@@ -28,6 +28,16 @@ for (const candidate of matching) {
   const { jobs } = json(['run', 'view', String(candidate.databaseId), '--json', 'jobs']);
   if (jobs.some(job => job.name === 'publish' && job.conclusion === 'success')) { publishedRun = candidate.databaseId; break; }
 }
+// A publishing retry cannot repair source compilation or create missing bundles.
+// Keep the workflow's provenance check, and fail locally before dispatching it.
+if (!publishedRun) {
+  const { jobs } = json(['run', 'view', String(source.databaseId), '--json', 'jobs']);
+  for (const name of ['verify', 'Build macOS universal', 'Build Windows x64', 'Build Linux x64']) {
+    if (!jobs.some(job => job.name === name && job.conclusion === 'success')) {
+      throw new Error(`Cannot resume ${tag}: source job did not succeed: ${name}. Inspect gh run view ${source.databaseId} --log-failed. If source code needs fixing, publish a new unused version; never move ${tag}.`);
+    }
+  }
+}
 const started = new Date().toISOString();
 execFileSync('gh', ['workflow', 'run', 'publish-release.yml', '--ref', 'main', '-f', `tag=${tag}`, '-f', `source_run_id=${source.databaseId}`, ...(publishedRun ? ['-f', `published_run_id=${publishedRun}`] : [])], { stdio: 'inherit' });
 execFileSync('node', ['scripts/release/watch-release.mjs', tag, '--workflow', 'publish-release.yml', '--after', started], { stdio: 'inherit' });

@@ -76,7 +76,7 @@ impl LrclibProvider {
             ])
             .send()
             .await
-            .map_err(&request_error)?;
+            .map_err(request_error)?;
         if exact.status().is_success() {
             let candidate = exact
                 .json::<LyricsCandidate>()
@@ -105,14 +105,14 @@ impl LrclibProvider {
                 .query(&query)
                 .send()
                 .await
-                .map_err(&request_error)?;
+                .map_err(request_error)?;
             if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
                 return Err(service_status_error(response.status()));
             }
             if !response.status().is_success() {
                 continue;
             }
-            let body = response.bytes().await.map_err(&request_error)?;
+            let body = response.bytes().await.map_err(request_error)?;
             candidates.extend(parse_candidates(&body)?);
             if candidates.len() >= 12 {
                 break;

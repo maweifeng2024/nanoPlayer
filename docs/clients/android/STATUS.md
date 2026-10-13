@@ -1,6 +1,11 @@
 # Android implementation status
 
-Updated 2026-10-13; local source version 0.1.15. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+Updated 2026-10-13; local source version 0.1.16. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+
+## 2026-10-13 release repair (0.1.16)
+
+- Remove unnecessary closure borrows rejected by desktop CI Clippy; lyric error messages and lookup behavior are unchanged.
+- Verified local debug APK: `artifacts/android/v0.1.16-b1014/debug/nanoPlayer-0.1.16-b1014-arm64-debug.apk`; versionName 0.1.16, versionCode 1014, arm64-v8a, minSdk 29, 209134714 bytes, APK v2 Android Debug signing. SHA-256: `edac2552eb18b2004d56887e47582cdbee7e7bb32fc3c616ab796dd3d2fe1f86`. No device is connected; installation/launch remains unverified. See `artifacts/verification/v0.1.16/summary.md` for local checks.
 
 
 ## 2026-10-13 local implementation (0.1.15)
