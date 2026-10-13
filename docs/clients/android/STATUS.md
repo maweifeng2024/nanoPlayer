@@ -1,6 +1,14 @@
 # Android implementation status
 
-Updated 2026-10-13; local source version 0.1.17. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+Updated 2026-10-13; local source version 0.1.18. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+
+## 2026-10-13 device-confirmed Android ANR repair (0.1.18)
+
+- Cause verified on USB-connected PKH110 / Android 16: 0.1.17 main thread stalled in `MediaController.moveMediaItem` while reconciling a large queue. Frontend indexing alone did not solve the native ANR.
+- Implemented: at most two batch replacements around the current source; background queue parsing and permission validation. Current item/position stay intact when still selected.
+- Verified: 13 native tests, 56 frontend unit tests, 77 browser tests, Rust fmt/Clippy/tests/FTS benchmark, website build. Local evidence: `artifacts/verification/v0.1.18/summary.md`.
+- Phone: 0.1.18 / 1016 installed in place; nine toggles each starting with a 3,284-item queue plus Android touch-input checks passed; no new ANR through 18:54:47 CST. Selection and paused queue/position restored. Long-duration/lockscreen acceptance remains open.
+- APK: `artifacts/android/v0.1.18-b1016/debug/nanoPlayer-0.1.18-b1016-arm64-debug.apk`, arm64-v8a, APK v2 debug signature verified. Desktop publication remains user-run: `pnpm release 0.1.18` from main.
 
 ## 2026-10-13 artist artwork and library selection (0.1.17)
 

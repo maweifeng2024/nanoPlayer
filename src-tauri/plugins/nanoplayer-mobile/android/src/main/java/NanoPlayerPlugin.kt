@@ -45,6 +45,7 @@ class NativeArgs {
 class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
     private val scanCancelled = java.util.concurrent.atomic.AtomicBoolean(false)
     private val worker = Executors.newSingleThreadExecutor()
+    private val playbackWorker = Executors.newSingleThreadExecutor()
     private val controllerDelegate = lazy {
         MediaController.Builder(activity, SessionToken(activity, ComponentName(activity, PlaybackService::class.java))).buildAsync()
     }
@@ -53,6 +54,7 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
     override fun onDestroy(activity: androidx.appcompat.app.AppCompatActivity) {
         if (controllerDelegate.isInitialized()) MediaController.releaseFuture(controller)
         worker.shutdownNow()
+        playbackWorker.shutdownNow()
         super.onDestroy(activity)
     }
 
@@ -107,15 +109,13 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                 scanCancelled.set(false)
                 try { invoke.resolve(scan(args.uri)) } catch (e: Exception) { invoke.reject(e.message ?: "Unable to read folder") }
             }
-            else -> controller.addListener({
+            else -> playbackWorker.execute {
                 try {
-                    val player = controller.get()
-                    when (args.action) {
-                        "setQueue", "updateQueue" -> {
+                    val items = if (args.action == "setQueue" || args.action == "updateQueue") {
                             val queue = JSONArray(args.queue)
                             require(queue.length() in 0..10000) { "Queue size must be 1–10000" }
                             require(queue.length() == 0 || args.index in 0 until queue.length()) { "Invalid queue index" }
-                            val items = (0 until queue.length()).map { i ->
+                             (0 until queue.length()).map { i ->
                                 val entry = queue.getJSONObject(i)
                                 val uri = Uri.parse(entry.getString("uri"))
                                 require(uri.scheme == "content") { "Only user-selected content URIs are allowed" }
@@ -126,14 +126,17 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                                     .setMediaMetadata(MediaMetadata.Builder().setTitle(entry.optString("title"))
                                         .setArtist(entry.optString("artist")).build()).build()
                             }
+                    } else emptyList()
+                    controller.addListener({
+                try {
+                    val player = controller.get()
+                    when (args.action) {
+                        "setQueue", "updateQueue" -> {
                             if (items.isEmpty()) player.clearMediaItems()
                             else if (args.action == "updateQueue") {
-                                for ((index, item) in items.withIndex()) {
-                                    val found = (index until player.mediaItemCount).firstOrNull { player.getMediaItemAt(it).mediaId == item.mediaId }
-                                    if (found == null) player.addMediaItem(index, item)
-                                    else if (found != index) player.moveMediaItem(found, index)
-                                }
-                                if (player.mediaItemCount > items.size) player.removeMediaItems(items.size, player.mediaItemCount)
+                                val oldIds = (0 until player.mediaItemCount).map { player.getMediaItemAt(it).mediaId }
+                                val edits = queueReplacements(oldIds, items.map { it.mediaId }, player.currentMediaItemIndex)
+                                for (edit in edits) player.replaceMediaItems(edit.from, edit.to, items.subList(edit.itemsFrom, edit.itemsTo))
                             } else {
                                 player.setMediaItems(items, args.index, args.positionMs.coerceAtLeast(0))
                                 player.prepare()
@@ -189,6 +192,8 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                     invoke.resolve(state as JSObject)
                 } catch (e: Exception) { invoke.reject(e.message ?: "Native playback failed") }
             }, ContextCompat.getMainExecutor(activity))
+                } catch (e: Exception) { invoke.reject(e.message ?: "Native playback failed") }
+            }
         }
     }
 

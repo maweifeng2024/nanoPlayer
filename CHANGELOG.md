@@ -4,6 +4,10 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.18] - 2026-10-13
+
+- Fix device-confirmed Android ANRs during library selection: replace per-item controller moves with at most two bulk queue replacements while retaining the current source; parse queues and check URI permissions off the UI thread.
+
 ## [0.1.17] - 2026-10-13
 
 - Replace empty artist initials with a local music illustration and full artist name.
