@@ -55,13 +55,13 @@ Root package scripts are the only documented public command surface. A client ma
 
 | Lifecycle | Desktop | Android | iOS |
 | --- | --- | --- | --- |
-| Diagnose | shared setup checks | `android:doctor` | planned `ios:doctor` |
-| Develop | `tauri dev` | Tauri/native helper commands | planned simulator/device helper |
-| Build | `tauri build` | `android:build:debug` | planned `ios:build:<variant>` |
-| Test | shared Vitest/E2E/Rust | `android:test:emulator` | planned `ios:test:simulator` |
-| Package/release | `release:desktop` / `release` | `release:android` | planned `release:ios` |
+| Diagnose | shared setup checks | `android:doctor` | `ios:doctor` |
+| Develop | `tauri dev` | Tauri/native helper commands | `ios:dev` |
+| Build | `tauri build` | `android:build:debug` | `ios:build:simulator` |
+| Test | shared Vitest/E2E/Rust | `android:test:emulator` | `ios:test:unit`, `ios:test:simulator <UDID>` |
+| Package/release | `release:desktop` / `release` | `release:android` | `release:ios` (local only, artifact qualification pending) |
 
-Planned names are a contract for future implementation, not runnable commands today.
+Availability and device qualification are separate. Current iOS commands exist; runtime, signing/export and installable qualification remain pending in [iOS status](clients/ios/STATUS.md).
 
 ## Organization rules
 

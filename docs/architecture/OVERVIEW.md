@@ -10,7 +10,7 @@ The React UI communicates with a narrow Tauri command/event layer. Rust owns app
 4. Lyrics providers are optional adapters; embedded and sidecar lyrics work offline.
 5. User state and caches live in application-managed storage, never beside source audio by default.
 
-Audio output currently uses rodio/cpal platform backends. Media controls in `src/player/PlayerBar.tsx` use the WebView's `navigator.mediaSession`; dedicated native Now Playing, SMTC, and MPRIS adapters are not implemented and must not be inferred from package availability.
+Desktop audio output uses rodio/cpal platform backends. Desktop media controls in `src/player/PlayerBar.tsx` use the WebView's `navigator.mediaSession`; dedicated desktop Now Playing, SMTC, and MPRIS adapters are not implemented and must not be inferred from package availability. Android uses Media3; the first iOS integration uses AVPlayer and native Now Playing/remote commands, with device acceptance pending.
 
 ## Implemented flow
 
@@ -31,6 +31,10 @@ Audio output currently uses rodio/cpal platform backends. Media controls in `src
 - `src/updates`: desktop update checking, installation and restart; release scripts generate signed updater metadata independently of OS code signing.
 
 Desktop playback completion/queue advance and periodic state saving depend on frontend timers (`PlayerBar.tsx`, `App.tsx`). Android uses its native media-service/session path instead of assuming the WebView remains active. See [mobile feasibility](../clients/MOBILE_FEASIBILITY.md) and [Android status](../clients/android/STATUS.md).
+
+The iOS entry is `src-tauri/src/ios.rs`, with Swift sources under `src-tauri/plugins/nanoplayer-mobile/ios/`. Swift owns authorized documents, copied imports, native playback/queue, journal/timers and foreground Wi-Fi receiving; Rust owns the shared database and scanner. `src/platform/mobile.ts` routes transport and mobile UI without pulling desktop audio/updater initialization into Apple mobile builds. Compile evidence and unverified lifecycle/device boundaries are in [iOS status](../clients/ios/STATUS.md).
+
+The approved iOS resource library uses `IOSLibraryPage` and `NativeLibrary` to separate managed content, Files references and exposed folders from other music apps. Only `Documents/Music` may be mutated: copied imports are coordinated and byte-verified before committing, folder/file moves have a durable intent journal, and Rust updates paths transactionally without changing track IDs. External references stay read-only, with explicit source UUIDs, display-name collision rules and persisted relative indexing scope. Internal recovery actions cannot be called through the iOS frontend bridge; iOS does not grant direct mobile-plugin dispatch permission. System audio-open requests are staged in application support until the user selects a managed destination. Provider permissions, actual sharing/network behavior and interrupted recovery still require device acceptance.
 
 ## Recovery and safety
 

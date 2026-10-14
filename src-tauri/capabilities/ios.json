@@ -1,0 +1,7 @@
+{
+  "identifier": "ios-main",
+  "description": "iOS native playback and explicitly selected documents",
+  "windows": ["main"],
+  "platforms": ["iOS"],
+  "permissions": ["core:default"]
+}

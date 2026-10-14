@@ -47,6 +47,7 @@ pnpm website:build
 Android 修改追加插件 JVM 测试、适用的原生 instrumentation 和本地 APK 构建验证。原生测试路径见 [Android 状态](../clients/android/STATUS.md)；已有模拟器公共入口为 `pnpm android:test:emulator [模拟器序列号]`。不要把仅支持模拟器的入口当作真机测试命令，也不要为尚未实现的客户端编造命令。
 
 - 浏览器测试证明共享展示与交互；原生单元测试证明对应算法/状态；安装后的模拟器/真机检查证明该设备和场景。三类结论分别报告。
+- iOS 修改追加 `pnpm ios:test:unit` 与 iOS 16 的 Rust/Swift 编译/Clippy；有运行时后在 iPhone/iPad 分别执行 `pnpm ios:test:simulator <UDID>`。共享 UI 改动同时覆盖 iPhone/iPad 的浏览器布局。后台音频、Files 授权、Wi-Fi 接收、升级和签名仍需原生设备验收，详细清单见 [iOS 流程](../clients/ios/WORKFLOW.md)。
 - 声称卡死修复需有复现步骤、修复前定位证据、修复后同规模/同路径重复操作与新增 ANR 检查；未连接设备时标为“原生设备待验收”。历史 3,284 首队列的通过次数与耗时不是固定性能阈值，也不是今后版本的保证。
 - UI 变更先查看截图差异、修正问题，再更新有意变化的快照并重跑相关测试；不能只更新快照来让失败变绿。虚拟列表使用稳定语义 ID/名称定位，滚动后不复用 DOM 数字索引。
 - 浏览器启动即关闭、缓存 `Operation not permitted` 等先按环境故障定位；修复权限/运行环境后重跑，不删除断言或改业务行为迁就环境。报告失败和重跑结果。

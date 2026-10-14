@@ -47,6 +47,7 @@ Do not document a command before it exists. A client README must state unsupport
 - `pnpm lint` and `cargo fmt --check --manifest-path src-tauri/Cargo.toml`: verify style.
 - `pnpm website:build`: validate the website.
 - `pnpm android:doctor`, `pnpm android:build:debug`, `pnpm android:test:emulator`: Android lifecycle commands.
+- `pnpm ios:doctor`, `pnpm ios:init`, `pnpm ios:dev`, `pnpm ios:build:simulator`, `pnpm ios:test:unit`, `pnpm ios:test:simulator <UDID>`: iOS lifecycle commands. Follow `docs/clients/ios/WORKFLOW.md`; commands existing does not establish device qualification.
 
 See `docs/development/COMMANDS.md` for arguments and boundaries.
 
@@ -97,4 +98,4 @@ Use Vitest for UI/state rules, Rust tests for playback/library rules, and Playwr
 
 Use Conventional Commits and keep commits focused. Pull requests explain behavior changes, link the relevant current plan or issue, list verification commands, and include screenshots for UI changes. Call out migrations, permission changes, signing changes, and source-file write risk.
 
-Treat music directories as read-only. Store ratings, playlists, statistics, downloaded lyrics, and artwork caches in application-managed storage. Online lyric lookup must be opt-in, disclose transmitted metadata, and fail without interrupting playback. Never commit credentials, signing keys, personal media, local SDK paths, or generated artifacts.
+Treat external music directories as read-only. The user-approved iOS managed library may create, rename and move files/folders only inside `Documents/Music`; native path checks must reject traversal, symlink escapes and every external write. Copying external audio must preserve source bytes; managed moves preserve track IDs and audio bytes through a recoverable path journal. Store ratings, playlists, statistics, downloaded lyrics, and artwork caches in application-managed storage. Online lyric lookup must be opt-in, disclose transmitted metadata, and fail without interrupting playback. Never commit credentials, signing keys, personal media, local SDK paths, or generated artifacts.

@@ -10,7 +10,7 @@ The repository source and local tag are v0.1.12. The checked-in website download
 | Windows 10+ | x64 NSIS `.exe`, English/Chinese WiX `.msi` | Tagged desktop GitHub release | Code signing and full native install/playback/upgrade qualification remain evidence-dependent |
 | Linux x64 | AppImage, `.deb`, `.rpm` | Tagged desktop GitHub release | Distribution/runtime and hardware qualification remain evidence-dependent |
 | Android 10+ phone/Pad | arm64 APK | Local `release:android` packaging | Debug signing verified historically; production signing, physical devices, AAB/store and public upload are not complete |
-| iOS/iPadOS | None | None | Planning only; no native project, command, signing, artifact, or release |
+| iOS/iPadOS 16+ | No verified app/IPA yet | Local lifecycle and packaging scripts | Swift/Rust compilation passes; simulator runtime, signed export and device acceptance pending |
 | Website | Static product/download site | Desktop publication workflow | Must be generated from verified published assets; never hand-edit download claims |
 
 Desktop updater signatures are distinct from operating-system code signing. Android signatures and build numbers are independent of the desktop updater manifest. A future iOS package will likewise require its own monotonic build number and signing verification while sharing the root product version.

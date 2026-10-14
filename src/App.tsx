@@ -7,7 +7,8 @@ import {
   PhonePlaylists,
   PhoneSettingsButton,
 } from "./layouts/PhoneNavigation";
-import { isAndroid, androidCommand, connectAndroidPlayback } from "./platform/android";
+import { isMobile, isIOS, mobileCommand, connectMobilePlayback } from "./platform/mobile";
+import { IOSOpenFiles } from "./library/IOSOpenFiles";
 import { UpdateNotifier } from "./updates/UpdateSettings";
 import { AmbientBackground } from "./library/AmbientBackground";
 import { t } from "./i18n";
@@ -68,7 +69,7 @@ const startWindowDrag = (event: MouseEvent<HTMLElement>) => {
     (event.target as HTMLElement).closest("button, input, label, a, [role='button']")
   )
     return;
-  if (isTauri() && !isAndroid())
+  if (isTauri() && !isMobile())
     getCurrentWindow()
       .startDragging()
       .catch(() => undefined);
@@ -143,7 +144,7 @@ export default function App() {
     getLibrarySnapshot()
       .then(({ roots, tracks, issues, playlists: nativePlaylists, userState }) => {
         if (!active) return;
-        if (isAndroid() && !userState)
+        if (isMobile() && !userState)
           useNanoStore.setState({
             playlists: [],
             ratings: {},
@@ -158,7 +159,7 @@ export default function App() {
         if (restored.selectedRootIds !== null)
           restored.setSelectedRootIds(restored.selectedRootIds);
         if (nativePlaylists?.length) replacePlaylists(nativePlaylists);
-        if (isAndroid()) {
+        if (isMobile()) {
           const loaded = useNanoStore.getState();
           replacePlaylists(
             loaded.playlists.filter(
@@ -177,7 +178,7 @@ export default function App() {
           });
         }
         setLibraryLoaded(true);
-        if (isAndroid()) disconnectAndroid = connectAndroidPlayback();
+        if (isMobile()) disconnectAndroid = connectMobilePlayback();
         unsubscribePlaylists = useNanoStore.subscribe((state, previous) => {
           if (
             state.playlists !== previous.playlists ||
@@ -322,7 +323,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    if (!isAndroid()) return;
+    if (!isMobile()) return;
     const back = (event: Event) =>
       queueMicrotask(() => {
         if (event.defaultPrevented) return;
@@ -341,9 +342,11 @@ export default function App() {
         if (sidebarOpen) return setSidebarOpen(false);
         if (drawer) return useNanoStore.getState().toggleDrawer(drawer);
         if (page === "now-playing") return useNanoStore.getState().collapsePlayer();
+        if (useNanoStore.getState().selectedCollection)
+          return useNanoStore.getState().clearSelectedCollection();
         if (page === "playlist") return setPage("playlists");
         if (page !== "home") return setPage("home");
-        void androidCommand("background");
+        void mobileCommand("background");
       });
     window.addEventListener("android-back", back);
     return () => window.removeEventListener("android-back", back);
@@ -354,7 +357,7 @@ export default function App() {
   return (
     <div className={`app-shell ${drawer ? "has-drawer" : ""}`} data-page={page}>
       <AmbientBackground />
-      {!isAndroid() && <UpdateNotifier />}
+      {!isMobile() && <UpdateNotifier />}
       <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label={t("主导航")}>
         <div className="brand-row" data-tauri-drag-region onMouseDown={startWindowDrag}>
           <div className="brand">
@@ -373,7 +376,7 @@ export default function App() {
         <nav>
           {[
             ...navigation.slice(0, 5),
-            ...(isAndroid() ? [{ id: "playlists" as const, label: "歌单", icon: Heart }] : []),
+            ...(isMobile() ? [{ id: "playlists" as const, label: "歌单", icon: Heart }] : []),
             ...navigation.slice(5),
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -494,10 +497,10 @@ export default function App() {
               <kbd>{shortcut("K")}</kbd>
             )}
           </label>
-          {isAndroid() && <PhoneSettingsButton />}
+          {isMobile() && <PhoneSettingsButton />}
         </header>
         <div className="page-scroll">
-          {isAndroid() && <PhoneLibraryTabs />}
+          {isMobile() && <PhoneLibraryTabs />}
           {!libraryLoaded ? null : page === "playlists" ? (
             <PhonePlaylists onCreate={addPlaylist} />
           ) : page === "library" || page === "issues" ? (
@@ -509,7 +512,8 @@ export default function App() {
       </main>
       <PlayerDrawer />
       <PlayerBar />
-      {isAndroid() && <PhoneNavigation />}
+      {isMobile() && <PhoneNavigation />}
+      {isIOS() && <IOSOpenFiles />}
       {libraryLoaded && isTauri() && !roots.length && !onboardingDismissed && (
         <div className="modal-backdrop" role="presentation">
           <section
@@ -523,7 +527,7 @@ export default function App() {
           >
             <p className="eyebrow">{t("欢迎使用 nanoPlayer")}</p>
             <h1 id="onboarding-title">
-              {t(isAndroid() ? "你的音乐，只属于这台设备" : "你的音乐，只属于这台电脑")}
+              {t(isMobile() ? "你的音乐，只属于这台设备" : "你的音乐，只属于这台电脑")}
             </h1>
             <p>{t("选择本地音乐文件夹，nanoPlayer 会建立私有索引并保持源文件只读。")}</p>
             <div className="onboarding-points">

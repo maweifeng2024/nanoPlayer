@@ -74,7 +74,7 @@ The 10,000-track synthetic Chrome regression checks bounded row/card counts, nav
 
 Home artwork follows the selected welcome track, uses bundled SVG scenes when missing, aligns with the lists and has no hero shadow. Returning home remounts its contextual selection. The UI includes Chinese/English and cover-derived ambient coloring in dark/light modes. Current browser validation is 27 passing E2E flows; older counts/timings above are dated historical evidence, not current gates. The current captured product image is `website/public/product-home-current.png` (2026-09-06); generated `test-results/` images are local, not durable design masters.
 
-Android phone and Pad reuse the shared design system with touch, safe-area, and split-screen adaptations. Physical-device acceptance remains incomplete; see [Android status](../clients/android/STATUS.md). iOS/iPadOS is not implemented.
+Android phone and Pad reuse the shared design system with touch, safe-area, and split-screen adaptations. Physical-device acceptance remains incomplete; see [Android status](../clients/android/STATUS.md). iOS/iPadOS now reuses this baseline in its first native integration; installation and device qualification remain pending. See [iOS status](../clients/ios/STATUS.md).
 
 ## Android inheritance clarification (2026-09-16, user confirmed)
 

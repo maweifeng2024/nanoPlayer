@@ -1,0 +1,16 @@
+{
+  "identifier": "app.nanoplayer.ios",
+  "app": {
+    "windows": [
+      {
+        "title": "nanoPlayer"
+      }
+    ]
+  },
+  "bundle": {
+    "iOS": {
+      "minimumSystemVersion": "16.0",
+      "bundleVersion": "5"
+    }
+  }
+}

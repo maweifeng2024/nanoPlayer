@@ -1,0 +1,70 @@
+.ios-library-toolbar, .ios-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block: var(--space-4);
+}
+.ios-library-search { flex: 1 0 100%; min-width: 0; }
+.ios-library input:not([type="checkbox"]), .ios-library-dialog input:not([type="checkbox"]), .ios-library-dialog select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-md);
+  margin-top: var(--space-2);
+  background: var(--panel);
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding-inline: var(--space-3);
+}
+.ios-source-group { margin-block: var(--space-6); }
+.ios-source-group h2 { font-size: var(--font-section-title); margin-bottom: var(--space-3); }
+.ios-source-group h2 small { font-size: var(--font-caption); font-weight: normal; color: var(--muted); }
+.ios-source-row, .ios-file-list li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--line);
+  padding-block: var(--space-3);
+}
+.ios-source-open, .ios-file-open {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: left;
+  padding-block: var(--space-2);
+  background: transparent;
+  color: inherit;
+  border: 0;
+}
+.ios-source-open svg, .ios-file-open svg { flex-shrink: 0; color: var(--muted); }
+.ios-source-open > span, .ios-file-open > span { display: grid; gap: var(--space-1); min-width: 0; }
+.ios-source-open strong, .ios-file-open strong { overflow-wrap: anywhere; font-size: var(--font-body); }
+.ios-source-open small, .ios-file-open small, .ios-source-index { color: var(--muted); font-size: var(--font-caption); }
+.ios-source-open[aria-current="true"] { color: var(--accent); }
+.ios-source-index { display: flex; align-items: center; gap: var(--space-2); }
+.ios-source-menu { position: fixed; right: auto; z-index: 35; }
+.ios-file-list { list-style: none; padding: 0; margin: 0; }
+.ios-path { overflow-wrap: anywhere; color: var(--muted); }
+.ios-file-browser { min-width: 0; }
+.ios-file-browser h2 { overflow-wrap: anywhere; font-size: var(--font-section-title); margin-block: var(--space-3); }
+.ios-file-browser p { margin-block: var(--space-3); }
+.ios-file-actions { position: sticky; bottom: 0; padding: var(--space-3); background: var(--panel); border-top: 1px solid var(--line); z-index: 10; }
+.ios-library-dialog { max-height: 85dvh; overflow-y: auto; }
+.ios-library-dialog header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ios-library-dialog form, .ios-library-dialog > label { display: grid; gap: var(--space-4); margin-block: var(--space-4); }
+.ios-library-dialog label { display: block; }
+.ios-destination-list { display: grid; gap: var(--space-2); max-height: 35dvh; overflow-y: auto; margin-block: var(--space-3); }
+.ios-operation-result { overflow-wrap: anywhere; }
+.ios-pending-import { position: fixed; top: var(--space-3); left: var(--space-3); right: var(--space-3); z-index: 50; background: var(--panel); }
+.ios-library-browsing .ios-source-list { display: none; }
+@media (min-width: 1000px) {
+  .ios-library-browsing { display: grid; grid-template-columns: minmax(200px, 0.7fr) minmax(0, 1fr); gap: var(--space-6); }
+  .ios-library-browsing .ios-source-list { display: block; }
+  .ios-library-browsing .ios-source-row .ios-source-index { width: 100%; }
+}

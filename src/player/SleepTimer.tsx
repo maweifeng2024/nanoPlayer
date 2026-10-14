@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Timer } from "lucide-react";
 import { t } from "../i18n";
 import { useNanoStore } from "../store";
-import { sendAndroidPlayback } from "../platform/android";
+import { sendMobilePlayback } from "../platform/mobile";
 
 export function SleepTimer() {
   const timer = useNanoStore((state) => state.sleepTimer);
@@ -23,7 +23,7 @@ export function SleepTimer() {
   const valid =
     Number.isInteger(Number(minutes)) && Number(minutes) >= 1 && Number(minutes) <= 1440;
   const start = (duration: number) => {
-    sendAndroidPlayback("sleepTimer", { minutes: duration, finishTrack });
+    sendMobilePlayback("sleepTimer", { minutes: duration, finishTrack });
     setOpen(false);
   };
   return (

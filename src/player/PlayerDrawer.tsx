@@ -1,7 +1,7 @@
 import { LyricText } from "../lyrics/LyricText";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "../library/Artwork";
-import { isAndroid, androidCommand } from "../platform/android";
+import { isMobile, mobileCommand } from "../platform/mobile";
 import { t } from "../i18n";
 import {
   ChevronUp,
@@ -312,8 +312,8 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
   const chooseLocalLyrics = async () => {
     if (!track || track.id < 0 || !isTauri())
       return setNotice(t("本地歌词选择仅用于桌面版真实曲目。"));
-    const chosen = isAndroid()
-      ? (await androidCommand<{ path?: string }>("pickFile", { kind: "lyrics" })).path
+    const chosen = isMobile()
+      ? (await mobileCommand<{ path?: string }>("pickFile", { kind: "lyrics" })).path
       : await open({
           multiple: false,
           title: t("为“{0}”选择歌词", track.title),
@@ -466,8 +466,8 @@ function Lyrics({ track }: { track?: ReturnType<typeof useNanoStore.getState>["t
           onClick={() => {
             if (line.at !== null) {
               useNanoStore.getState().seekPlayback(Math.max(0, line.at - offset));
-              if (isAndroid())
-                void androidCommand("seek", { positionMs: Math.max(0, line.at - offset) });
+              if (isMobile())
+                void mobileCommand("seek", { positionMs: Math.max(0, line.at - offset) });
             }
           }}
         >

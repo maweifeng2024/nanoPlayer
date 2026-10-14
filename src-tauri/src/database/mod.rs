@@ -156,6 +156,7 @@ impl LibraryDatabase {
         })
     }
 
+    #[cfg(not(target_os = "ios"))]
     pub fn upsert_scan(&mut self, root: &Path, scan: ScanResult) -> Result<(), String> {
         let canonical = root
             .canonicalize()
@@ -347,6 +348,91 @@ impl LibraryDatabase {
         transaction.commit().map_err(to_string)
     }
 
+    #[cfg(any(target_os = "ios", test))]
+    pub fn rebase_mobile_root(&mut self, previous: &str, current: &str) -> Result<(), String> {
+        if previous == current {
+            return Ok(());
+        }
+        if !Path::new(previous).is_absolute() || !Path::new(current).is_absolute() {
+            return Err("Invalid mobile root relocation".into());
+        }
+        // Track paths are composed from the root + stable relative path. Preserve
+        // root/media/track IDs, selections, playlists and statistics atomically.
+        let transaction = self.connection.transaction().map_err(to_string)?;
+        transaction
+            .execute(
+                "UPDATE library_roots SET canonical_path=?1 WHERE canonical_path=?2",
+                params![current, previous],
+            )
+            .map_err(to_string)?;
+        transaction.commit().map_err(to_string)
+    }
+
+    #[cfg(any(target_os = "ios", test))]
+    pub fn relocate_mobile_paths(
+        &mut self,
+        mappings: &std::collections::HashMap<String, String>,
+    ) -> Result<(), String> {
+        for (previous, current) in mappings {
+            if !Path::new(previous).is_absolute() || !Path::new(current).is_absolute() {
+                return Err("Invalid mobile relocation".into());
+            }
+        }
+        let relocate = |path: &str| -> String {
+            mappings
+                .iter()
+                .filter(|(old, _)| path == old.as_str() || path.starts_with(&format!("{old}/")))
+                .max_by_key(|(old, _)| old.len())
+                .map(|(old, new)| format!("{new}{}", &path[old.len()..]))
+                .unwrap_or_else(|| path.to_owned())
+        };
+        let transaction = self.connection.transaction().map_err(to_string)?;
+        let roots: Vec<(i64, String)> = {
+            let mut statement = transaction
+                .prepare("SELECT id,canonical_path FROM library_roots")
+                .map_err(to_string)?;
+            let rows = statement
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                .map_err(to_string)?;
+            rows.collect::<Result<_, _>>().map_err(to_string)?
+        };
+        for (id, previous_root) in roots {
+            let current_root = relocate(&previous_root);
+            let files: Vec<(i64, String)> = {
+                let mut statement = transaction
+                    .prepare("SELECT id,relative_path FROM media_files WHERE library_root_id=?1")
+                    .map_err(to_string)?;
+                let rows = statement
+                    .query_map([id], |row| Ok((row.get(0)?, row.get(1)?)))
+                    .map_err(to_string)?;
+                rows.collect::<Result<_, _>>().map_err(to_string)?
+            };
+            for (file_id, relative) in files {
+                let path = relocate(&format!("{previous_root}/{relative}"));
+                let next = path
+                    .strip_prefix(&format!("{current_root}/"))
+                    .ok_or("Mobile relocation moved outside the indexed root")?;
+                if next != relative {
+                    transaction
+                        .execute(
+                            "UPDATE media_files SET relative_path=?1 WHERE id=?2",
+                            params![next, file_id],
+                        )
+                        .map_err(to_string)?;
+                }
+            }
+            if current_root != previous_root {
+                transaction
+                    .execute(
+                        "UPDATE library_roots SET canonical_path=?1 WHERE id=?2",
+                        params![current_root, id],
+                    )
+                    .map_err(to_string)?;
+            }
+        }
+        transaction.commit().map_err(to_string)
+    }
+
     pub fn remove_root(&mut self, root_id: i64) -> Result<(), String> {
         let transaction = self.connection.transaction().map_err(to_string)?;
         transaction.execute("DELETE FROM track_search WHERE rowid IN (SELECT t.id FROM tracks t JOIN media_files m ON m.id=t.media_file_id WHERE m.library_root_id=?1)", [root_id]).map_err(to_string)?;
@@ -413,6 +499,7 @@ impl LibraryDatabase {
         transaction.commit().map_err(to_string)
     }
 
+    #[cfg(not(target_os = "ios"))]
     pub fn track_path(&self, track_id: i64) -> Result<Option<String>, String> {
         self.connection.query_row(
             "SELECT COALESCE((SELECT content_uri FROM document_resources dr WHERE dr.media_file_id=m.id), r.canonical_path || '/' || m.relative_path) FROM tracks t JOIN media_files m ON m.id=t.media_file_id JOIN library_roots r ON r.id=m.library_root_id WHERE t.id=?1 AND m.availability='available'",
@@ -485,7 +572,7 @@ impl LibraryDatabase {
         })
     }
 
-    #[cfg(any(target_os = "android", test))]
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
     pub fn merge_native_events(
         &mut self,
         events: &[serde_json::Value],
@@ -835,6 +922,7 @@ impl LibraryDatabase {
         }))
     }
 
+    #[cfg(not(target_os = "ios"))]
     pub fn root_paths(&self) -> Result<Vec<PathBuf>, String> {
         collect(
             &self.connection,
@@ -1039,6 +1127,82 @@ mod tests {
         USER_FEATURES_MIGRATION,
     };
     use rusqlite::Connection;
+
+    #[test]
+    fn mobile_root_relocation_preserves_ids_and_rolls_back_collision() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        migrate_database(&mut connection).unwrap();
+        connection.execute("INSERT INTO library_roots(id,canonical_path,display_name,created_at) VALUES(1,'/old/Documents/Music','Music','original'),(2,'/other/Music','Other','original')", []).unwrap();
+        let mut database = LibraryDatabase {
+            connection,
+            path: std::path::PathBuf::new(),
+        };
+        database
+            .rebase_mobile_root("/old/Documents/Music", "/new/Documents/Music")
+            .unwrap();
+        database
+            .rebase_mobile_root("/old/Documents/Music", "/new/Documents/Music")
+            .unwrap();
+        let snapshot = database.snapshot().unwrap();
+        let root = snapshot.roots.iter().find(|root| root.id == 1).unwrap();
+        assert_eq!(root.path, "/new/Documents/Music");
+        assert_eq!(root.added_at, "original");
+        assert!(database
+            .rebase_mobile_root("/new/Documents/Music", "/other/Music")
+            .is_err());
+        assert_eq!(
+            database.root_path(1).unwrap().unwrap(),
+            "/new/Documents/Music"
+        );
+        assert!(database.rebase_mobile_root("relative", "/new").is_err());
+    }
+
+    #[test]
+    fn mobile_file_moves_preserve_track_state_and_rollback_conflicts() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        migrate_database(&mut connection).unwrap();
+        connection.execute_batch("INSERT INTO library_roots(id,canonical_path,display_name,created_at) VALUES(1,'/music','nanoPlayer','original');
+          INSERT INTO media_files(id,library_root_id,relative_path,size_bytes,modified_at,format) VALUES(1,1,'Inbox/a.wav',44,'1','wav'),(2,1,'existing.wav',44,'1','wav');
+          INSERT INTO albums(id,title,normalized_title,album_artist_key) VALUES(1,'Album','album','artist');
+          INSERT INTO tracks(id,media_file_id,album_id,title,normalized_title,duration_ms) VALUES(41,1,1,'Song','song',2000);").unwrap();
+        let mut database = LibraryDatabase {
+            connection,
+            path: std::path::PathBuf::new(),
+        };
+        database.save_user_state(r#"{"ratings":{"41":5},"playlists":[{"id":"fixture","name":"Test","trackIds":[41]}]}"#).unwrap();
+        let mappings = std::collections::HashMap::from([(
+            "/music/Inbox".to_owned(),
+            "/music/Concert".to_owned(),
+        )]);
+        database.relocate_mobile_paths(&mappings).unwrap();
+        database.relocate_mobile_paths(&mappings).unwrap();
+        let snapshot = database.snapshot().unwrap();
+        assert_eq!(snapshot.tracks[0].id, 41);
+        assert_eq!(snapshot.tracks[0].root_id, 1);
+        assert_eq!(snapshot.tracks[0].path, "/music/Concert/a.wav");
+        assert_eq!(snapshot.playlists[0].track_ids, vec![41]);
+        assert_eq!(snapshot.user_state.unwrap()["ratings"]["41"], 5);
+        assert!(database
+            .relocate_mobile_paths(&std::collections::HashMap::from([(
+                "/music/Concert/a.wav".to_owned(),
+                "/music/existing.wav".to_owned()
+            )]))
+            .is_err());
+        assert_eq!(
+            database.track_path(41).unwrap().unwrap(),
+            "/music/Concert/a.wav"
+        );
+        database
+            .relocate_mobile_paths(&std::collections::HashMap::from([(
+                "/music".to_owned(),
+                "/new/Music".to_owned(),
+            )]))
+            .unwrap();
+        assert_eq!(
+            database.track_path(41).unwrap().unwrap(),
+            "/new/Music/Concert/a.wav"
+        );
+    }
 
     #[test]
     fn document_uri_rescan_preserves_identity_and_recovers_permission() {

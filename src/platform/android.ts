@@ -50,7 +50,10 @@ interface NativePlayback {
 }
 
 /** One serialized command stream; native snapshots never feed back as user commands. */
-export function connectAndroidPlayback() {
+export function connectAndroidPlayback(
+  command: typeof androidCommand = androidCommand,
+  acceptsPath: (path: string) => boolean = (path) => path.startsWith("content://"),
+) {
   let disposed = false;
   let applying = false;
   let pending = 0;
@@ -122,7 +125,7 @@ export function connectAndroidPlayback() {
     chain = chain
       .then(async () => {
         if (disposed) return;
-        const snapshot = await androidCommand<NativePlayback>(action, args);
+        const snapshot = await command<NativePlayback>(action, args);
         if (pending === 1) apply(snapshot);
       })
       .catch((error) => {
@@ -154,7 +157,7 @@ export function connectAndroidPlayback() {
     ) {
       const queue = next.queue.flatMap((id) => {
         const track = tracksById(next.tracks).get(id);
-        return track && track.path.startsWith("content://")
+        return track && acceptsPath(track.path)
           ? [{ id: String(id), uri: track.path, title: track.title, artist: track.artist }]
           : [];
       });

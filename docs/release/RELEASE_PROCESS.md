@@ -43,7 +43,7 @@ Android behavior and release requirements are in [`../clients/android/PLAN.md`](
 
 ## iOS/iPadOS boundary
 
-No iOS/iPadOS build or release command exists. Before the first installable build, add a monotonic iOS build-number authority, signing/export contract, simulator/device gates, and verified artifact reporting as described in [`../clients/ios/README.md`](../clients/ios/README.md). Do not route iOS through desktop or Android release behavior by default.
+iOS lifecycle and local packaging commands now exist; see [workflow](../clients/ios/WORKFLOW.md), [status](../clients/ios/STATUS.md), and [packaging](../../packaging/ios/README.md). The independent build-number authority is tracked. Current native code compiles, but simulator installation, signing/export and device gates remain unverified. `release:ios` is local only and does not upload, tag, push, or change desktop/website metadata. No iOS release is claimed; do not route iOS through desktop/Android publication.
 
 ## 2026-10-13 local version preparation
 

@@ -1,4 +1,6 @@
 import { chooseLibraryFolders } from "./importFolders";
+import { isIOS } from "../platform/mobile";
+import { IOSLibraryPage } from "./IOSLibraryPage";
 import { t } from "../i18n";
 import { AlertTriangle, Folder, FolderCheck, Info, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useState } from "react";
@@ -34,7 +36,7 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
       setPage: state.setPage,
     })),
   );
-  const chooseFolder = chooseLibraryFolders;
+  const chooseFolder = () => chooseLibraryFolders();
   const pendingPaths = useNanoStore((state) => state.pendingRootPaths);
   const rescan = async (id: number) => {
     if (!isTauri()) return setNotice(t("示例资料库无需重新扫描。"));
@@ -122,6 +124,7 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
         )}
       </section>
     );
+  if (isIOS()) return <IOSLibraryPage />;
   return (
     <section className="library-page" aria-labelledby="library-title">
       <header className="page-header">

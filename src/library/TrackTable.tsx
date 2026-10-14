@@ -2,7 +2,7 @@ import { trackIsSelected } from "./folderFilter";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "./Artwork";
 import { ConfirmDialog } from "../ConfirmDialog";
-import { isAndroid } from "../platform/android";
+import { isMobile } from "../platform/mobile";
 import { t } from "../i18n";
 import {
   CheckSquare,
@@ -43,7 +43,7 @@ export function TrackTable({
   rated?: boolean;
   toolbar?: React.ReactNode;
 }) {
-  const phone = isAndroid();
+  const phone = isMobile();
   const state = useNanoStore(
     useShallow((store) => ({
       roots: store.roots,
@@ -462,7 +462,7 @@ export function TrackTable({
               data-track-id={track.id}
               onPointerDown={(event) => {
                 if (
-                  !isAndroid() ||
+                  !isMobile() ||
                   event.pointerType === "mouse" ||
                   (event.target as HTMLElement).closest("input, summary, [role=button]")
                 )

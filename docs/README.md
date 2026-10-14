@@ -19,7 +19,11 @@ Start here instead of relying on dated files discovered by search.
 
 - [`clients/desktop/`](clients/desktop/README.md): desktop status and updater behavior.
 - [`clients/android/`](clients/android/README.md): Android architecture, setup, status, and desktop-parity contract.
-- [`clients/ios/`](clients/ios/README.md): iOS/iPadOS preparation boundary; no implementation is claimed.
+- [`clients/ios/`](clients/ios/README.md): iOS/iPadOS native integration and lifecycle scripts; installable qualification pending.
+- [`clients/ios/DESIGN.md`](clients/ios/DESIGN.md): confirmed iPhone/iPad design and Wi-Fi transfer contract.
+- [`clients/ios/LIBRARY_DESIGN.md`](clients/ios/LIBRARY_DESIGN.md): approved three-source library, managed folders, read-only indexing and device acceptance boundaries.
+- [`clients/ios/STATUS.md`](clients/ios/STATUS.md): compiled implementation, current evidence and pending device gates.
+- [`clients/ios/WORKFLOW.md`](clients/ios/WORKFLOW.md): repeatable setup, development, testing and release gates.
 - [`clients/MOBILE_FEASIBILITY.md`](clients/MOBILE_FEASIBILITY.md): cross-mobile feasibility analysis and trade-offs.
 
 ## Archive
@@ -27,3 +31,7 @@ Start here instead of relying on dated files discovered by search.
 [`archive/`](archive/README.md) contains dated audits, proposals, implementation notes, and superseded visual evidence. These files explain earlier decisions but are not current status or command authority.
 
 Latest dated review: [2026-10-14 ratings, scanning and startup review](archive/2026-10-14-ratings-scan-startup-review.md).
+
+Latest iOS review: [2026-10-14 player fix and pending library design](archive/2026-10-14-ios-player-library-review.md).
+
+Latest iOS implementation: [2026-10-15 three-source library](archive/2026-10-15-ios-library-implementation.md).

@@ -1,5 +1,5 @@
 import { shortcut } from "../platform/shortcuts";
-import { isAndroid, sendAndroidPlayback } from "../platform/android";
+import { isMobile, sendMobilePlayback } from "../platform/mobile";
 import { t } from "../i18n";
 import {
   Heart,
@@ -46,7 +46,7 @@ export function PlayerBar() {
   }, [state.listenedSessionMs, state.sessionCounted]);
 
   useEffect(() => {
-    if (isAndroid() || !isTauri() || !track || track.id < 0) return;
+    if (isMobile() || !isTauri() || !track || track.id < 0) return;
     let disposed = false;
     let starting = false;
     const begin = () => {
@@ -92,7 +92,7 @@ export function PlayerBar() {
   }, [track?.id, state.playbackRevision]);
 
   useEffect(() => {
-    if (isAndroid() || !track || !state.playing) return;
+    if (isMobile() || !track || !state.playing) return;
     let polling = false;
     const finish = () => {
       const latest = useNanoStore.getState();
@@ -159,7 +159,7 @@ export function PlayerBar() {
   }, [state.playing, track?.id]);
 
   useEffect(() => {
-    if (isAndroid() || !("mediaSession" in navigator) || !track || track.durationMs <= 0) return;
+    if (isMobile() || !("mediaSession" in navigator) || !track || track.durationMs <= 0) return;
     try {
       navigator.mediaSession.setPositionState({
         duration: track.durationMs / 1000,
@@ -172,7 +172,7 @@ export function PlayerBar() {
   }, [state.progressMs, track?.id]);
 
   useEffect(() => {
-    if (isAndroid() || !("mediaSession" in navigator)) return;
+    if (isMobile() || !("mediaSession" in navigator)) return;
     navigator.mediaSession.playbackState = state.playing ? "playing" : "paused";
     if (track)
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -221,7 +221,7 @@ export function PlayerBar() {
   }, [state.playing, track?.id]);
 
   useEffect(() => {
-    if (isAndroid() || !isTauri() || !track || track.id < 0) return;
+    if (isMobile() || !isTauri() || !track || track.id < 0) return;
     const needsLoad =
       loadedTrack.current !== track.id || loadedRevision.current !== state.playbackRevision;
     const command = !needsLoad
@@ -256,7 +256,7 @@ export function PlayerBar() {
 
   const seek = (value: number) => {
     state.seekPlayback(value);
-    if (isAndroid() && isTauri()) sendAndroidPlayback("seek", { positionMs: value });
+    if (isMobile() && isTauri()) sendMobilePlayback("seek", { positionMs: value });
     else if (isTauri() && track && track.id > 0)
       invoke("playback_seek", { positionMs: value }).catch((error) =>
         state.setNotice(t(String(error))),
@@ -264,13 +264,13 @@ export function PlayerBar() {
   };
   const setVolume = (value: number) => {
     state.setVolume(value);
-    if (isTauri() && !isAndroid())
+    if (isTauri() && !isMobile())
       invoke("playback_volume", { volume: value }).catch(() => undefined);
   };
   const toggleMute = () => {
     const nextMuted = !state.muted;
     state.toggleMute();
-    if (isTauri() && !isAndroid())
+    if (isTauri() && !isMobile())
       invoke("playback_volume", { volume: nextMuted ? 0 : state.volume }).catch((error) =>
         state.setNotice(t(String(error))),
       );
@@ -313,7 +313,7 @@ export function PlayerBar() {
           <Heart size={18} fill={track && state.ratings[track.id] ? "currentColor" : "none"} />
         </button>
       </div>
-      {isAndroid() && (
+      {isMobile() && (
         <div className="mobile-player-actions">
           <button
             className="icon-button mobile-lyrics"
@@ -361,7 +361,7 @@ export function PlayerBar() {
           <button
             aria-label={t("上一首")}
             onClick={() =>
-              isAndroid() && isTauri() ? sendAndroidPlayback("previous") : state.previous()
+              isMobile() && isTauri() ? sendMobilePlayback("previous") : state.previous()
             }
             type="button"
           >
@@ -381,7 +381,7 @@ export function PlayerBar() {
           </button>
           <button
             aria-label={t("下一首")}
-            onClick={() => (isAndroid() && isTauri() ? sendAndroidPlayback("next") : state.next())}
+            onClick={() => (isMobile() && isTauri() ? sendMobilePlayback("next") : state.next())}
             type="button"
           >
             <SkipForward size={18} />
@@ -436,7 +436,7 @@ export function PlayerBar() {
         </div>
       </div>
       <div className="player-tools">
-        {isAndroid() && (
+        {isMobile() && (
           <button
             className="pad-lyrics lyrics-text-icon"
             aria-label={t("歌词")}

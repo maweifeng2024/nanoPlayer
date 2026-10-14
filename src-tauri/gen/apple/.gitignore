@@ -1,0 +1,13 @@
+*
+!.gitignore
+!project.yml
+!Podfile
+!LaunchScreen.storyboard
+!ExportOptions.plist
+!Sources/
+!Sources/**
+!Assets.xcassets/
+!Assets.xcassets/**
+!nanoplayer_iOS/
+!nanoplayer_iOS/Info.plist
+!nanoplayer_iOS/nanoplayer_iOS.entitlements

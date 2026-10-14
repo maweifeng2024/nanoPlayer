@@ -4,6 +4,29 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.23] - 2026-10-15
+
+- Add the approved iOS three-source resource library with persistent source names, read-only references and partial indexing.
+- Add managed folder creation/rename, empty-folder removal, copy destinations and recoverable moves that retain track identities and source audio bytes.
+- Add destination selection for imports, foreground Wi-Fi receiving and audio opened through the system; expose the app's music directory in Files.
+
+## [0.1.22] - 2026-10-14
+
+- Restore iOS playback progress and transport controls by keeping desktop compact-player rules outside mobile layouts.
+- Keep one mobile lyrics entry and repair iPhone landscape and narrow iPad now-playing layouts.
+- Document the proposed iOS three-source library and managed-folder workflow for user review; file management is not implemented in this release.
+
+## [0.1.21] - 2026-10-14
+
+- Adopt the single-window UIKit scene lifecycle and official Tauri 2.12 / tao 0.37 fixes for iOS 27 launch.
+- Preserve local Xcode signing settings and make Rust/Node paths and Git transport settings reproducible across project regeneration.
+
+## [0.1.20] - 2026-10-14
+
+- Start the iOS/iPadOS client with the approved Android visual design and native file/playback adapters.
+- Add copied imports, read-only folder bookmarks and foreground Wi-Fi music receiving with browser pairing.
+- Add repeatable iOS environment, project, simulator-test and local packaging commands; signing, device acceptance and public distribution remain pending.
+
 ## [0.1.19] - 2026-10-14
 
 - Highlight saved song ratings and persist rating changes immediately to native state.

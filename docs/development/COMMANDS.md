@@ -147,6 +147,15 @@ src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.
 | `pnpm test:watch` | 启动 Vitest 监听模式 |
 | `pnpm test:e2e` | 执行项目端到端测试脚本 |
 | `pnpm android:doctor` | 只读检查安卓工具环境，不安装工具、不启动 adb、不初始化项目 |
+| `pnpm ios:doctor` | 只读诊断 Xcode、SDK、Rust targets、CocoaPods、XcodeGen 与运行时 |
+| `pnpm ios:init` | 生成/同步 Apple 工程、图标、版本与测试 scheme |
+| `pnpm ios:dev [设备名] [-- --open]` | iOS 开发；`--open` 打开 Xcode 集成，设备/签名需配置 |
+| `pnpm ios:build:debug` | 本地 arm64 真机开发签名归档；复用已配置 Team，不上传 |
+| `pnpm ios:build:simulator` | 本地 arm64 模拟器 debug 构建；需要运行时 |
+| `pnpm ios:test:unit` | Swift 原生计数与上传规则；不是设备/网络测试 |
+| `pnpm ios:test:simulator <UDID>` | 构建后执行 XCTest/XCUITest，iPhone/iPad 分别运行 |
+| `pnpm release:ios -- --simulator --debug` | 完整本地门禁与模拟器归档，不上传/推送/建标签 |
+| `pnpm release:ios -- --device --debug` | 本地开发签名 IPA；需 Team/证书/profile；本机开发签名导出已验证 |
 | `pnpm android:test:emulator [序列号]` | 默认 `emulator-5554`；重新构建并安装 debug/测试 APK，运行原生测试；仅接受 `emulator-数字`，报告位于 `artifacts/android/tests/` |
 
 模拟器测试示例：
@@ -176,6 +185,7 @@ git push origin main
 
 - 已实现：桌面三平台 GitHub 发布及恢复；安卓源码随 Git 提交；本地安卓 APK 构建、签名验证和产物归档。
 - 尚未接入：Android GitHub Actions 构建、APK 自动上传发布、安卓发布恢复流程。
+- iOS 源码接入与本地脚本已建立，安装/签名/设备验收未完成；见 [iOS 流程](../clients/ios/WORKFLOW.md)。无自动真机测试、TestFlight 上传或 App Store 发布入口。
 - 旧版文档中“安卓入口直接失败、尚未启用安卓代码”的描述已落后于当前本地实现；本速查表按实际脚本核对，不代表这些本地改动已推送到远端。
 
 实现来源：

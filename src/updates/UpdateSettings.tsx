@@ -1,4 +1,4 @@
-import { isAndroid, androidCommand } from "../platform/android";
+import { isMobile, isIOS, mobileCommand } from "../platform/mobile";
 import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 import { t } from "../i18n";
@@ -49,12 +49,12 @@ export function UpdateSettings() {
   const { phase, update, received, total, error } = useUpdateStore();
   const [androidVersion, setAndroidVersion] = useState("");
   useEffect(() => {
-    if (isAndroid())
-      void androidCommand<{ versionName: string; versionCode: number }>("deviceInfo")
+    if (isMobile())
+      void mobileCommand<{ versionName: string; versionCode: number | string }>("deviceInfo")
         .then((info) => setAndroidVersion(`${info.versionName} (${info.versionCode})`))
         .catch(() => undefined);
   }, []);
-  if (isAndroid())
+  if (isMobile())
     return (
       <article>
         <span className="settings-icon">
@@ -62,9 +62,9 @@ export function UpdateSettings() {
         </span>
         <div>
           <h3>
-            {t("软件更新")} · Android {androidVersion}
+            {t("软件更新")} · {isIOS() ? "iOS" : "Android"} {androidVersion}
           </h3>
-          <p>{t("Android 版本通过安装同一签名的新 APK 更新，保留资料库和设置。")}</p>
+          <p>{t(isIOS() ? "iOS 版本通过 TestFlight 或 App Store 更新；开发版本由 Xcode 安装。" : "Android 版本通过安装同一签名的新 APK 更新，保留资料库和设置。")}</p>
         </div>
       </article>
     );

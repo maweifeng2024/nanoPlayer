@@ -1,7 +1,7 @@
 import { LyricText } from "../lyrics/LyricText";
 import { SleepTimer } from "../player/SleepTimer";
 import { shortcut } from "../platform/shortcuts";
-import { isAndroid, androidCommand } from "../platform/android";
+import { isMobile, mobileCommand } from "../platform/mobile";
 import { collectionTracks } from "./collectionTracks";
 import { t } from "../i18n";
 import {
@@ -258,9 +258,9 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   const [momentSeed] = useState(() => Math.random());
   const featured = tracks[0];
   const stats = { ratings, playCounts, lastPlayedAt };
-  const recent = collectionTracks(tracks, "recent", stats).slice(0, isAndroid() ? 12 : 20);
-  const popular = collectionTracks(tracks, "popular", stats).slice(0, isAndroid() ? 12 : 20);
-  const rated = collectionTracks(tracks, "rated", stats).slice(0, isAndroid() ? 12 : 20);
+  const recent = collectionTracks(tracks, "recent", stats).slice(0, isMobile() ? 12 : 20);
+  const popular = collectionTracks(tracks, "popular", stats).slice(0, isMobile() ? 12 : 20);
+  const rated = collectionTracks(tracks, "rated", stats).slice(0, isMobile() ? 12 : 20);
   if (!featured) return <EmptyLibrary />;
   const moment = (() => {
     const defaultTrack = tracks[Math.floor(momentSeed * tracks.length)] ?? featured;
@@ -546,8 +546,8 @@ function NowPlayingPage() {
                   onClick={() => {
                     if (line.at !== null) {
                       state.seekPlayback(Math.max(0, line.at - offset));
-                      if (isAndroid())
-                        void androidCommand("seek", { positionMs: Math.max(0, line.at - offset) });
+                      if (isMobile())
+                        void mobileCommand("seek", { positionMs: Math.max(0, line.at - offset) });
                     }
                   }}
                   key={`${line.at}-${index}`}
@@ -564,11 +564,13 @@ function NowPlayingPage() {
             <p>{t("暂无歌词，可在右侧歌词抽屉查找本地或在线匹配。")}</p>
           )}
         </div>
-        {isAndroid() && <SleepTimer />}
-        <button className="secondary-button" onClick={() => state.toggleDrawer("lyrics")}>
-          <Mic2 size={15} />
-          {t("打开歌词抽屉")}
-        </button>
+        {isMobile() && <SleepTimer />}
+        {!isMobile() && (
+          <button className="secondary-button" onClick={() => state.toggleDrawer("lyrics")}>
+            <Mic2 size={15} />
+            {t("打开歌词抽屉")}
+          </button>
+        )}
       </div>
     </section>
   );
@@ -874,8 +876,8 @@ function PlaylistPage() {
   const playableItems = items.filter((track) => trackIsSelected(track, { roots, selectedRootIds }));
   const chooseCover = async () => {
     if (!isTauri()) return setNotice(t("自定义歌单图片可在 Tauri 桌面版中选择。"));
-    const chosen = isAndroid()
-      ? (await androidCommand<{ path?: string }>("pickFile", { kind: "cover" })).path
+    const chosen = isMobile()
+      ? (await mobileCommand<{ path?: string }>("pickFile", { kind: "cover" })).path
       : await open({
           multiple: false,
           filters: [{ name: t("图片"), extensions: ["jpg", "jpeg", "png", "webp", "gif"] }],
@@ -1180,7 +1182,7 @@ function SettingsPage() {
         .catch(() => undefined);
   }, []);
   useEffect(() => {
-    if (isTauri() && !isAndroid())
+    if (isTauri() && !isMobile())
       getAudioOutputs()
         .then(setOutputs)
         .catch(() => undefined);
@@ -1339,7 +1341,7 @@ function SettingsPage() {
           <div className="segmented" aria-label={t("外观主题")}>
             {(
               [
-                ["system", t(isAndroid() ? "系统" : "跟随系统")],
+                ["system", t(isMobile() ? "系统" : "跟随系统")],
                 ["light", t("浅色")],
                 ["dark", t("深色")],
               ] as const
@@ -1354,7 +1356,7 @@ function SettingsPage() {
             ))}
           </div>
         </article>
-        <article hidden={isAndroid()}>
+        <article hidden={isMobile()}>
           <span className="settings-icon">
             <Keyboard />
           </span>
@@ -1386,11 +1388,11 @@ function SettingsPage() {
             <strong>{t("音频输出")}</strong>
             <p>{t("切换设备时保留当前曲目、进度、音量和暂停状态。")}</p>
           </div>
-          {isAndroid() ? (
+          {isMobile() ? (
             <button
               className="secondary-button"
               onClick={() =>
-                void androidCommand("audioSettings").catch((error) => setNotice(String(error)))
+                void mobileCommand("audioSettings").catch((error) => setNotice(String(error)))
               }
             >
               {t("系统音频设置")}

@@ -1,0 +1,88 @@
+# iOS / iPadOS 状态
+
+2026-10-15。当前本地源版本 0.1.23，iOS build 5，已实现用户确认的三类资源库与文件管理。开发签名 IPA 已生成；本次真机安装、Files/provider、系统打开方式与实际 Wi-Fi 上传尚未验收，未上传 TestFlight 或公开发布。下列 0.1.21/0.1.22 内容为历史证据，当前资源库证据见文末 0.1.23 节。
+
+## 0.1.21 初始接入的源码（历史）
+
+- Tauri 生成工程、iOS 16 配置、独立 Bundle ID 与 capabilities；Rust iOS 入口隔离桌面音频、updater、文件监听与菜单初始化。
+- Swift mobile plugin 注册，应用数据库及共享 React 功能接入。复用 Android 手机/Pad 布局，iPhone 横屏保留手机导航，iPad 的桌面 UA 与窄分屏仍识别为 Pad。
+- 文件/文件夹复制到应用 Music 目录；单独的只读文件夹引用与 bookmark 恢复。文件协调读取，不写入源音乐；丢失授权返回可恢复错误。
+- AVPlayer 队列、暂停/seek、顺序/随机、循环、音量、锁屏/控制中心与音频路由面板；原生睡眠定时器、会话 journal、自然结束计数与 Rust 幂等确认。进程恢复默认暂停。
+- 升级时恢复应用目录/授权目录路径，保持数据库根 ID；需真机升级验证。左边缘返回手势复用已有移动端关闭层级。
+- 前台 Wi-Fi 接收、地址二维码、配对码、浏览器批量流式上传、停止后扫描；本地 HTTP 明示不加密。上传类型与大小限制、失败配对限流、随机目标文件名与不完整文件清理。
+- 命令及本地打包契约见 [流程](WORKFLOW.md)，图标从既有 nanoPlayer 源图生成；不提交缓存或签名材料。
+
+## 0.1.21 已验证（历史）
+
+- 修复 Xcode 的 `UIScene life cycle is required` 启动终止：Tauri 2.12.3、tao 0.37.1，明确单窗口 UIApplicationSceneManifest。
+- Rust 构建统一使用受控脚本提供 Node/Rust PATH 与进程级 Git HTTP/1.1；本机 Team 自动保存在忽略目录，重生成工程后恢复。没有改动全局 Cargo 缓存或提交签名身份。
+- Vite 忽略原生构建、签名和产物目录。先前构建期间浏览器操作被重载打断；修复后完整回归通过。
+
+| 门禁 | 本次结果 | 范围 |
+| --- | --- | --- |
+| `pnpm ios:doctor` | 通过 | Xcode/SDK 27、iOS 27 runtime、Rust targets、CocoaPods、XcodeGen |
+| `pnpm check` | 通过 | lint、UI token、60 Vitest、frontend build |
+| `pnpm test:e2e` | 通过 | 82 项，包含 desktop/Android phone/Pad/iPhone/iPad |
+| `pnpm ios:test:unit` | 通过 | 20 原生计数与上传规则检查 |
+| iOS Rust/Swift 编译与 Clippy | 通过 | arm64 simulator，warnings denied |
+| Desktop Rust fmt/Clippy/tests | 通过 | 19 默认测试、2 ignored；10k FTS 基准另行通过 |
+| release/iOS script tests | 通过 | 23 项，包含工程同步幂等性与本机 Team 恢复 |
+| `pnpm website:build` | 通过 | 本地构建，未部署 |
+| iPhone XCUITest | 通过 | iPhone 18 Pro / iOS 27；启动、菜单、资料库、Wi-Fi 弹窗开关 |
+| iPad XCUITest | 通过 | iPad (A16) / iOS 27；启动、侧栏、资料库、Wi-Fi 弹窗开关 |
+| 开发签名 IPA | 通过 | 0.1.21 / 2、arm64、minimum OS 16；ZIP、签名、profile 存在与版本校验 |
+| 最终 IPA 真机安装/启动 | 通过 | 导出 IPA 解包后安装，iPhone 15 Plus / iOS 27.0.1，进程持续运行；不是全部功能验收 |
+| Android 本地 APK | 通过 | 0.1.21 / 1020、arm64-v8a、minSdk 29，ZIP/badging/SHA-256/v2 debug 签名 |
+| Android 真机/instrumentation | 未执行 | 本次没有安装新 APK 到 Android 设备；浏览器回归不是原生性能证据 |
+
+原生测试首次发现 XCTest 控制台与 Tauri stderr 转发相互回灌，已通过测试启动环境 `OS_ACTIVITY_DT_MODE=NO` 解决；导航改用可见菜单，避免定位到收起的侧栏。两端成功 xcresult 与截图保存在 `artifacts/ios/tests/` 和 `artifacts/ios/v0.1.21-b2/evidence/`。命令日志在 `/tmp/nanoplayer-ios21-*.log`，这些均为本地输出。
+
+本次 IPA：`artifacts/ios/v0.1.21-b2/device-debug/nanoPlayer-0.1.21-b2-arm64-device-debug.ipa`。
+
+SHA-256：`f1783fe3e0dbb4809b3d11d177d89a079252f1b59f72e40784a0a699049e1ff0`。
+
+Android APK：`artifacts/android/v0.1.21-b1020/debug/nanoPlayer-0.1.21-b1020-arm64-debug.apk`。
+
+SHA-256：`6c06973b8d8026d2ac944afb4af7e87d81a47fc95bfae213d1cabf6b9fa3c7f6`。
+
+## 必须完成的原生验收
+
+首轮接入尚不代表 Android 原生功能完全对等：锁屏当前仅发送标题、艺术家、进度与时长，专辑/封面元数据尚未接入；自动真机测试入口尚未建立。Wi-Fi 接收当前要求可用的 IPv4 Wi-Fi 地址，IPv6-only 网络不在本轮已实现范围。iOS 格式解码范围须按 AVPlayer 实测，不继承 Android 的格式支持承诺。
+
+1. 模拟器启动/导航已通过；仍需对应最低系统验证，以及返回手势、大字体、横屏与分屏完整验收。
+2. 真机开发签名安装/启动已通过；继续验证 Files/iCloud/provider 的复制、引用、bookmark 失效/恢复、重启/升级和源文件 SHA-256 不变。
+3. 用合成格式矩阵验证 AVPlayer 解码，锁屏/后台、音频中断、耳机路由、自然计数、睡眠定时器、进程恢复和大队列；尚未证明与 Android 的原生行为完全一致。
+4. Wi-Fi 实际上传：正确/错误配对、多个文件、Unicode 名称、512MB 上下界、断网、切后台、空间不足、并发、无 Wi-Fi/访客网络隔离及权限拒绝。当前浏览器回归不证明原生接收成功。
+5. 核验归档/IPA 版本、架构、签名、profile、entitlements、图标、校验和与安装，再准备 TestFlight。用户明确授权前不上传、不提交审核、不公开发布。
+
+以上为 0.1.21 历史验证；当前本地交接版本见下节。桌面发布不上传 iOS，本地源码、编译通过、设备验收与公开发布分别报告。
+
+## 0.1.22 播放页修复与资源库评审（2026-10-14）
+
+已修复 iOS 被桌面窄窗口 CSS 隐藏的进度/播放控制、移动端重复歌词入口、iPhone 横屏内容网格，以及窄 iPad 内容/播放器裁切。资源库三类来源与管理区文件夹/移动需求见 [待确认方案](LIBRARY_DESIGN.md)，这些新能力未实现。
+
+本次 60 Vitest、84 E2E、19 Rust tests、10k FTS 基准、23 release/iOS script tests、20 iOS native unit checks、desktop/iOS Rust fmt/Clippy、website build 和版本核验通过。额外 iOS 播放页 2 E2E 在最终浅色截图加入后通过，覆盖 iPhone/iPad 的控制可见、窗口边界、单一歌词入口和二次点击关闭。浏览器截图已人工复核，保存于 `artifacts/ios/v0.1.22-b4/evidence/`。
+
+最终本地开发签名 IPA：`artifacts/ios/v0.1.22-b4/device-debug/nanoPlayer-0.1.22-b4-arm64-device-debug.ipa`，0.1.22 / 4、arm64、minimum OS 16；ZIP、签名/profile、版本、架构与 SHA-256 已核验。SHA-256：`6ff797ed29e707c6fb7357129edbe054a4e4009ecaacb25bb7559cedfecd401c`。尚未将本次最终 IPA 安装到真机，不沿用 0.1.21 的安装记录。
+
+共享 UI 对应最终 Android APK：`artifacts/android/v0.1.22-b1022/debug/nanoPlayer-0.1.22-b1022-arm64-debug.apk`，0.1.22 / 1022、arm64-v8a、minSdk 29；ZIP/badging/SHA-256/APK v2 Android Debug 签名通过。SHA-256：`7cdd59ced2c0ecbb538ba67b043bde2c222430f8d6bc5cfd9c4d7620e0108d5d`，本次未安装到 Android 设备。截图复核前的 iOS 3 / Android 1021 包已被新预期构建取代，不能作为当前源码证据。
+
+iPhone 模拟器 XCUITest 已通过：iPhone 18 Pro / iOS 27；结果 `artifacts/ios/tests/C3A4AA33-6DEC-47F9-9A55-17374C1271FE-1791982927845.xcresult`。iPad (A16) / iOS 27 同样通过，结果 `artifacts/ios/tests/510086B7-EEB8-4AD1-86F7-AF082F64916B-1791983874839.xcresult`。两者仅启动/导航/Wi-Fi 弹窗。真实歌曲播放页、最低 iOS 16 运行、系统大字体/VoiceOver、安全区/分屏及前述后台/Files/Wi-Fi 真机项仍待验收。
+
+详细命令、失败与重跑、产物及权限边界见 [本次评审](../../archive/2026-10-14-ios-player-library-review.md)。桌面和网站发布由用户从 main 执行 `pnpm release 0.1.22`；本次未推送、打标签或发布。
+
+## 0.1.23 三类资源库（2026-10-15，当前）
+
+用户已确认 [资源库设计](LIBRARY_DESIGN.md)。已实现 nanoPlayer / Files / 其他音乐 App 三分区、独立来源 ID 和不冲突显示名、只读外部引用与部分范围索引；自有管理区支持新建/重命名、批量移动和删除空文件夹。导入、Wi-Fi 接收、系统打开音乐可选自有保存目标，外部文件仅复制，源字节不改动。旧授权迁移为 Files 来源，旧音频不搬移；管理区移动/重新授权通过日志和 Rust 路径事务保留 track ID、评分与歌单。
+
+本次 60 Vitest、87 E2E、54 native rules、20 Rust tests（2 ignored，10k benchmark 另行通过）、23 release/iOS script tests、desktop/iOS Rust Clippy、fmt、website build、版本与文档路径检查通过。已人工复核 iPhone/iPad 浏览器深浅色与窗口截图及原生截图。iPhone 18 Pro、iPad (A16) / iOS 27 均通过原生“启动/导航/Wi-Fi 弹窗 → 新建文件夹 → 移动到收件箱 → 删除空文件夹”测试；文件夹为空，真实音频字节与 ID 保持由 native unit/Rust tests 分别验证。
+
+证据：`artifacts/ios/tests/C3A4AA33-6DEC-47F9-9A55-17374C1271FE-1792019441838.xcresult`、`artifacts/ios/tests/510086B7-EEB8-4AD1-86F7-AF082F64916B-1792019542459.xcresult`；截图在 `artifacts/ios/v0.1.23-b5/evidence/`。
+
+最终 IPA：`artifacts/ios/v0.1.23-b5/device-debug/nanoPlayer-0.1.23-b5-arm64-device-debug.ipa`，0.1.23 / 5、arm64、minimum OS 16；ZIP/版本/架构/profile/开发签名核验通过。SHA-256：`9023c331b6a86cd4bb3d5cd87e28721e1479d4bba9208f7d79b9719be566712c`。本次未安装最终 IPA 到真机，不继承 0.1.21 的安装结论。
+
+对应 Android APK：`artifacts/android/v0.1.23-b1023/debug/nanoPlayer-0.1.23-b1023-arm64-debug.apk`，0.1.23 / 1023、arm64-v8a、minSdk 29；ZIP/badging/APK v2 Android Debug 签名通过。SHA-256：`0a757a3012ea827be87139d297033635d4cdd9e031e5cdfce833941f9bebee09`。本次未安装 APK，未改 Android 原生队列/文件逻辑，JVM/instrumentation 未重复执行。
+
+仍待真机验收：Files/iCloud/真实第三方 App 的授权/云端未下载与失效恢复、系统音频打开方式、真实 Wi-Fi 上传与断网/空间不足、带合成音频的进程中断/升级恢复、暂停当前歌曲移动后继续播放与统计、后台音频、最低 iOS 16、系统安全区/分屏/大字体/VoiceOver。其他 App 必须公开可选文件夹，不访问其私有或 DRM 缓存；后台 Wi-Fi 接收不在范围内。
+
+完整命令与边界见 [实现记录](../../archive/2026-10-15-ios-library-implementation.md)。当前桌面交接命令为 main 上的 `pnpm release 0.1.23`，旧版本命令只属历史。本次未执行推送、标签、桌面或官网发布。

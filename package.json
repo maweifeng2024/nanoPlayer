@@ -1,6 +1,6 @@
 {
   "name": "nanoplayer",
-  "version": "0.1.19",
+  "version": "0.1.23",
   "private": true,
   "type": "module",
   "engines": {
@@ -23,12 +23,20 @@
     "release": "node scripts/release/dispatch.mjs",
     "release:desktop": "node scripts/release/dispatch.mjs --platform desktop",
     "release:android": "node scripts/release/dispatch.mjs --platform android",
+    "ios:doctor": "node scripts/ios/doctor.mjs",
+    "ios:init": "node scripts/ios/lifecycle.mjs init",
+    "ios:dev": "node scripts/ios/lifecycle.mjs dev",
+    "ios:build:simulator": "node scripts/ios/lifecycle.mjs build-simulator",
+    "ios:test:simulator": "node scripts/ios/lifecycle.mjs test-simulator",
+    "ios:test:unit": "node scripts/ios/test-unit.mjs",
+    "release:ios": "node scripts/ios/release.mjs",
     "android:doctor": "node scripts/android/doctor.mjs",
     "android:build:debug": "bash scripts/android/build-debug.sh",
-    "android:test:emulator": "bash scripts/android/test-emulator.sh"
+    "android:test:emulator": "bash scripts/android/test-emulator.sh",
+    "ios:build:debug": "node scripts/ios/lifecycle.mjs build-device"
   },
   "dependencies": {
-    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/api": "2.12.3",
     "@tauri-apps/plugin-dialog": "2.7.3",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.11.0",
@@ -39,7 +47,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.55.0",
-    "@tauri-apps/cli": "2.11.4",
+    "@tauri-apps/cli": "2.12.2",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

@@ -384,4 +384,4 @@ flowchart LR
 
 ## 2026-09-11 文档核对
 
-历史事实与验证边界见 [归档成果核对](../archive/audits/DOCUMENTATION_AUDIT_2026-09-11.md)。第 8、11 节保留原始桌面方案，不构成新的开发安排。当前 Android 已实现但仍在验收，iOS/iPadOS 尚未实现；跨移动端技术取舍见 [可行性分析](../clients/MOBILE_FEASIBILITY.md)。
+历史事实与验证边界见 [归档成果核对](../archive/audits/DOCUMENTATION_AUDIT_2026-09-11.md)。第 8、11 节保留原始桌面方案，不构成新的开发安排。当前 Android 已实现但仍在验收，iOS/iPadOS 首轮原生接入已编译，安装与设备验收尚未完成，见 [iOS 状态](../clients/ios/STATUS.md)；跨移动端技术取舍见 [可行性分析](../clients/MOBILE_FEASIBILITY.md)。

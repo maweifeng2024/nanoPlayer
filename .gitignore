@@ -11,6 +11,7 @@ test-results/
 src-tauri/target/
 src-tauri/gen/*
 !src-tauri/gen/android/
+!src-tauri/gen/apple/
 src-tauri/.taurignore
 *.log
 *.tsbuildinfo
@@ -32,5 +33,12 @@ local.properties
 .android-local/
 
 /artifacts/
+
+# Rebuildable Swift caches and private Apple signing material.
+.tauri/
+.ios-local/
+.build/
+*.mobileprovision
+*.p12
 
 /.preview/

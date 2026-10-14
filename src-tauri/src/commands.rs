@@ -37,6 +37,7 @@ pub(crate) fn health_check() -> &'static str {
 }
 
 #[tauri::command]
+#[cfg(not(target_os = "ios"))]
 pub(crate) fn library_snapshot(
     state: tauri::State<'_, AppState>,
 ) -> Result<LibrarySnapshot, String> {

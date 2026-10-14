@@ -1,4 +1,4 @@
-import { isAndroid, androidCommand } from "../platform/android";
+import { isMobile, mobileCommand } from "../platform/mobile";
 import { isTauri } from "../tauriBridge";
 import { useEffect, useState, type CSSProperties } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -51,14 +51,16 @@ export function AmbientBackground() {
     };
   }, [track?.id, track?.artworkHash, track?.hasArtwork]);
   useEffect(() => {
-    if (!isAndroid()) return;
+    if (!isMobile()) return;
     const root = document.documentElement;
     const sync = () => {
       const light = root.dataset.theme === "light";
       // All adjacent chrome and system bars share this exact base color.
       const color = light ? "#f8f7f5" : "#18181b";
       root.style.setProperty("--mobile-surface", color);
-      if (isTauri()) void androidCommand("systemBars", { color, light }).catch(() => undefined);
+      if (isTauri()) void mobileCommand("systemBars", {
+        color, light, mode: useNanoStore.getState().theme,
+      }).catch(() => undefined);
     };
     sync();
     const observer = new MutationObserver(sync);
