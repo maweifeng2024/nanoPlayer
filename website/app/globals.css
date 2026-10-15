@@ -392,3 +392,13 @@ body { background: var(--paper); color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* Product previews share the existing feature-section spacing. */
+.client-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.client-gallery article { min-width: 0; padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.45); }
+.client-gallery h3 { margin: 0; font-size: 23px; }
+.client-gallery p { color: var(--muted-text); line-height: 1.7; }
+.client-gallery img { display: block; width: auto; max-width: 100%; height: auto; max-height: 620px; margin: 24px auto 0; border-radius: 12px; }
+.client-gallery .client-pad { grid-column: 1 / -1; }
+.client-gallery .client-pad img { width: 100%; max-height: none; }
+@media (max-width: 720px) { .client-gallery { grid-template-columns: 1fr; } }

@@ -5,7 +5,7 @@ import release from '../../public/downloads/latest.json';
 
 export const metadata: Metadata = {
   title: '下载',
-  description: '下载 nanoPlayer macOS 测试版，并查看各平台构建状态。',
+  description: '下载 nanoPlayer macOS、Windows 与 Linux 桌面版，查看移动客户端测试状态。',
 };
 
 const platforms = [
@@ -47,6 +47,7 @@ export default function DownloadPage() {
           </article>
         ))}
       </section>
+      <section className="download-safety"><ShieldCheck /><p><strong>Android / iOS / iPadOS：本地测试阶段</strong><span>Android 手机/Pad 已实现原生播放；iOS 已接入 AVPlayer、三类资料库与前台 Wi-Fi 导入。移动版尚未公开下载或发布 TestFlight，真实文件来源、后台播放及长时行为仍有验收项。请勿将桌面安装包用于移动设备。</span></p></section>
       <section className="release-trust">
         <h2>本次发布信息</h2>
         <ul>
