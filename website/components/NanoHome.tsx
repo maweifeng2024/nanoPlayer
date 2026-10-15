@@ -34,7 +34,7 @@ export default function NanoHome() {
       <section className="hero">
         <div className="hero-copy">
           <p className="kicker"><Disc3 size={14} /> LOCAL MUSIC PLAYER <span className="version-chip">v{release.version}</span></p>
-          <h1>让本地音乐，<br />随你聆听。</h1>
+          <h1>播放你电脑里的<br />本地音乐。</h1>
           <p className="hero-text">nanoPlayer 已接入桌面、Android 与 iPhone / iPad。按歌曲、专辑和艺术家浏览本地收藏，使用歌单、评分、播放队列与同步歌词。桌面版已开放下载，移动版仍在测试验收。</p>
           <div className="hero-actions">
             <Link className="primary-link" href="/download">下载最新版 <ArrowDownToLine size={16} /></Link>
