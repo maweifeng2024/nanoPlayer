@@ -244,3 +244,19 @@ it("synchronizes a 10,000-track selection without repeated library scans", async
   expect(linearLookup).not.toHaveBeenCalled();
   linearLookup.mockRestore();
 });
+
+it("synchronizes iOS first-level directory exclusions to a restored native queue", async () => {
+  useNanoStore.setState({ selectedRootIds: null, libraryScopes: [{ id: "A", path: "/Music/A", selected: false }, { id: "B", path: "/Music/B", selected: true }],
+    tracks: [1, 2].map((id) => ({ ...original.tracks[0], id, path: `/Music/${id === 1 ? "A" : "B"}/song.wav` })) });
+  const command = vi.fn(async <T,>(action: string, args: Record<string, unknown> = {}): Promise<T> => {
+    if (action === "setQueue" || action === "updateQueue") {
+      const items = JSON.parse(String(args.queue)) as { id: string }[];
+      return { ...snapshot, queue: items.map((item) => item.id), trackId: items[0]?.id } as T;
+    }
+    return snapshot as T;
+  });
+  disconnect = connectAndroidPlayback(<T = unknown>(action: string, args?: Record<string, unknown>) => command(action, args) as Promise<T>, (path) => path.startsWith("/"));
+  await flush();
+  expect(useNanoStore.getState().queue).toEqual([2]);
+  expect(command.mock.calls.some(([action, args]) => action === "setQueue" && JSON.parse(String(args?.queue)).every((item: { id: string }) => item.id === "2"))).toBe(true);
+});

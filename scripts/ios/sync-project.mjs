@@ -15,7 +15,7 @@ let text = fs.readFileSync(file, 'utf8');
 localSigning(process.cwd());
 text = synchronizeProject(text, { version, buildNumber: allocation.buildNumber });
 if (!text.includes('UIBackgroundModes:')) text = text.replace('        LSRequiresIPhoneOS: true',
-  '        LSRequiresIPhoneOS: true\n        UIBackgroundModes: [audio]\n        NSLocalNetworkUsageDescription: "开启 Wi-Fi 传歌时允许同一 Wi-Fi 的设备上传音乐。"');
+  '        LSRequiresIPhoneOS: true\n        UIBackgroundModes: [audio]\n        NSLocalNetworkUsageDescription: "开启 Wi-Fi 传输时，允许同一 Wi-Fi 的设备上传音乐并管理 nanoPlayer 内的文件夹。"');
 if (!text.includes('nanoplayerUITests:')) {
   text += `\n  nanoplayerUITests:\n    type: bundle.ui-testing\n    platform: iOS\n    sources:\n      - path: ../../../tests/ios\n    dependencies:\n      - target: nanoplayer_iOS\n    settings:\n      base:\n        GENERATE_INFOPLIST_FILE: YES\n        PRODUCT_BUNDLE_IDENTIFIER: app.nanoplayer.ios.uitests\n`;
 }

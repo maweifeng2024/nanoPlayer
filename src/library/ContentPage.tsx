@@ -1,7 +1,7 @@
 import { LyricText } from "../lyrics/LyricText";
 import { SleepTimer } from "../player/SleepTimer";
 import { shortcut } from "../platform/shortcuts";
-import { isMobile, mobileCommand } from "../platform/mobile";
+import { isMobile, isIOS, mobileCommand } from "../platform/mobile";
 import { collectionTracks } from "./collectionTracks";
 import { t } from "../i18n";
 import {
@@ -94,6 +94,7 @@ export function ContentPage() {
       tracks: store.tracks,
       roots: store.roots,
       selectedRootIds: store.selectedRootIds,
+      libraryScopes: store.libraryScopes,
       setSelectedRootIds: store.setSelectedRootIds,
       lastPlayedAt: store.lastPlayedAt,
       playCounts: store.playCounts,
@@ -152,6 +153,7 @@ export function ContentPage() {
     nativeSearchIds,
     selectedRootIds,
     state.roots,
+    state.libraryScopes,
     state.lastPlayedAt,
     state.page,
     state.playCounts,
@@ -182,7 +184,7 @@ export function ContentPage() {
           popular={state.page === "popular"}
           rated={state.page === "rated"}
           toolbar={
-            state.page === "songs" ? (
+            state.page === "songs" && !isIOS() ? (
               <details
                 className="folder-filter"
                 onKeyDown={(event) => {
@@ -833,6 +835,7 @@ function CollectionPortrait({
 function PlaylistPage() {
   const roots = useNanoStore((state) => state.roots);
   const selectedRootIds = useNanoStore((state) => state.selectedRootIds);
+  const libraryScopes = useNanoStore((state) => state.libraryScopes);
   const {
     playlists,
     selectedPlaylistId,
@@ -873,7 +876,7 @@ function PlaylistPage() {
   const items = playlist.trackIds
     .map((id) => tracks.find((track) => track.id === id))
     .filter(Boolean) as Track[];
-  const playableItems = items.filter((track) => trackIsSelected(track, { roots, selectedRootIds }));
+  const playableItems = items.filter((track) => trackIsSelected(track, { roots, selectedRootIds, libraryScopes }));
   const chooseCover = async () => {
     if (!isTauri()) return setNotice(t("自定义歌单图片可在 Tauri 桌面版中选择。"));
     const chosen = isMobile()
@@ -897,7 +900,7 @@ function PlaylistPage() {
   };
   const available = tracks.filter(
     (track) =>
-      trackIsSelected(track, { roots, selectedRootIds }) &&
+      trackIsSelected(track, { roots, selectedRootIds, libraryScopes }) &&
       !playlist.trackIds.includes(track.id) &&
       (!query ||
         [track.title, track.artist, track.album].some((value) =>

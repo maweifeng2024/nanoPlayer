@@ -112,7 +112,7 @@ export function connectAndroidPlayback(
     });
     applying = false;
     if (
-      current.selectedRootIds !== null &&
+      (current.selectedRootIds !== null || current.libraryScopes?.length > 0) &&
       queue.some((id) => {
         const track = tracksById(current.tracks).get(id);
         return !track || !trackIsSelected(track, current);

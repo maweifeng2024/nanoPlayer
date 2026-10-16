@@ -21,7 +21,8 @@ Start here instead of relying on dated files discovered by search.
 - [`clients/android/`](clients/android/README.md): Android architecture, setup, status, and desktop-parity contract.
 - [`clients/ios/`](clients/ios/README.md): iOS/iPadOS native integration and lifecycle scripts; installable qualification pending.
 - [`clients/ios/DESIGN.md`](clients/ios/DESIGN.md): confirmed iPhone/iPad design and Wi-Fi transfer contract.
-- [`clients/ios/LIBRARY_DESIGN.md`](clients/ios/LIBRARY_DESIGN.md): approved three-source library, managed folders, read-only indexing and device acceptance boundaries.
+- [`clients/ios/LIBRARY_DESIGN.md`](clients/ios/LIBRARY_DESIGN.md): 0.1.23 library baseline; current redesign and acceptance are linked separately.
+- [`clients/ios/LIBRARY_REDESIGN.md`](clients/ios/LIBRARY_REDESIGN.md): 2026-10-16 confirmed first-level selection, explicit references/copies and Wi-Fi folder-transfer design; final iOS device qualification pending.
 - [`clients/ios/STATUS.md`](clients/ios/STATUS.md): compiled implementation, current evidence and pending device gates.
 - [`clients/ios/WORKFLOW.md`](clients/ios/WORKFLOW.md): repeatable setup, development, testing and release gates.
 - [`clients/MOBILE_FEASIBILITY.md`](clients/MOBILE_FEASIBILITY.md): cross-mobile feasibility analysis and trade-offs.
@@ -35,3 +36,5 @@ Latest dated review: [2026-10-14 ratings, scanning and startup review](archive/2
 Latest iOS review: [2026-10-14 player fix and pending library design](archive/2026-10-14-ios-player-library-review.md).
 
 Latest iOS implementation: [2026-10-15 three-source library](archive/2026-10-15-ios-library-implementation.md).
+
+Latest iOS library review: [2026-10-16 implementation and validation](archive/2026-10-16-ios-library-redesign.md).

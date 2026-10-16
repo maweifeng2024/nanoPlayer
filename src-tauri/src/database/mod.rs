@@ -1128,41 +1128,44 @@ mod tests {
     };
     use rusqlite::Connection;
 
+    // These helpers validate paths using the host filesystem rules. Keep the
+    // database-only fixtures absolute on Windows too, without touching disk.
+    fn mobile_test_path(path: &str) -> String {
+        #[cfg(windows)]
+        let path = format!("C:{path}");
+        assert!(std::path::Path::new(&path).is_absolute());
+        path.to_owned()
+    }
+
     #[test]
     fn mobile_root_relocation_preserves_ids_and_rolls_back_collision() {
         let mut connection = Connection::open_in_memory().unwrap();
         migrate_database(&mut connection).unwrap();
-        connection.execute("INSERT INTO library_roots(id,canonical_path,display_name,created_at) VALUES(1,'/old/Documents/Music','Music','original'),(2,'/other/Music','Other','original')", []).unwrap();
+        let previous = mobile_test_path("/old/Documents/Music");
+        let current = mobile_test_path("/new/Documents/Music");
+        let collision = mobile_test_path("/other/Music");
+        connection.execute("INSERT INTO library_roots(id,canonical_path,display_name,created_at) VALUES(1,?1,'Music','original'),(2,?2,'Other','original')", [&previous, &collision]).unwrap();
         let mut database = LibraryDatabase {
             connection,
             path: std::path::PathBuf::new(),
         };
-        database
-            .rebase_mobile_root("/old/Documents/Music", "/new/Documents/Music")
-            .unwrap();
-        database
-            .rebase_mobile_root("/old/Documents/Music", "/new/Documents/Music")
-            .unwrap();
+        database.rebase_mobile_root(&previous, &current).unwrap();
+        database.rebase_mobile_root(&previous, &current).unwrap();
         let snapshot = database.snapshot().unwrap();
         let root = snapshot.roots.iter().find(|root| root.id == 1).unwrap();
-        assert_eq!(root.path, "/new/Documents/Music");
+        assert_eq!(root.path, current);
         assert_eq!(root.added_at, "original");
-        assert!(database
-            .rebase_mobile_root("/new/Documents/Music", "/other/Music")
-            .is_err());
-        assert_eq!(
-            database.root_path(1).unwrap().unwrap(),
-            "/new/Documents/Music"
-        );
-        assert!(database.rebase_mobile_root("relative", "/new").is_err());
+        assert!(database.rebase_mobile_root(&current, &collision).is_err());
+        assert_eq!(database.root_path(1).unwrap().unwrap(), current);
+        assert!(database.rebase_mobile_root("relative", &current).is_err());
     }
 
     #[test]
     fn mobile_file_moves_preserve_track_state_and_rollback_conflicts() {
         let mut connection = Connection::open_in_memory().unwrap();
         migrate_database(&mut connection).unwrap();
-        connection.execute_batch("INSERT INTO library_roots(id,canonical_path,display_name,created_at) VALUES(1,'/music','nanoPlayer','original');
-          INSERT INTO media_files(id,library_root_id,relative_path,size_bytes,modified_at,format) VALUES(1,1,'Inbox/a.wav',44,'1','wav'),(2,1,'existing.wav',44,'1','wav');
+        connection.execute("INSERT INTO library_roots(id,canonical_path,display_name,created_at) VALUES(1,?1,'nanoPlayer','original')", [mobile_test_path("/music")]).unwrap();
+        connection.execute_batch("INSERT INTO media_files(id,library_root_id,relative_path,size_bytes,modified_at,format) VALUES(1,1,'Inbox/a.wav',44,'1','wav'),(2,1,'existing.wav',44,'1','wav');
           INSERT INTO albums(id,title,normalized_title,album_artist_key) VALUES(1,'Album','album','artist');
           INSERT INTO tracks(id,media_file_id,album_id,title,normalized_title,duration_ms) VALUES(41,1,1,'Song','song',2000);").unwrap();
         let mut database = LibraryDatabase {
@@ -1171,36 +1174,39 @@ mod tests {
         };
         database.save_user_state(r#"{"ratings":{"41":5},"playlists":[{"id":"fixture","name":"Test","trackIds":[41]}]}"#).unwrap();
         let mappings = std::collections::HashMap::from([(
-            "/music/Inbox".to_owned(),
-            "/music/Concert".to_owned(),
+            mobile_test_path("/music/Inbox"),
+            mobile_test_path("/music/Concert"),
         )]);
         database.relocate_mobile_paths(&mappings).unwrap();
         database.relocate_mobile_paths(&mappings).unwrap();
         let snapshot = database.snapshot().unwrap();
         assert_eq!(snapshot.tracks[0].id, 41);
         assert_eq!(snapshot.tracks[0].root_id, 1);
-        assert_eq!(snapshot.tracks[0].path, "/music/Concert/a.wav");
+        assert_eq!(
+            snapshot.tracks[0].path,
+            mobile_test_path("/music/Concert/a.wav")
+        );
         assert_eq!(snapshot.playlists[0].track_ids, vec![41]);
         assert_eq!(snapshot.user_state.unwrap()["ratings"]["41"], 5);
         assert!(database
             .relocate_mobile_paths(&std::collections::HashMap::from([(
-                "/music/Concert/a.wav".to_owned(),
-                "/music/existing.wav".to_owned()
+                mobile_test_path("/music/Concert/a.wav"),
+                mobile_test_path("/music/existing.wav")
             )]))
             .is_err());
         assert_eq!(
             database.track_path(41).unwrap().unwrap(),
-            "/music/Concert/a.wav"
+            mobile_test_path("/music/Concert/a.wav")
         );
         database
             .relocate_mobile_paths(&std::collections::HashMap::from([(
-                "/music".to_owned(),
-                "/new/Music".to_owned(),
+                mobile_test_path("/music"),
+                mobile_test_path("/new/Music"),
             )]))
             .unwrap();
         assert_eq!(
             database.track_path(41).unwrap().unwrap(),
-            "/new/Music/Concert/a.wav"
+            mobile_test_path("/new/Music/Concert/a.wav")
         );
     }
 
@@ -1616,3 +1622,6 @@ mod tests {
         assert!(p95 < std::time::Duration::from_millis(100));
     }
 }
+
+#[cfg(test)]
+mod ios_trash_tests;

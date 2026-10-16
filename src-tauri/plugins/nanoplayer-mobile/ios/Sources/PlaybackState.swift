@@ -37,3 +37,31 @@ enum UploadRules {
   }
 }
 
+
+struct LibraryParticipationRule {
+  let path: String
+  let enabled: Bool
+  var directOnly = false
+  static func allows(_ uri: String, rules: [LibraryParticipationRule]) -> Bool {
+    for rule in rules where uri.hasPrefix(rule.path + "/") {
+      if rule.directOnly && uri.dropFirst(rule.path.count + 1).contains("/") { continue }
+      return rule.enabled
+    }
+    return true
+  }
+}
+struct LibraryQueueSelection {
+  let queue: [QueueTrack]
+  let order: [String]
+  let currentId: String?
+  init(queue: [QueueTrack], order: [String], currentId: String?, rules: [LibraryParticipationRule]) {
+    self.queue = queue.filter { LibraryParticipationRule.allows($0.uri, rules: rules) }
+    let ids = Set(self.queue.map(\.id))
+    self.order = order.filter { ids.contains($0) }
+    if let currentId, ids.contains(currentId) { self.currentId = currentId }
+    else {
+      let oldIndex = order.firstIndex(of: currentId ?? "") ?? -1
+      self.currentId = order.dropFirst(oldIndex + 1).first { ids.contains($0) } ?? self.order.first ?? self.queue.first?.id
+    }
+  }
+}

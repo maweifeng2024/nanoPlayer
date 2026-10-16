@@ -1,5 +1,5 @@
 import { changedStorage } from "./state/changedStorage";
-import { trackIsSelected } from "./library/folderFilter";
+import { type LibraryScope, trackIsSelected } from "./library/folderFilter";
 import { t, setActiveLanguage } from "./i18n";
 import { create } from "zustand";
 import { persist, type StateStorage } from "zustand/middleware";
@@ -31,6 +31,8 @@ interface NanoState {
   collapsePlayer: () => void;
   selectedPlaylistId?: string;
   selectedCollection?: { kind: "album" | "artist"; value: string };
+  libraryScopes: LibraryScope[];
+  setLibraryScopes: (scopes: LibraryScope[]) => void;
   selectedRootIds: number[] | null;
   setSelectedRootIds: (ids: number[] | null) => void;
   roots: LibraryRoot[];
@@ -309,6 +311,11 @@ export const useNanoStore = create<NanoState>()(
       visualDesignVersion: currentVisualDesignVersion,
       statisticsVersion: 1,
       page: "home",
+      libraryScopes: [],
+      setLibraryScopes: (libraryScopes) => {
+        set({ libraryScopes });
+        get().setSelectedRootIds(get().selectedRootIds);
+      },
       selectedRootIds: null,
       setSelectedRootIds: (selectedRootIds) =>
         set((state) => {

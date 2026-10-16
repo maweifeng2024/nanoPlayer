@@ -53,7 +53,7 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UIBackgroundModes: [audio]
-        NSLocalNetworkUsageDescription: "开启 Wi-Fi 传歌时允许同一 Wi-Fi 的设备上传音乐。"
+        NSLocalNetworkUsageDescription: "开启 Wi-Fi 传输时，允许同一 Wi-Fi 的设备上传音乐并管理 nanoPlayer 内的文件夹。"
         UILaunchStoryboardName: LaunchScreen
         UIRequiredDeviceCapabilities: [arm64, metal]
         UISupportedInterfaceOrientations:
@@ -65,8 +65,8 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        CFBundleShortVersionString: 0.1.23
-        CFBundleVersion: "5"
+        CFBundleShortVersionString: 0.1.24
+        CFBundleVersion: "7"
     entitlements:
       path: nanoplayer_iOS/nanoplayer_iOS.entitlements
     scheme:

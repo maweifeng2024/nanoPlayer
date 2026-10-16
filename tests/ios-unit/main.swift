@@ -108,6 +108,60 @@ expect(try recovering.pendingMoves().isEmpty, "Reauthorization is acknowledged o
 let failedCopy = try recovering.copy([external.appendingPathComponent("missing.wav")], target: "收件箱")
 expect((failedCopy["results"] as! [[String: Any]])[0]["error"] != nil, "Missing external files fail without partial publication")
 expect(try Data(contentsOf: original) == bytes, "Failed operations never change original audio")
+
+// Only first-level participation changes; the same native rules serve LAN requests.
+expect(DocumentSelectionMode(rawValue: "") == nil, "A music picker must explicitly choose reference or copy")
+expect(DocumentSelectionMode(rawValue: "import") == nil, "Unknown music picker modes cannot silently copy")
+let management = try NativeLibrary(managed: music, support: support)
+let initialChoices = try management.managementSnapshot()["directories"] as! [[String: Any]]
+try management.initializeParticipation(Dictionary(uniqueKeysWithValues: initialChoices.map { ($0["id"] as! String, false) }))
+expect(try management.managementSnapshot()["selectionInitialized"] as? Bool == true, "Legacy selection migrates exactly once")
+let inboxId = try management.directoryID("收件箱")
+let concertId = try management.directoryID("演唱会")
+try management.setParticipation(concertId, enabled: false)
+let again = try NativeLibrary(managed: music, support: support)
+let topRows = try again.managementSnapshot()["directories"] as! [[String: Any]]
+expect(topRows.first { $0["id"] as? String == concertId }?["enabled"] as? Bool == false, "First-level choice persists by UUID")
+_ = try again.createFolder(parent: "演唱会", name: "深层")
+let deepId = try again.directoryID("演唱会/深层")
+rejects("Reject subdirectory participation") { try again.setParticipation(deepId, enabled: false) }
+let rootId = try again.directoryID("")
+let listed = try again.browserList(rootId)
+expect(listed["currentId"] as? String == rootId, "LAN browser uses opaque directory IDs")
+rejects("Reject forged browser target") { _ = try again.directoryPath("../../External") }
+rejects("Reject stale directory edits") { _ = try again.browserCommand("create", values: ["id": rootId, "name": "stale", "revision": -1], rootId: rootId, initialId: inboxId) }
+let trashResult = try again.trashDirectory("演唱会")
+expect(!fm.fileExists(atPath: music.appendingPathComponent("演唱会").path), "Trash removes directory from scanned Music")
+let trashMappings = trashResult["mappings"] as! [String: String]
+expect(trashMappings[music.appendingPathComponent("演唱会").path]?.contains(".nanoplayer-trash/") == true, "Trash journals virtual DB tombstone for stable IDs")
+let restarted = try NativeLibrary(managed: music, support: support)
+expect(try restarted.pendingMoves() == trashMappings, "Interrupted trash DB sync is recoverable")
+try restarted.acknowledgeMoves()
+let trashRows = try restarted.browserList(rootId)["trash"] as! [[String: Any]]
+let trashId = trashRows[0]["id"] as! String
+_ = try restarted.restoreTrash(trashId)
+expect(try Data(contentsOf: music.appendingPathComponent("演唱会/原曲.wav")) == bytes, "Trash restore preserves every byte")
+expect(try restarted.pendingMoves().values.contains(music.appendingPathComponent("演唱会").path), "Restore remaps the tombstone to original path")
+try restarted.acknowledgeMoves()
+expect(try restarted.directoryID("演唱会") == concertId, "Restored first-level directory retains UUID and selection")
+rejects("System inbox cannot be deleted") { _ = try restarted.trashDirectory("收件箱") }
+let referenceTree = try NativeLibrary.digest(external)
+let ownTree = try NativeLibrary.digest(music.appendingPathComponent("收件箱"))
+_ = try restarted.register(external, kind: "files", label: "", location: "")
+expect(try NativeLibrary.digest(external) == referenceTree, "Referencing an external source never changes source bytes")
+expect(try NativeLibrary.digest(music.appendingPathComponent("收件箱")) == ownTree, "Referencing never copies audio into managed storage")
+
+let policy = [LibraryParticipationRule(path: "/Music/.nanoplayer-trash", enabled: false),
+  LibraryParticipationRule(path: "/Music/A", enabled: false), LibraryParticipationRule(path: "/Music/B", enabled: true),
+  LibraryParticipationRule(path: "/Music", enabled: false, directOnly: true)]
+let nativeQueue = [QueueTrack(id: "1", uri: "/Music/A/deep/a.wav", title: "A", artist: "fixture"),
+  QueueTrack(id: "2", uri: "/Music/B/b.wav", title: "B", artist: "fixture"),
+  QueueTrack(id: "3", uri: "/Music/root.wav", title: "Root", artist: "fixture")]
+let filteredNativeQueue = LibraryQueueSelection(queue: nativeQueue, order: ["1", "2", "3"], currentId: "1", rules: policy)
+expect(filteredNativeQueue.queue.map(\.id) == ["2"] && filteredNativeQueue.currentId == "2", "Native queue skips excluded first-level descendants after WebView loss")
+expect(!LibraryParticipationRule.allows("/Music/.nanoplayer-trash/id/a.wav", rules: policy), "Trash tombstones cannot return to native playback")
+expect(LibraryParticipationRule.allows("/Music/AB/song.wav", rules: policy), "Native selection respects component boundaries and root audio scope")
+expect(LibraryQueueSelection(queue: nativeQueue, order: ["1", "2", "3"], currentId: "2", rules: policy).currentId == "2", "Native queue retains the selected current track")
 try Data("{\"schemaVersion\":99,\"sources\":[]}".utf8).write(to: support.appendingPathComponent("library-sources.json"))
 rejects("Reject future catalog schema without silently resetting") { _ = try NativeLibrary(managed: music, support: support) }
 print("Native library rules and byte preservation: \(checks) total checks passed.")

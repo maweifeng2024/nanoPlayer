@@ -6,6 +6,7 @@ import MediaPlayer
 final class NativePlayer {
   private let player = AVPlayer()
   private var queue: [QueueTrack] = []
+  private var libraryRules: [LibraryParticipationRule] = []
   private var order: [String] = []
   private var currentId: String?
   private var restoredPosition: Double = 0
@@ -90,6 +91,18 @@ final class NativePlayer {
     save()
   }
 
+  func applyLibrarySelection(_ rules: [LibraryParticipationRule]) {
+    libraryRules = rules
+    let selection = LibraryQueueSelection(queue: queue, order: order, currentId: currentId, rules: rules)
+    guard selection.queue.count != queue.count else { return }
+    let keep = selection.currentId == currentId
+    let playing = player.rate > 0
+    if !keep { closeRecord() }
+    queue = selection.queue; order = selection.order; currentId = selection.currentId
+    if !keep { restoredPosition = 0; load(); nowPlaying(); if playing && currentId != nil { try? play() } }
+    ended = false; save()
+  }
+
   func canRelocate(_ paths: [String]) -> Bool {
     guard player.rate > 0, let uri = queue.first(where: { $0.id == currentId })?.uri else { return true }
     return !paths.contains { uri == $0 || uri.hasPrefix($0 + "/") }
@@ -107,7 +120,8 @@ final class NativePlayer {
       }
     case "setQueue", "updateQueue":
       guard let data = args.queue?.data(using: .utf8) else { throw failure("队列无效") }
-      let next = try JSONDecoder().decode([QueueTrack].self, from: data)
+      let input = try JSONDecoder().decode([QueueTrack].self, from: data)
+      let next = input.filter { LibraryParticipationRule.allows($0.uri, rules: libraryRules) }
       guard Set(next.map(\.id)).count == next.count,
         next.allSatisfy({ allowed($0.uri) }) else { throw failure("队列包含未授权文件") }
       let keep = args.action == "updateQueue" && next.contains(where: { $0.id == currentId })

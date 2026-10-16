@@ -63,7 +63,8 @@
 | `pnpm ios:dev` | Tauri iOS 开发入口；透传设备名和 `--open`，需要模拟器或配置好的真机 |
 | `pnpm ios:build:simulator` | arm64 模拟器 debug 构建，无生产签名 |
 | `pnpm ios:build:debug` | 已配置 Team 的 arm64 真机开发签名归档，不上传 |
-| `pnpm ios:test:unit` | 原生计数与上传规则检查；不启动 iOS、不证明音频/网络运行 |
+| `pnpm ios:test:unit` | 原生计数、文件/回收站、一级目录及队列规则；不证明设备音频运行 |
+| `pnpm ios:test:wifi` | macOS 复用生产接收器的真实局域网与 Chromium 回归；不替代 iOS 设备权限/前台验收 |
 | `pnpm ios:test:simulator <UDID>` | 先构建，再对指定模拟器执行 XCTest/XCUITest；分别在 iPhone 和 iPad 执行 |
 | `pnpm release:ios -- --simulator --debug` | 完整本地门禁后归档模拟器 ZIP、manifest、checksum；不上传 |
 | `pnpm release:ios -- --device --debug` | 本地真机调试 IPA；需 Team/证书/profile，本机开发签名导出已验证 |

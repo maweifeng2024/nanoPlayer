@@ -43,6 +43,11 @@ export function IOSOpenFiles() {
       <p>保存到 nanoPlayer / {target || "根目录"}。复制后加入音乐库，原文件不变。</p>
       <button className="secondary-button" disabled={busy} onClick={() => setChoosing(true)}>选择保存文件夹</button>
       {error && <p role="alert">{error}</p>}
+      <button className="secondary-button" disabled={busy} onClick={() => {
+        setBusy(true);
+        void iosLibraryCommand("libraryDiscardOpened").then(() => { setPending({ count: 0, names: [] }); previous.current = 0; setOpen(false); })
+          .catch((cause) => setError(String(cause))).finally(() => setBusy(false));
+      }}>取消并清理暂存</button>
       <button className="primary-button" disabled={busy} onClick={() => {
         setBusy(true); setError("");
         void iosLibraryCommand<FileResults>("librarySaveOpened", { target }).then(async (result) => {

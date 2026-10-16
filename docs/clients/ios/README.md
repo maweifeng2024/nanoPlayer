@@ -2,8 +2,9 @@
 
 Status: native integration and lifecycle scripts implemented on 2026-10-14; Swift/Rust compilation and browser layout checks pass. Simulator launch, development-signed IPA export and iPhone installation are verified; audio, file-provider and Wi-Fi transfer acceptance remain pending.
 
-0.1.23 adds the user-approved three-source resource library, managed folders, read-only indexing, destinations and journalled moves. See [library design](LIBRARY_DESIGN.md) and [current validation](STATUS.md); earlier iPhone installation evidence does not qualify this new build.
+0.1.24 implements the confirmed two-section resource library, first-level participation, explicit reference/copy confirmation, and authenticated Wi-Fi folder transfer with trash/restore. SDK 27.1 compilation, iPhone/iPad simulator HTTP transfer and development-signed build 7 IPA validation pass; physical-device qualification remains pending. See [library design](LIBRARY_DESIGN.md) and [current validation](STATUS.md); earlier iPhone installation evidence does not qualify this new build.
 
+- [Library redesign](LIBRARY_REDESIGN.md): 2026-10-16 confirmed interaction and implementation contract; final iOS qualification pending.
 - [Current status and evidence](STATUS.md).
 - [Design proposal](DESIGN.md): iPhone/iPad layout and confirmed decisions and pending device/account information.
 - [Development, testing and release workflow](WORKFLOW.md): setup, implementation gates, Xcode operations and artifact evidence.

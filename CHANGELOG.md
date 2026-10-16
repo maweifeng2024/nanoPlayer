@@ -4,6 +4,13 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.24] - 2026-10-16
+
+- iOS 资源库改为自有目录与外部只读来源，仅首页一级目录参与勾选，歌曲集合与原生队列同步。
+- Files 引用与复制采用明确的独立入口和确认；取消系统打开可清理暂存，旧部分范围保留至用户确认。
+- Wi-Fi 传输支持浏览器选目录上传、新建/改名/移动目录与可恢复回收站，新增配对会话、目录身份及并发检查。
+- 本地准备版本；iOS SDK 27.1 编译与模拟器传输验证已恢复，安装包与设备边界见 iOS 状态文档。
+
 ## [0.1.23] - 2026-10-15
 
 - Add the approved iOS three-source resource library with persistent source names, read-only references and partial indexing.

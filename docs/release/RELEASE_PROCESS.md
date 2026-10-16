@@ -43,7 +43,7 @@ Android behavior and release requirements are in [`../clients/android/PLAN.md`](
 
 ## iOS/iPadOS boundary
 
-iOS lifecycle and local packaging commands now exist; see [workflow](../clients/ios/WORKFLOW.md), [status](../clients/ios/STATUS.md), and [packaging](../../packaging/ios/README.md). The independent build-number authority is tracked. Current native code compiles, but simulator installation, signing/export and device gates remain unverified. `release:ios` is local only and does not upload, tag, push, or change desktop/website metadata. No iOS release is claimed; do not route iOS through desktop/Android publication.
+iOS lifecycle and local packaging commands now exist; see [workflow](../clients/ios/WORKFLOW.md), [status](../clients/ios/STATUS.md), and [packaging](../../packaging/ios/README.md). The independent build-number authority is tracked. Current native code compiles; 0.1.24 simulator installation/HTTP transfer and development-signed IPA export are verified. Physical-device and production-distribution gates remain separate and pending. `release:ios` is local only and does not upload, tag, push, or change desktop/website metadata. No iOS release is claimed; do not route iOS through desktop/Android publication.
 
 ## 2026-10-13 local version preparation
 

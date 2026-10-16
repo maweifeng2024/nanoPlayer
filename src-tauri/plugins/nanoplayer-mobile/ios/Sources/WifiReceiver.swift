@@ -2,12 +2,20 @@ import CoreImage
 import Darwin
 import Foundation
 import Network
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /// A foreground-only, explicitly started LAN receiver. Each request streams to
 /// a staging file; authenticated, complete files are moved into app-owned music.
 final class WifiReceiver {
+  typealias Handler = (String, [String: Any], @escaping (Result<[String: Any], Error>) -> Void) -> Void
   private let directory: URL
+  private let handler: Handler
+  private var sessions = Set<String>()
+  private var changes = 0
+  private var uploadRequests = Set<UUID>()
+  private var editing = false
   private let work = DispatchQueue(label: "app.nanoplayer.ios.wifi", qos: .utility)
   private var listener: NWListener?
   private var connections: [UUID: NWConnection] = [:]
@@ -22,12 +30,13 @@ final class WifiReceiver {
   private var startCompletion: ((Result<[String: Any], Error>) -> Void)?
   private let maxFileBytes = 512 * 1024 * 1024
 
-  init(directory: URL) { self.directory = directory }
+  init(directory: URL, handler: @escaping Handler) { self.directory = directory; self.handler = handler }
 
   func start(completion: @escaping (Result<[String: Any], Error>) -> Void) {
     work.async { [self] in
       do {
         guard let host = wifiAddress() else { throw failure("请先连接 Wi-Fi，再开启传歌") }
+        sessions.removeAll()
         code = String(format: "%08u", arc4random_uniform(100_000_000))
         startCompletion = completion
         let parameters = NWParameters.tcp
@@ -60,15 +69,17 @@ final class WifiReceiver {
     work.sync { shutdown(); return info() }
   }
   private func shutdown() {
-    active = false; listener?.cancel(); listener = nil
+    active = false; sessions.removeAll(); listener?.cancel(); listener = nil
     connections.values.forEach { $0.cancel() }; connections.removeAll()
     pending.values.forEach { try? FileManager.default.removeItem(at: $0) }; pending.removeAll()
-    reserved.removeAll()
+    reserved.removeAll(); uploadRequests.removeAll(); editing = false
     startCompletion?(.failure(failure("接收已停止"))); startCompletion = nil
   }
   private func info() -> [String: Any] {
-    var value: [String: Any] = ["active": active, "address": address, "code": code,
-      "uploaded": uploaded, "uri": directory.path]
+    let base: [String: Any] = ["active": active, "address": address, "code": code,
+      "uploaded": uploaded, "changes": changes, "uri": directory.path]
+    #if canImport(UIKit)
+    var value = base
     if active, let data = address.data(using: .utf8), let filter = CIFilter(name: "CIQRCodeGenerator") {
       filter.setValue(data, forKey: "inputMessage")
       if let output = filter.outputImage?.transformed(by: CGAffineTransform(scaleX: 6, y: 6)),
@@ -78,6 +89,9 @@ final class WifiReceiver {
       }
     }
     return value
+    #else
+    return base
+    #endif
   }
 
   private func accept(_ connection: NWConnection) {
@@ -120,22 +134,39 @@ final class WifiReceiver {
         headers[key] = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
       }
       if request[0] == "GET" && request[1] == "/" {
-        self.respond(connection, id: id, status: 200, text: Self.page, html: true); return
+        self.respond(connection, id: id, status: 200, text: WifiPage.html, html: true); return
       }
-      guard request[0] == "POST", request[1] == "/upload" else {
-        self.respond(connection, id: id, status: 404, text: "页面不存在"); return
+      guard request[0] == "POST", ["/pair", "/api", "/upload", "/logout"].contains(String(request[1])),
+        headers["host"] == self.address.replacingOccurrences(of: "http://", with: ""),
+        headers["origin"] == self.address else {
+        self.respond(connection, id: id, status: 403, text: "请求来源不匹配"); return
       }
-      if self.failedAttempts >= 5 && Date().timeIntervalSince(self.lastFailure) < 30 {
-        self.respond(connection, id: id, status: 429, text: "配对失败次数过多，30 秒后重试"); return
+      if request[1] == "/pair" {
+        if self.failedAttempts >= 5 && Date().timeIntervalSince(self.lastFailure) < 30 {
+          self.respond(connection, id: id, status: 429, text: "配对失败次数过多，30 秒后重试"); return
+        }
+        guard headers["x-pairing-code"] == self.code else {
+          self.failedAttempts += 1; self.lastFailure = Date()
+          self.respond(connection, id: id, status: 403, text: "配对码错误"); return
+        }
+        self.failedAttempts = 0
+        guard self.sessions.count < 8 else { self.respond(connection, id: id, status: 429, text: "连接过多，请先断开其他浏览器或重启 Wi-Fi 传输"); return }
+        let token = UUID().uuidString + UUID().uuidString
+        self.sessions.insert(token)
+        self.respondJSON(connection, id: id, value: ["token": token]); return
       }
-      guard headers["x-pairing-code"] == self.code else {
-        self.failedAttempts += 1; self.lastFailure = Date()
-        self.respond(connection, id: id, status: 403, text: "配对码错误"); return
+      guard self.active, let session = headers["x-session-token"], self.sessions.contains(session) else {
+        self.respond(connection, id: id, status: 401, text: "请先配对，或会话已失效"); return
       }
-      self.failedAttempts = 0
-      // Browser requests are same-origin. No CORS support or unauthenticated writes.
-      if let origin = headers["origin"], origin != self.address {
-        self.respond(connection, id: id, status: 403, text: "来源不匹配"); return
+      if request[1] == "/logout" {
+        self.sessions.remove(session); self.respondJSON(connection, id: id, value: [:]); return
+      }
+      if request[1] == "/api" {
+        guard headers["transfer-encoding"] == nil, let length = Int(headers["content-length"] ?? ""), length > 0, length <= 65536 else {
+          self.respond(connection, id: id, status: 400, text: "请求大小无效"); return
+        }
+        self.receiveJSON(connection, id: id, bytes: Data(bytes[boundary.upperBound...]), length: length, ended: ended)
+        return
       }
       guard headers["transfer-encoding"] == nil,
         let length = Int(headers["content-length"] ?? ""), length > 0, length <= self.maxFileBytes,
@@ -143,26 +174,72 @@ final class WifiReceiver {
         UploadRules.valid(name: name, bytes: length) else {
         self.respond(connection, id: id, status: 400, text: "支持音频文件，单个文件最大 512MB"); return
       }
-      let staging = self.directory.appendingPathComponent(".upload-\(id.uuidString)")
-      guard FileManager.default.createFile(atPath: staging.path, contents: nil),
-        let handle = try? FileHandle(forWritingTo: staging) else {
-        self.respond(connection, id: id, status: 507, text: "无法写入，检查可用空间"); return
+      guard !self.editing, let target = headers["x-directory-id"] else {
+        self.respond(connection, id: id, status: 400, text: "请选择上传目录"); return
       }
-      self.pending[id] = staging
-      let existing = (try? FileManager.default.contentsOfDirectory(atPath: self.directory.path)) ?? []
-      let names = Set((existing + self.reserved.values.map(\.lastPathComponent)).map(NativeLibrary.nameKey))
-      let file = URL(fileURLWithPath: name), ext = file.pathExtension
-      let base = file.deletingPathExtension().lastPathComponent
-      var finalName = name, suffix = 2
-      while names.contains(NativeLibrary.nameKey(finalName)) {
-        finalName = "\(base)（\(suffix)）" + (ext.isEmpty ? "" : "." + ext); suffix += 1
-      }
-      let destination = self.directory.appendingPathComponent(finalName)
-      self.reserved[id] = destination
       let first = Data(bytes[boundary.upperBound...])
-      self.receiveBody(connection, id: id, handle: handle, received: 0, length: length,
-        bytes: first, ended: ended, destination: destination)
+      self.uploadRequests.insert(id)
+      self.handler("uploadTarget", ["id": target, "name": name]) { result in
+        self.work.async {
+          guard self.connections[id] != nil, self.active else { return }
+          do {
+            let info = try result.get()
+            guard let path = info["directory"] as? String else { throw self.failure("目标不可用") }
+            let parent = URL(fileURLWithPath: path)
+            let existing = try FileManager.default.contentsOfDirectory(atPath: path)
+            let names = Set((existing + self.reserved.values.filter { $0.deletingLastPathComponent() == parent }.map(\.lastPathComponent)).map(NativeLibrary.nameKey))
+            let file = URL(fileURLWithPath: name), ext = file.pathExtension
+            let base = file.deletingPathExtension().lastPathComponent
+            var finalName = name, suffix = 2
+            while names.contains(NativeLibrary.nameKey(finalName)) {
+              finalName = "\(base)（\(suffix)）" + (ext.isEmpty ? "" : "." + ext); suffix += 1
+            }
+            let staging = parent.appendingPathComponent(".upload-\(id.uuidString)")
+            guard FileManager.default.createFile(atPath: staging.path, contents: nil), let handle = try? FileHandle(forWritingTo: staging) else {
+              throw self.failure("无法写入，请检查可用空间")
+            }
+            self.pending[id] = staging
+            let destination = parent.appendingPathComponent(finalName)
+            self.reserved[id] = destination
+            self.receiveBody(connection, id: id, handle: handle, received: 0, length: length, bytes: first, ended: ended, destination: destination)
+          } catch { self.respond(connection, id: id, status: 409, text: error.localizedDescription) }
+        }
+      }
+
     }
+  }
+
+  private func receiveJSON(_ connection: NWConnection, id: UUID, bytes: Data, length: Int, ended: Bool) {
+    guard bytes.count <= length else { respond(connection, id: id, status: 400, text: "请求长度无效"); return }
+    if bytes.count < length {
+      guard !ended else { close(connection, id: id); return }
+      connection.receive(minimumIncompleteLength: 1, maximumLength: min(65536, length - bytes.count)) { [weak self] data, _, ended, error in
+        guard let self, self.connections[id] != nil else { return }
+        if error != nil { self.close(connection, id: id); return }
+        self.receiveJSON(connection, id: id, bytes: bytes + (data ?? Data()), length: length, ended: ended)
+      }
+      return
+    }
+    do {
+      guard let args = try JSONSerialization.jsonObject(with: bytes) as? [String: Any], let action = args["action"] as? String else { throw failure("请求无效") }
+      let readOnly = action == "list"
+      guard readOnly || (uploadRequests.isEmpty && !editing) else { throw failure("正在上传，请等待当前上传完成再编辑目录") }
+      if !readOnly { editing = true }
+      handler(action, args) { result in
+        self.work.async {
+          if !readOnly { self.editing = false }
+          guard self.connections[id] != nil, self.active else { return }
+          do { let value = try result.get(); if !readOnly { self.changes += 1 }; self.respondJSON(connection, id: id, value: value) }
+          catch { self.respond(connection, id: id, status: 409, text: error.localizedDescription) }
+        }
+      }
+    } catch { respond(connection, id: id, status: 400, text: error.localizedDescription) }
+  }
+  private func respondJSON(_ connection: NWConnection, id: UUID, value: [String: Any]) {
+    do {
+      let bytes = try JSONSerialization.data(withJSONObject: value)
+      respond(connection, id: id, status: 200, text: String(decoding: bytes, as: UTF8.self), json: true)
+    } catch { respond(connection, id: id, status: 500, text: "响应失败") }
   }
 
   private func receiveBody(_ connection: NWConnection, id: UUID, handle: FileHandle,
@@ -175,7 +252,7 @@ final class WifiReceiver {
         try handle.close()
         guard let source = pending[id] else { throw failure("上传已取消") }
         try FileManager.default.moveItem(at: source, to: destination)
-        pending.removeValue(forKey: id); uploaded += 1
+        pending.removeValue(forKey: id); uploaded += 1; changes += 1
         respond(connection, id: id, status: 201, text: "上传完成"); return
       }
       guard !ended else { throw failure("上传中断，请重新上传") }
@@ -189,14 +266,14 @@ final class WifiReceiver {
       try? handle.close(); respond(connection, id: id, status: 400, text: error.localizedDescription)
     }
   }
-  private func respond(_ connection: NWConnection, id: UUID, status: Int, text: String, html: Bool = false) {
+  private func respond(_ connection: NWConnection, id: UUID, status: Int, text: String, html: Bool = false, json: Bool = false) {
     let body = Data(text.utf8)
-    let header = "HTTP/1.1 \(status) Response\r\nContent-Type: \(html ? "text/html" : "text/plain"); charset=utf-8\r\nContent-Length: \(body.count)\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n"
+    let header = "HTTP/1.1 \(status) Response\r\nContent-Type: \(html ? "text/html" : json ? "application/json" : "text/plain"); charset=utf-8\r\nContent-Length: \(body.count)\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n"
     connection.send(content: Data(header.utf8) + body, completion: .contentProcessed { [weak self] _ in self?.close(connection, id: id) })
   }
   private func close(_ connection: NWConnection, id: UUID) {
     connection.cancel(); connections.removeValue(forKey: id)
-    reserved.removeValue(forKey: id)
+    reserved.removeValue(forKey: id); uploadRequests.remove(id)
     if let url = pending.removeValue(forKey: id) { try? FileManager.default.removeItem(at: url) }
   }
   private func failure(_ message: String) -> NSError {
@@ -220,25 +297,4 @@ final class WifiReceiver {
     return nil
   }
 
-  private static let page = """
-  <!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>nanoPlayer · Wi-Fi 传歌</title><style>
-  body{font:16px system-ui;background:#18181b;color:#fafafa;margin:0;padding:32px;max-width:640px;margin-inline:auto}
-  h1{font-size:28px}input,button{font:inherit;padding:12px;border-radius:8px;margin:8px 0;max-width:100%;box-sizing:border-box}
-  button{background:#fb7185;color:#18181b;border:0}p{line-height:1.6;color:#c4c4cc}pre{white-space:pre-wrap;overflow-wrap:anywhere}
-  </style><h1>nanoPlayer · Wi-Fi 传歌</h1>
-  <p>保持手机接收页打开。在同一可信 Wi-Fi 内上传音乐，单个文件最大 512MB。传输使用本地 HTTP，配对码仅用于本次接收。文件复制到应用资料库。</p>
-  <form id="form"><label>手机上显示的配对码 <input id="code" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required autocomplete="off"></label>
-  <p><input id="files" type="file" multiple accept=".mp3,.m4a,.aac,.flac,.wav,.aiff,.aif,.alac" required></p>
-  <button id="send">开始上传</button></form><pre id="result" role="status" aria-live="polite"></pre>
-  <script>
-  const form=document.querySelector('#form'),button=document.querySelector('#send'),result=document.querySelector('#result');
-  form.addEventListener('submit',async event=>{event.preventDefault();button.disabled=true;result.textContent='';
-  try{for(const file of document.querySelector('#files').files){
-  result.textContent+='正在上传 '+file.name+'…\\n';
-  const response=await fetch('/upload',{method:'POST',headers:{'X-Pairing-Code':document.querySelector('#code').value,'X-File-Name':encodeURIComponent(file.name)},body:file});
-  const text=await response.text();result.textContent+=file.name+'：'+text+'\\n';if(!response.ok)break;
-  }}catch(error){result.textContent+='连接中断，请确认手机接收页仍打开后重试。';}finally{button.disabled=false;}});
-  </script></html>
-  """
 }

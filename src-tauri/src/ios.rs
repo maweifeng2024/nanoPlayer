@@ -32,7 +32,7 @@ async fn ios_native(app: tauri::AppHandle, payload: Value) -> Result<Value, Stri
         return Err("Internal iOS action".into());
     }
     let mut snapshot = native(app.clone(), payload).await?;
-    if action == "pickTree" {
+    if ["pickTree", "libraryCommitReference"].contains(&action.as_str()) {
         let mappings = native(app.clone(), json!({"action":"libraryPendingMoves"})).await?;
         apply_moves(
             &app,
@@ -41,13 +41,28 @@ async fn ios_native(app: tauri::AppHandle, payload: Value) -> Result<Value, Stri
         .await?;
         return Ok(snapshot);
     }
-    if ["libraryMove", "libraryRename"].contains(&action.as_str()) {
+    if [
+        "libraryMove",
+        "libraryRename",
+        "libraryTrash",
+        "libraryRestore",
+    ]
+    .contains(&action.as_str())
+    {
         if let Some(value) = snapshot.get("mappings") {
             let mappings: std::collections::HashMap<String, String> =
                 serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
             apply_moves(&app, &mappings).await?;
         }
         return Ok(snapshot);
+    }
+    if ["wifiStatus", "wifiStop"].contains(&action.as_str()) {
+        let moves = native(app.clone(), json!({"action":"libraryPendingMoves"})).await?;
+        apply_moves(
+            &app,
+            &serde_json::from_value(moves).map_err(|e| e.to_string())?,
+        )
+        .await?;
     }
     if ![
         "snapshot",

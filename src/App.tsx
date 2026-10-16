@@ -8,6 +8,7 @@ import {
   PhoneSettingsButton,
 } from "./layouts/PhoneNavigation";
 import { isMobile, isIOS, mobileCommand, connectMobilePlayback } from "./platform/mobile";
+import { loadIOSLibrary } from "./library/iosLibrary";
 import { IOSOpenFiles } from "./library/IOSOpenFiles";
 import { UpdateNotifier } from "./updates/UpdateSettings";
 import { AmbientBackground } from "./library/AmbientBackground";
@@ -142,7 +143,7 @@ export default function App() {
     let disconnectAndroid: (() => void) | undefined;
     let unsubscribePlaylists: (() => void) | undefined;
     getLibrarySnapshot()
-      .then(({ roots, tracks, issues, playlists: nativePlaylists, userState }) => {
+      .then(async ({ roots, tracks, issues, playlists: nativePlaylists, userState }) => {
         if (!active) return;
         if (isMobile() && !userState)
           useNanoStore.setState({
@@ -177,6 +178,8 @@ export default function App() {
             ),
           });
         }
+        if (isIOS()) await loadIOSLibrary();
+        if (!active) return;
         setLibraryLoaded(true);
         if (isMobile()) disconnectAndroid = connectMobilePlayback();
         unsubscribePlaylists = useNanoStore.subscribe((state, previous) => {

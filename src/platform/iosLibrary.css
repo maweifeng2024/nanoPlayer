@@ -66,5 +66,8 @@
 @media (min-width: 1000px) {
   .ios-library-browsing { display: grid; grid-template-columns: minmax(200px, 0.7fr) minmax(0, 1fr); gap: var(--space-6); }
   .ios-library-browsing .ios-source-list { display: block; }
-  .ios-library-browsing .ios-source-row .ios-source-index { width: 100%; }
 }
+.ios-section-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.ios-source-index { min-height: 44px; min-width: 32px; justify-content: center; }
+.ios-source-index input { width: 20px; height: 20px; accent-color: var(--accent); }
+.ios-source-open, .ios-file-open { min-height: 44px; }

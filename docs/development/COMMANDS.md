@@ -152,7 +152,8 @@ src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.
 | `pnpm ios:dev [设备名] [-- --open]` | iOS 开发；`--open` 打开 Xcode 集成，设备/签名需配置 |
 | `pnpm ios:build:debug` | 本地 arm64 真机开发签名归档；复用已配置 Team，不上传 |
 | `pnpm ios:build:simulator` | 本地 arm64 模拟器 debug 构建；需要运行时 |
-| `pnpm ios:test:unit` | Swift 原生计数与上传规则；不是设备/网络测试 |
+| `pnpm ios:test:unit` | Swift 原生计数、一级目录选择、文件管理/回收站与字节保持；不是设备测试 |
+| `pnpm ios:test:wifi` | macOS 复用生产接收器的真实局域网/浏览器回归；需 Wi-Fi 和 Chromium，不证明 iOS 前台/设备行为 |
 | `pnpm ios:test:simulator <UDID>` | 构建后执行 XCTest/XCUITest，iPhone/iPad 分别运行 |
 | `pnpm release:ios -- --simulator --debug` | 完整本地门禁与模拟器归档，不上传/推送/建标签 |
 | `pnpm release:ios -- --device --debug` | 本地开发签名 IPA；需 Team/证书/profile；本机开发签名导出已验证 |

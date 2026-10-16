@@ -31,13 +31,14 @@ struct NativeArgs: Decodable {
   var paths: [String]?
   var indexAll: Bool?
   var skip: Bool?
+  var confirmed: Bool?
 }
 
 /// Owns all audio and authorization outside the WebView lifecycle.
 class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
   private let media = NativePlayer()
   private var pickerInvoke: Invoke?
-  private var pickerMode = "copy"
+  private var pickerMode = DocumentSelectionMode.copy
   private var pickerKind = "music"
   private var pickerTarget = "收件箱"
   private var pickerSourceKind = "files"
@@ -45,6 +46,15 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
   private var pickerLocation = ""
   private var pickerReplacing: String?
   private var pickerSkip = false
+  private struct ReferenceDraft {
+    let url: URL
+    let bookmark: Data
+    let kind: String
+    let label: String
+    let location: String
+    let replacing: String?
+  }
+  private var referenceDrafts: [String: ReferenceDraft] = [:]
   private var grants: [String: URL] = [:]
   private let worker = DispatchQueue(label: "app.nanoplayer.ios.documents", qos: .utility)
   private let files = FileManager.default
@@ -72,6 +82,7 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
         if stale { saveGrant(url) }
       }
     }
+    if let library = try? libraryResult.get(), let rules = try? library.participationRules() { media.applyLibrarySelection(rules) }
     NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification,
       object: nil, queue: .main) { [weak self] _ in self?.wifi?.stop() }
   }
@@ -127,8 +138,13 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
         switch args.action {
         case "pickTree", "pickFile":
           guard pickerInvoke == nil else { invoke.reject("文件选择器已打开"); return }
+          if args.action == "pickTree", DocumentSelectionMode(rawValue: args.mode ?? "") == nil {
+            invoke.reject("请明确选择只读引用或复制导入"); return
+          }
+          for item in referenceDrafts.values { item.url.stopAccessingSecurityScopedResource() }
+          referenceDrafts.removeAll()
           pickerInvoke = invoke
-          pickerMode = args.mode ?? "copy"
+          pickerMode = DocumentSelectionMode(rawValue: args.mode ?? "") ?? .copy
           pickerKind = args.action == "pickFile" ? (args.kind ?? "lyrics") : "music"
           pickerTarget = args.target ?? "收件箱"
           pickerSourceKind = args.kind == "app" ? "app" : "files"
@@ -137,14 +153,39 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
           pickerReplacing = args.sourceId
           pickerSkip = args.skip == true
           let types: [UTType] = pickerKind == "lyrics" ? [.plainText, .data]
-            : pickerKind == "cover" ? [.image] : pickerMode == "reference" ? [.folder] : [.folder, .audio]
+            : pickerKind == "cover" ? [.image] : pickerMode == .reference ? [.folder] : [.folder, .audio]
           let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: false)
-          picker.allowsMultipleSelection = pickerKind == "music" && pickerMode != "reference"
+          picker.allowsMultipleSelection = pickerKind == "music" && pickerMode != .reference
           picker.delegate = self
           guard let controller = manager.viewController else {
             pickerInvoke = nil; invoke.reject("无法打开文件选择器"); return
           }
           controller.present(picker, animated: true)
+        case "libraryCancelReference":
+          if let draft = referenceDrafts.removeValue(forKey: args.sourceId ?? "") { draft.url.stopAccessingSecurityScopedResource() }
+          invoke.resolve([:])
+        case "libraryCommitReference":
+          guard let draft = referenceDrafts.removeValue(forKey: args.sourceId ?? "") else { invoke.reject("文件授权已取消，请重新选择"); return }
+          worker.async {
+            do {
+              let library = try self.libraryResult.get()
+              let previous = try draft.replacing.map { try library.source($0).uri }
+              let existing = library.sources.contains { URL(fileURLWithPath: $0.uri).resolvingSymlinksInPath() == draft.url.resolvingSymlinksInPath() }
+              let source = try library.register(draft.url, kind: draft.kind, label: draft.label, location: draft.location, replacing: draft.replacing)
+              if !existing, draft.replacing == nil, let name = args.name, !name.isEmpty { try library.editSource(source.id, name: name, indexPaths: nil) }
+              DispatchQueue.main.async {
+                var saved = UserDefaults.standard.dictionary(forKey: "nanoplayer.folderBookmarks") ?? [:]
+                saved[draft.url.path] = draft.bookmark
+                if let previous, previous != draft.url.path {
+                  self.grants.removeValue(forKey: previous)?.stopAccessingSecurityScopedResource(); saved.removeValue(forKey: previous)
+                }
+                UserDefaults.standard.set(saved, forKey: "nanoplayer.folderBookmarks")
+                if self.grants[draft.url.path] == nil { self.grants[draft.url.path] = draft.url }
+                else { draft.url.stopAccessingSecurityScopedResource() }
+                invoke.resolve(["uri": source.uri, "sourceId": source.id])
+              }
+            } catch { draft.url.stopAccessingSecurityScopedResource(); invoke.reject(error.localizedDescription) }
+          }
         case "authorizePath":
           let path = args.uri ?? ""
           let url = URL(fileURLWithPath: path).resolvingSymlinksInPath()
@@ -230,9 +271,23 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
           wifi?.stop()
           worker.async {
             do {
-              let target = try self.libraryResult.get().path(sourceId: "managed", relative: args.target ?? "收件箱", writable: true)
+              let library = try self.libraryResult.get()
+              let rootId = try library.directoryID("")
+              let initialId = try library.directoryID(args.target ?? "收件箱")
               DispatchQueue.main.async {
-                let receiver = WifiReceiver(directory: target)
+                let receiver = WifiReceiver(directory: self.imported) { [weak self] action, values, completion in
+                  guard let self else { return }
+                  DispatchQueue.main.async {
+                    let write = !["list", "uploadTarget"].contains(action)
+                    if write && !self.media.canRelocate([self.imported.path]) {
+                      completion(.failure(NSError(domain: "nanoPlayer", code: 1, userInfo: [NSLocalizedDescriptionKey: "请先暂停播放再编辑目录"]))); return
+                    }
+                    self.worker.async {
+                      do { completion(.success(try self.libraryResult.get().browserCommand(action, values: values, rootId: rootId, initialId: initialId))) }
+                      catch { completion(.failure(error)) }
+                    }
+                  }
+                }
                 self.wifi = receiver
                 receiver.start { result in
                   switch result {
@@ -261,15 +316,19 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
           invoke.resolve([:])
         case "background": invoke.resolve([:])
         case "librarySources", "libraryBrowse", "libraryCreate", "libraryMove", "libraryRename", "libraryOpened", "librarySaveOpened",
-          "libraryCopy", "libraryEdit", "libraryIndex", "libraryDeleteEmpty", "libraryPendingMoves", "libraryAckMoves", "libraryRebase":
-          if ["libraryMove", "libraryRename"].contains(args.action) {
+          "libraryCopy", "libraryEdit", "libraryIndex", "librarySelect", "libraryInitializeSelection", "libraryTrash", "libraryRestore", "libraryPurge", "libraryDiscardOpened", "libraryDeleteEmpty", "libraryPendingMoves", "libraryAckMoves", "libraryRebase":
+          if ["libraryMove", "libraryRename", "libraryTrash", "libraryRestore", "libraryPurge"].contains(args.action) {
             guard wifi?.snapshot()["active"] as? Bool != true else { invoke.reject("请先停止 Wi-Fi 接收"); return }
-            let moving = (args.paths ?? [args.relativePath ?? ""]).map { imported.appendingPathComponent($0).standardizedFileURL.path }
+            let moving = (args.action == "libraryTrash" ? [args.relativePath ?? ""] : args.paths ?? [args.relativePath ?? ""]).map { imported.appendingPathComponent($0).standardizedFileURL.path }
             guard media.canRelocate(moving) else { invoke.reject("请先暂停正在播放的歌曲再移动"); return }
           }
           let authorized = Array(grants.values)
           worker.async {
-            do { invoke.resolve(try self.libraryCommand(args, authorized: authorized)) }
+            do {
+              let result = try self.libraryCommand(args, authorized: authorized)
+              let rules = try self.libraryResult.get().participationRules()
+              DispatchQueue.main.async { self.media.applyLibrarySelection(rules); invoke.resolve(result) }
+            }
             catch { invoke.reject(error.localizedDescription) }
           }
         default:
@@ -293,32 +352,18 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
   func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
     guard let invoke = pickerInvoke else { return }
     pickerInvoke = nil
-    if pickerMode == "reference" && pickerKind == "music" {
+    if pickerMode == .reference && pickerKind == "music" {
       guard let url = urls.first, url.startAccessingSecurityScopedResource() else {
         invoke.reject("无法取得文件夹授权"); return
       }
-      let kind = pickerSourceKind, label = pickerLabel, location = pickerLocation, replacing = pickerReplacing
-      worker.async {
-        do {
-          let library = try self.libraryResult.get()
-          let previousPath = try replacing.map { try library.source($0).uri }
-          let source = try library.register(url, kind: kind, label: label, location: location, replacing: replacing)
-          DispatchQueue.main.async {
-            do {
-              try self.saveGrantThrowing(url)
-              if let previousPath, previousPath != url.path {
-                self.grants.removeValue(forKey: previousPath)?.stopAccessingSecurityScopedResource()
-                var saved = UserDefaults.standard.dictionary(forKey: "nanoplayer.folderBookmarks") ?? [:]
-                saved.removeValue(forKey: previousPath)
-                UserDefaults.standard.set(saved, forKey: "nanoplayer.folderBookmarks")
-              }
-              if self.grants[url.path] == nil { self.grants[url.path] = url }
-              else { url.stopAccessingSecurityScopedResource() }
-              invoke.resolve(["uri": source.uri, "sourceId": source.id])
-            } catch { url.stopAccessingSecurityScopedResource(); invoke.reject(error.localizedDescription) }
-          }
-        } catch { url.stopAccessingSecurityScopedResource(); invoke.reject(error.localizedDescription) }
-      }
+      do {
+        // Keep the security scope, but create no catalog entry or index before confirmation.
+        let bookmark = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
+        let token = UUID().uuidString
+        referenceDrafts[token] = ReferenceDraft(url: url, bookmark: bookmark, kind: pickerSourceKind,
+          label: pickerLabel, location: pickerLocation, replacing: pickerReplacing)
+        invoke.resolve(["referenceToken": token, "name": url.lastPathComponent, "location": pickerLocation])
+      } catch { url.stopAccessingSecurityScopedResource(); invoke.reject(error.localizedDescription) }
       return
     }
     let kind = pickerKind
@@ -361,6 +406,7 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
     UserDefaults.standard.set(saved, forKey: "nanoplayer.folderBookmarks")
   }
 
+
   private func libraryCommand(_ args: NativeArgs, authorized: [URL]) throws -> [String: Any] {
     let library = try libraryResult.get()
     let sourceId = args.sourceId ?? "managed"
@@ -371,6 +417,20 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
       }
     }
     switch args.action {
+    case "libraryDiscardOpened":
+      let pending = library.support.appendingPathComponent("OpenRequests")
+      if files.fileExists(atPath: pending.path) { try files.removeItem(at: pending) }
+      return [:]
+    case "libraryInitializeSelection":
+      let data = Data((args.events ?? "{}").utf8)
+      try library.initializeParticipation(JSONDecoder().decode([String: Bool].self, from: data))
+      return try library.managementSnapshot()
+    case "librarySelect":
+      try library.setParticipation(sourceId, enabled: args.enabled == true, confirmAll: args.confirmed == true)
+      return try library.managementSnapshot()
+    case "libraryTrash": return try library.trashDirectory(args.relativePath ?? "")
+    case "libraryRestore": return try library.restoreTrash(sourceId, target: args.target)
+    case "libraryPurge": try library.purgeTrash(sourceId); return [:]
     case "libraryOpened", "librarySaveOpened":
       let pending = library.support.appendingPathComponent("OpenRequests")
       let folders = (try? files.contentsOfDirectory(at: pending, includingPropertiesForKeys: nil)) ?? []
@@ -387,6 +447,9 @@ class NanoPlayerPlugin: Plugin, UIDocumentPickerDelegate {
         _ = try library.register(url, kind: "files", label: "", location: "", legacy: true)
       }
       var result = try library.snapshot()
+      let management = try library.managementSnapshot()
+      for (key, value) in management { result[key] = value }
+      result["trashPaths"] = library.trashPaths()
       if var sources = result["sources"] as? [[String: Any]] {
         for i in sources.indices where sources[i]["kind"] as? String != "managed" {
           sources[i]["authorized"] = authorized.contains { $0.path == sources[i]["uri"] as? String }

@@ -22,8 +22,14 @@ export interface IOSEntry {
   indexed: boolean;
   partial?: boolean;
   needsDownload?: boolean;
+  audioCount?: number;
+  directoryCount?: number;
 }
-export interface IOSLibrary { managedUri: string; sources: IOSSource[] }
+export interface IOSDirectory { id: string; path: string; name: string; enabled: boolean | null; directOnly?: boolean }
+export interface IOSLibrary {
+  managedUri: string; sources: IOSSource[]; directories: IOSDirectory[];
+  sourceEnabled: Record<string, boolean>; selectionInitialized?: boolean; revision?: number; trashPaths?: string[];
+}
 export interface FileResults {
   uri?: string;
   mappings?: Record<string, string>;
@@ -49,6 +55,7 @@ let previewEntries: Record<string, IOSEntry[]> = {
   "files-demo": [{ path: "专辑", name: "专辑", directory: true, sizeBytes: 0, indexed: true }, { path: "示例.flac", name: "示例.flac", directory: false, sizeBytes: 1024, indexed: true }],
   "app-demo": [{ path: "试听.m4a", name: "试听.m4a", directory: false, sizeBytes: 256, indexed: true }],
 };
+const previewEnabled: Record<string, boolean> = {};
 function uniqueName(base: string, names: string[]) {
   let candidate = base, n = 2;
   while (names.some((name) => name.normalize("NFC").toLowerCase() === candidate.normalize("NFC").toLowerCase())) candidate = `${base}（${n++}）`;
@@ -61,7 +68,12 @@ export async function iosLibraryCommand<T = FileResults>(action: string, args: R
   const relative = String(args.relativePath ?? "");
   const entries = previewEntries[id] ?? [];
   const paths = (args.paths ?? []) as string[];
-  if (action === "librarySources") return { sources: structuredClone(previewSources), managedUri: previewSources[0].uri } as T;
+  if (action === "librarySelect") { previewEnabled[String(args.sourceId)] = args.enabled === true; return {} as T; }
+  if (action === "librarySources") return {
+    sources: structuredClone(previewSources), managedUri: previewSources[0].uri,
+    directories: previewEntries.managed.filter((e) => e.directory && !parentPath(e.path)).map((e) => ({ id: e.path, path: e.path, name: e.name, enabled: previewEnabled[e.path] ?? null })),
+    sourceEnabled: { ...previewEnabled },
+  } as T;
   if (action === "libraryOpened") return { count: 0, names: [] } as T;
   if (!source) throw new Error("来源不存在");
   if (["libraryCreate", "libraryMove", "libraryRename", "libraryDeleteEmpty"].includes(action) && id !== "managed") throw new Error("外部来源只读");
@@ -74,6 +86,9 @@ export async function iosLibraryCommand<T = FileResults>(action: string, args: R
   }
   if (action === "libraryEdit") source.name = uniqueName(String(args.name), previewSources.filter((item) => item.id !== id).map((item) => item.name));
   if (action === "libraryIndex") source.indexPaths = args.indexAll ? null : paths;
+  if (action === "libraryTrash") {
+    previewEntries[id] = entries.filter((item) => !insidePath(relative, item.path));
+  }
   if (action === "libraryDeleteEmpty") {
     if (entries.some((item) => item.path !== relative && insidePath(relative, item.path))) throw new Error("仅能删除空文件夹");
     previewEntries[id] = entries.filter((item) => item.path !== relative);
@@ -107,18 +122,39 @@ export async function syncIOSLibrary(uri?: string) {
   try {
     const result = uri ? await addLibraryRoots([uri]) : await getLibrarySnapshot();
     state.replaceLibrary(result.roots, result.tracks, result.issues);
+    await loadIOSLibrary();
   } finally { state.setScanning(false); }
 }
-export async function pickIOSSource(kind: "files" | "app", name: string, location: string, sourceId?: string) {
+export interface IOSReferenceDraft { referenceToken: string; name: string; location: string }
+let previewDraft: { kind: "files" | "app"; name: string; location: string; sourceId?: string } | undefined;
+export async function pickIOSSource(kind: "files" | "app", name: string, location: string, sourceId?: string): Promise<IOSReferenceDraft | undefined> {
   if (!isTauri()) {
-    const id = `preview-${Date.now()}`;
-    previewSources.push({ id, kind, name: uniqueName(`${kind === "files" ? "Files" : name} · Music`, previewSources.map((s) => s.name)), originalName: "Music", location, uri: `/preview/${id}`, indexPaths: null, available: true, authorized: true });
-    previewEntries[id] = [];
-    return;
+    previewDraft = { kind, name, location, sourceId };
+    return { referenceToken: "preview-reference", name: "Music", location: location || "Files" };
   }
-  const result = await mobileCommand<{ uri?: string }>("pickTree", { mode: "reference", kind, name, location, sourceId });
-  if (result.uri) await syncIOSLibrary(result.uri);
+  const draft = await mobileCommand<IOSReferenceDraft>("pickTree", { mode: "reference", kind, name, location, sourceId });
+  return draft.referenceToken ? draft : undefined;
 }
+export async function commitIOSReference(draft: IOSReferenceDraft, name: string) {
+  if (!isTauri()) {
+    if (!previewDraft) throw new Error("请重新选择文件夹");
+    const previous = previewSources.find((s) => s.id === previewDraft?.sourceId);
+    if (previous) previous.name = name;
+    else {
+      const id = `preview-${Date.now()}`;
+      previewSources.push({ id, kind: previewDraft.kind, name: uniqueName(name, previewSources.map((s) => s.name)), originalName: draft.name, location: draft.location, uri: `/preview/${id}`, indexPaths: null, available: true, authorized: true });
+      previewEntries[id] = [];
+    }
+    previewDraft = undefined; return;
+  }
+  const result = await mobileCommand<{ uri: string }>("libraryCommitReference", { sourceId: draft.referenceToken, name });
+  await syncIOSLibrary(result.uri);
+}
+export async function cancelIOSReference(draft: IOSReferenceDraft) {
+  if (!isTauri()) { previewDraft = undefined; return; }
+  await mobileCommand("libraryCancelReference", { sourceId: draft.referenceToken });
+}
+
 export async function importIOSFiles(target: string, skip = false) {
   if (!isTauri()) return "浏览器演示不会读取或保存设备文件。";
   const result = await mobileCommand<FileResults>("pickTree", { mode: "copy", target, skip });
@@ -128,4 +164,31 @@ export async function importIOSFiles(target: string, skip = false) {
 export async function removeIOSPreviewSource(id: string) {
   previewSources = previewSources.filter((source) => source.id !== id);
   delete previewEntries[id];
+}
+
+export async function loadIOSLibrary() {
+  const library = await iosLibraryCommand<IOSLibrary>("librarySources");
+  const state = useNanoStore.getState();
+  const legacySelected = (uri: string) => {
+    const root = state.roots.find((item) => item.path === uri);
+    return library.selectionInitialized || state.selectedRootIds === null || !root || state.selectedRootIds.includes(root.id);
+  };
+  if (isTauri() && !library.selectionInitialized) {
+    const legacy = Object.fromEntries([
+      ...library.directories.map((item) => [item.id, item.enabled ?? legacySelected(library.managedUri)]),
+      ...library.sources.filter((source) => source.kind !== "managed").map((source) => [source.id, library.sourceEnabled[source.id] ?? legacySelected(source.uri)]),
+    ]);
+    await iosLibraryCommand("libraryInitializeSelection", { events: JSON.stringify(legacy) });
+    return loadIOSLibrary();
+  }
+  const scopes = [{ id: "trash", path: library.managedUri + "/.nanoplayer-trash", selected: false, directOnly: false }, ...library.directories.map((item) => ({ id: item.id,
+    path: library.managedUri + (item.path ? "/" + item.path : ""), directOnly: item.directOnly,
+    selected: item.enabled ?? legacySelected(library.managedUri),
+  }))];
+  for (const source of library.sources.filter((source) => source.kind !== "managed")) scopes.push({
+    id: source.id, path: source.uri, directOnly: false,
+    selected: library.sourceEnabled[source.id] ?? legacySelected(source.uri),
+  });
+  if (JSON.stringify(scopes) !== JSON.stringify(state.libraryScopes)) state.setLibraryScopes(scopes);
+  return library;
 }
