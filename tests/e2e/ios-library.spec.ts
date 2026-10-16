@@ -5,6 +5,8 @@ async function library(page: import("@playwright/test").Page) {
   await page.locator(".phone-navigation").getByRole("button", { name: "资料库" }).click();
   await page.locator(".phone-library-tabs").getByRole("button", { name: "本地资料库" }).click();
   await expect(page.getByText("浏览器演示：文件操作仅影响示例，不读取设备文件。")).toBeVisible();
+  await expect(page.locator('.ios-library input:not([type="checkbox"])')).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "全局搜索" })).toHaveCount(0);
 }
 test("first-level only selection and single-entry managed operations", async ({ page }) => {
   await library(page);
@@ -100,4 +102,32 @@ test.describe("iPad resource browser", () => {
       }
     }
   });
+});
+
+test("read-only songs use first-level selection instead of obsolete root IDs", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { useNanoStore } = await import("/src/store.ts");
+    const { demoRoot, demoTracks } = await import("/src/domain.ts");
+    const tracks = [3, 4, 5].map((id) => ({ ...demoTracks[0], id, rootId: id,
+      title: `Referenced song ${id}`, path: `/external/source-${id}/song.wav` }));
+    useNanoStore.setState({ roots: [3, 4, 5].map((id) => ({ ...demoRoot, id, path: `/external/source-${id}` })),
+      tracks, selectedRootIds: [1, 3], libraryScopes: [3, 4, 5].map((id) => ({ id: `source-${id}`, path: `/external/source-${id}`, selected: true })),
+      page: "songs", queue: [], currentTrackId: undefined, playing: false });
+  });
+  await expect(page.locator('.track-row')).toHaveCount(3);
+  await expect(page.locator('.track-row.is-excluded')).toHaveCount(0);
+  await page.locator('[data-track-id="4"] .track-title').dblclick();
+  await expect.poll(() => page.evaluate(async () => {
+    const { useNanoStore } = await import("/src/store.ts");
+    return useNanoStore.getState().currentTrackId;
+  })).toBe(4);
+  await page.evaluate(async () => {
+    const { useNanoStore } = await import("/src/store.ts");
+    useNanoStore.getState().setPage("playlist", "mixed-reference");
+    useNanoStore.setState({ playlists: [{ id: "mixed-reference", name: "References", trackIds: [3, 4, 5] }] });
+    useNanoStore.getState().setLibraryScopes(useNanoStore.getState().libraryScopes.map((scope) => ({ ...scope, selected: scope.id !== "source-4" })));
+  });
+  await expect(page.locator('[data-track-id="4"]')).toHaveClass(/is-excluded/);
+  await expect(page.locator('[data-track-id="5"]')).not.toHaveClass(/is-excluded/);
 });

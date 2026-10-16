@@ -157,7 +157,7 @@ export default function App() {
         replaceLibrary(roots, tracks, issues);
         applyNativeUserState(userState);
         const restored = useNanoStore.getState();
-        if (restored.selectedRootIds !== null)
+        if (!isIOS() && restored.selectedRootIds !== null)
           restored.setSelectedRootIds(restored.selectedRootIds);
         if (nativePlaylists?.length) replacePlaylists(nativePlaylists);
         if (isMobile()) {
@@ -465,7 +465,7 @@ export default function App() {
               <ChevronLeft size={22} />
             </button>
           </div>
-          <label className="search-box">
+          {!(isIOS() && page === "library") && <label className="search-box">
             <Search size={16} aria-hidden="true" />
             <input
               ref={searchRef}
@@ -499,7 +499,7 @@ export default function App() {
             ) : (
               <kbd>{shortcut("K")}</kbd>
             )}
-          </label>
+          </label>}
           {isMobile() && <PhoneSettingsButton />}
         </header>
         <div className="page-scroll">

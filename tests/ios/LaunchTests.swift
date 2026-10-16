@@ -15,6 +15,8 @@ final class LaunchTests: XCTestCase {
     XCTAssertTrue(folders.waitForExistence(timeout: 5))
     folders.tap()
     XCTAssertTrue(app.buttons["Wi-Fi 传输"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.textFields["搜索一级目录或来源"].exists)
+    XCTAssertFalse(app.textFields["全局搜索"].exists)
     app.buttons["Wi-Fi 传输"].tap()
     XCTAssertTrue(app.buttons["开启 Wi-Fi 传输"].waitForExistence(timeout: 5))
     app.buttons["关闭"].firstMatch.tap()
@@ -50,6 +52,43 @@ final class LaunchTests: XCTestCase {
     let attachment = XCTAttachment(screenshot: app.screenshot())
     attachment.name = "ios-library"; attachment.lifetime = .keepAlways
     add(attachment)
+  }
+
+  func testExistingSongsCanStartPlayback() throws {
+    let app = XCUIApplication()
+    app.launchEnvironment["OS_ACTIVITY_DT_MODE"] = "NO"
+    app.launch()
+    XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 20))
+    let later = app.buttons["稍后再说"]
+    if later.waitForExistence(timeout: 2) { later.tap() }
+    let navigation = app.buttons["打开导航"]
+    if navigation.exists && navigation.isHittable { navigation.tap() }
+    // Opening the library must load first-level scopes before songs are shown.
+    app.buttons["本地资料库"].firstMatch.tap()
+    XCTAssertTrue(app.buttons["Wi-Fi 传输"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.textFields["搜索一级目录或来源"].exists)
+    XCTAssertFalse(app.textFields["全局搜索"].exists)
+    let songs = try XCTUnwrap(app.buttons.matching(identifier: "歌曲").allElementsBoundByIndex.first { $0.isHittable })
+    songs.tap()
+    let hierarchy = XCTAttachment(string: app.debugDescription)
+    hierarchy.name = "songs-hierarchy"; hierarchy.lifetime = .keepAlways
+    add(hierarchy)
+    let screen = XCTAttachment(screenshot: app.screenshot())
+    screen.name = "songs-before-playback"; screen.lifetime = .keepAlways
+    add(screen)
+    let song = app.otherElements["歌曲列表"].buttons.matching(NSPredicate(format: "label == %@ OR label BEGINSWITH %@", "播放", "播放 ")).firstMatch
+    guard song.waitForExistence(timeout: 10) else { throw XCTSkip("No existing songs on this device") }
+    XCTAssertEqual(app.otherElements["歌曲列表"].buttons.matching(NSPredicate(format: "label == %@", "·")).count, 0,
+      "Songs with empty text tags must display their filenames and unknown artist/album labels")
+    XCTAssertTrue(song.isEnabled, "A checked first-level source must not be disabled by legacy root IDs")
+    let pause = app.buttons["暂停"].firstMatch
+    if pause.exists && pause.isHittable { pause.tap() }
+    song.tap()
+    XCTAssertTrue(pause.waitForExistence(timeout: 10), "A selected song must start native playback")
+    let attachment = XCTAttachment(screenshot: app.screenshot())
+    attachment.name = "existing-songs-playback"; attachment.lifetime = .keepAlways
+    add(attachment)
+    pause.tap()
   }
   func testWifiTransferUploadsIntoChosenDirectory() throws {
     let app = XCUIApplication()

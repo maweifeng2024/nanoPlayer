@@ -28,7 +28,6 @@ export function IOSLibraryPage() {
   const [path, setPath] = useState("");
   const [directOnly, setDirectOnly] = useState(false);
   const [entries, setEntries] = useState<IOSEntry[]>([]);
-  const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<Dialog>();
   const [menu, setMenu] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -88,7 +87,6 @@ export function IOSLibraryPage() {
   const back = () => {
     if (path && !directOnly) setPath(parentPath(path));
     else { setActiveId(undefined); setPath(""); setDirectOnly(false); }
-    setSearch("");
   };
   useEffect(() => {
     const handler = (event: Event) => {
@@ -99,7 +97,7 @@ export function IOSLibraryPage() {
     return () => window.removeEventListener("android-back", handler);
   }, [activeId, path, directOnly, dialog, menu]);
   const browse = (id: string, nextPath = "", direct = false) => {
-    setActiveId(id); setPath(nextPath); setDirectOnly(direct); setSearch(""); setError("");
+    setActiveId(id); setPath(nextPath); setDirectOnly(direct); setError("");
   };
   const setParticipation = async (id: string, enabled: boolean, confirmed = false) => {
     await iosLibraryCommand("librarySelect", { sourceId: id, enabled, confirmed });
@@ -107,7 +105,7 @@ export function IOSLibraryPage() {
     setResult(enabled ? "已加入音乐库，包含所有子目录" : "已从音乐浏览和播放范围排除，原文件保留");
   };
   const openEntry = (entry: IOSEntry) => {
-    if (entry.directory) { setPath(entry.path); setSearch(""); return; }
+    if (entry.directory) { setPath(entry.path); return; }
     const state = useNanoStore.getState();
     const track = state.tracks.find((item) => item.path === `${source?.uri}/${entry.path}`);
     if (!track) { setResult("歌曲尚不可用；云端文件需先在 Files 下载后重新扫描。"); return; }
@@ -131,7 +129,6 @@ export function IOSLibraryPage() {
     if (!current) throw new Error("目录已变化，请刷新后重试");
     setDialog({ kind: "delete", entry: current });
   });
-  const match = (name: string) => name.toLowerCase().includes(search.toLowerCase());
   const sourceRow = (item: IOSSource, itemPath: string, id: string, label: string, direct = false) => {
     const uri = item.uri + (itemPath ? `/${itemPath}` : "");
     const count = tracks.filter((track) => track.path.startsWith(uri + "/") && (!direct || !track.path.slice(uri.length + 1).includes("/"))).length;
@@ -167,18 +164,17 @@ export function IOSLibraryPage() {
       <button className="primary-button" disabled={busy || scanning} onClick={() => setDialog({ kind: "add" })}>添加 ＋</button>
     </header>
     {!isTauri() && <p className="safety-note">浏览器演示：文件操作仅影响示例，不读取设备文件。</p>}
-    <label className="ios-library-search">{source ? "搜索当前目录" : "搜索一级目录或来源"}<input aria-label={source ? "搜索当前目录" : "搜索一级目录或来源"} value={search} onChange={(event) => setSearch(event.target.value)} /></label>
     {error && <p role="alert">{error}</p>}
     {result && <p role="status" className="ios-operation-result">{result}</p>}
     <div className={`ios-library-columns ${source ? "ios-library-browsing" : ""}`}>
       <div className="ios-source-list">
         <section className="ios-source-group" aria-label="nanoPlayer 资源">
           <div className="ios-section-heading"><h2>nanoPlayer <small>可管理</small></h2><WifiTransfer onImported={refresh} /></div>
-          {library.directories.filter((d) => match(d.name)).map((d) => sourceRow(library.sources[0], d.path, d.id, d.name, d.directOnly))}
+          {library.directories.map((d) => sourceRow(library.sources[0], d.path, d.id, d.name, d.directOnly))}
           <button className="text-button" onClick={() => browse("managed")}>浏览 nanoPlayer 根目录</button>
         </section>
         <section className="ios-source-group" aria-label="外部只读来源"><h2>外部来源 <small>只读</small></h2>
-          {library.sources.filter((item) => item.kind !== "managed" && match(item.name)).map((item) => sourceRow(item, "", item.id, item.name))}
+          {library.sources.filter((item) => item.kind !== "managed").map((item) => sourceRow(item, "", item.id, item.name))}
           {!library.sources.some((item) => item.kind !== "managed") && <p>引用 Files 文件夹后在此显示。</p>}
         </section>
         <p className="safety-note">勾选的一级目录及其所有子目录参与音乐库。取消勾选不会删除文件。</p>
@@ -201,7 +197,7 @@ export function IOSLibraryPage() {
           })}><RefreshCw size={18} /></button>
         </div>
         <ul className="ios-file-list">
-          {entries.filter((entry) => (!directOnly || !entry.directory) && match(entry.name)).slice(0, limit).map((entry) => <li key={entry.path}>
+          {entries.filter((entry) => (!directOnly || !entry.directory)).slice(0, limit).map((entry) => <li key={entry.path}>
             <button className="ios-file-open" onClick={() => openEntry(entry)}>{entry.directory ? <Folder size={22} /> : <Music2 size={22} />}<span><strong>{entry.name}</strong><small>{entry.needsDownload ? "需在 Files 下载后重试" : entry.directory ? "文件夹" : formatBytes(entry.sizeBytes)}{!managed && " · 只读"}</small></span></button>
             <button className="icon-button" aria-label={`更多操作 ${entry.name}`} aria-expanded={menu === entry.path} onClick={(event) => toggleMenu(entry.path, event)}><MoreHorizontal size={18} /></button>
             {menu === entry.path && <div ref={(node) => { menuRef.current = node; }} className="context-menu menu-popover ios-source-menu" role="menu">

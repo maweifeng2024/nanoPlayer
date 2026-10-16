@@ -145,8 +145,8 @@ export function PlayerBar() {
           return;
         }
         snapshot.setProgress(Math.min(status.positionMs, current.durationMs));
-        if (!status.paused)
-          snapshot.tickPlayback(Math.max(0, status.positionMs - snapshot.progressMs));
+        if (status.paused) snapshot.setPlaying(false);
+        else snapshot.tickPlayback(Math.max(0, status.positionMs - snapshot.progressMs));
       } catch (error) {
         snapshot.setPlaying(false);
         snapshot.setNotice(t("读取播放状态失败：{0}", t(String(error))));

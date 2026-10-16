@@ -48,6 +48,7 @@ export function TrackTable({
     useShallow((store) => ({
       roots: store.roots,
       selectedRootIds: store.selectedRootIds,
+      libraryScopes: store.libraryScopes,
       ratings: store.ratings,
       playCounts: store.playCounts,
       lastPlayedAt: store.lastPlayedAt,

@@ -202,7 +202,7 @@ fn remove_library_root(
 }
 
 #[tauri::command]
-fn playback_load(
+async fn playback_load(
     track_id: i64,
     start_ms: u64,
     volume: f32,
@@ -222,7 +222,7 @@ fn playback_load(
     if audio.is_none() {
         *audio = Some(audio::AudioEngine::new()?);
     }
-    audio.as_ref().expect("audio initialized").load(
+    audio.as_mut().expect("audio initialized").load(
         std::path::Path::new(&path),
         start_ms,
         volume,
@@ -231,7 +231,7 @@ fn playback_load(
 }
 
 #[tauri::command]
-fn playback_pause(state: tauri::State<'_, AppState>) -> Result<(), String> {
+async fn playback_pause(state: tauri::State<'_, AppState>) -> Result<(), String> {
     if let Some(audio) = state
         .audio
         .lock()
@@ -244,7 +244,7 @@ fn playback_pause(state: tauri::State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn playback_resume(state: tauri::State<'_, AppState>) -> Result<(), String> {
+async fn playback_resume(state: tauri::State<'_, AppState>) -> Result<(), String> {
     if let Some(audio) = state
         .audio
         .lock()
@@ -257,12 +257,12 @@ fn playback_resume(state: tauri::State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn playback_seek(position_ms: u64, state: tauri::State<'_, AppState>) -> Result<(), String> {
+async fn playback_seek(position_ms: u64, state: tauri::State<'_, AppState>) -> Result<(), String> {
     if let Some(audio) = state
         .audio
         .lock()
         .map_err(|_| "播放器锁已损坏".to_owned())?
-        .as_ref()
+        .as_mut()
     {
         audio.seek(position_ms)?;
     }
@@ -270,7 +270,7 @@ fn playback_seek(position_ms: u64, state: tauri::State<'_, AppState>) -> Result<
 }
 
 #[tauri::command]
-fn playback_volume(volume: f32, state: tauri::State<'_, AppState>) -> Result<(), String> {
+async fn playback_volume(volume: f32, state: tauri::State<'_, AppState>) -> Result<(), String> {
     if let Some(audio) = state
         .audio
         .lock()
@@ -283,24 +283,25 @@ fn playback_volume(volume: f32, state: tauri::State<'_, AppState>) -> Result<(),
 }
 
 #[tauri::command]
-fn playback_status(
+async fn playback_status(
     state: tauri::State<'_, AppState>,
 ) -> Result<Option<audio::PlaybackStatus>, String> {
-    Ok(state
+    state
         .audio
         .lock()
         .map_err(|_| "播放器锁已损坏".to_owned())?
-        .as_ref()
-        .map(audio::AudioEngine::status))
+        .as_mut()
+        .map(audio::AudioEngine::status)
+        .transpose()
 }
 
 #[tauri::command]
-fn playback_output_devices() -> Result<Vec<audio::AudioOutput>, String> {
+async fn playback_output_devices() -> Result<Vec<audio::AudioOutput>, String> {
     audio::output_devices()
 }
 
 #[tauri::command]
-fn playback_refresh_output(
+async fn playback_refresh_output(
     track_id: Option<i64>,
     start_ms: u64,
     volume: f32,
@@ -320,7 +321,7 @@ fn playback_refresh_output(
         .audio
         .lock()
         .map_err(|_| "播放器锁已损坏".to_owned())?;
-    let engine = match output_name {
+    let mut engine = match output_name {
         Some(name) if !name.is_empty() => audio::AudioEngine::for_output(&name)?,
         _ => audio::AudioEngine::new()?,
     };

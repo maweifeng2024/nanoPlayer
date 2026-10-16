@@ -2,6 +2,14 @@
 
 Updated: 2026-10-13 · Local source: 0.1.18 · Published desktop: 0.1.14 · Detailed verification below is dated where stated
 
+## 2026-10-16 headphone/output recovery (0.1.27 local)
+
+- Code diagnosis: rodio `Player::clear()` and `Player::try_seek()` wait for output callbacks; a disconnected/stalled output can therefore leave a command holding the engine mutex indefinitely. The old engine had no automatic output recovery. This is a source-level diagnosis, not a captured hardware hang stack.
+- Implemented: decoder-side seek and queue replacement without waiting for output consumption; asynchronous desktop playback commands; default-route/disconnected-device checks (once per second while playing), plus a three-second stalled-position fallback. Recovery preserves track/progress/volume, rebuilds the default output and pauses; the user can resume explicitly. UI now synchronizes native pause state.
+- Verified: non-consuming-output Rust regression, route-selection policy regression, source-byte preservation; `pnpm check`, browser regression, Rust fmt/Clippy/tests/10k benchmark, release-script tests, website build, iOS native unit rules. Evidence and APK details: `artifacts/verification/v0.1.27/summary.md`.
+- Android already uses Media3 audio focus and `setHandleAudioBecomingNoisy(true)`; iOS already pauses for `oldDeviceUnavailable` and interruptions and reactivates its playback session on play. Neither uses the desktop rodio queue operations. This audit does not establish physical headphone/Bluetooth acceptance.
+- Remaining: reproduce and retest physical wired/Bluetooth disconnect, manual resume, repeated switches and UI responsiveness on macOS/Windows/Linux and mobile devices. No Android device was connected; no installed desktop application or personal playback state was changed. Desktop publication remains user-run: `pnpm release 0.1.27` from main.
+
 ## 2026-10-13 device-confirmed Android ANR repair (0.1.18)
 
 - Cause verified on USB-connected PKH110 / Android 16: 0.1.17 main thread stalled in `MediaController.moveMediaItem` while reconciling a large queue. Frontend indexing alone did not solve the native ANR.

@@ -130,7 +130,7 @@ test("placeholder artwork keeps the neutral background in both themes", async ({
   await page.screenshot({ path: "test-results/ambient-warm-light.png" });
 });
 
-test("native playback checkpoints complete sessions across pause/resume and short tracks", async ({
+test("native route-loss pause updates controls and preserves session accounting", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -216,7 +216,9 @@ test("native playback checkpoints complete sessions across pause/resume and shor
   ).toBeVisible();
   await page.getByRole("button", { name: "播放", exact: true }).click();
   await expect.poll(() => page.getByLabel("播放进度", { exact: true }).inputValue()).not.toBe("0");
-  await page.getByRole("button", { name: "暂停", exact: true }).click();
+  // A route-loss pause originates in native audio, without a UI click.
+  await page.evaluate(() => { (window as any).__nativeTest.paused = true; });
+  await expect(page.getByRole("button", { name: "播放", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "播放", exact: true }).click();
   await expect
     .poll(() =>

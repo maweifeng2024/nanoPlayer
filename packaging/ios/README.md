@@ -1,6 +1,6 @@
 # iOS 本地打包契约
 
-共享 versionName 取 root package.json。`build-number.json` 独立维护 `buildNumber` 与本次 `version`；当前 0.1.23 / 5。每个新预期安装构建递增一次，失败重试复用该次编号。改变共享版本时先同步版本，然后在此分配新的 build number；`ios:dev`/构建入口会拒绝未分配的版本。
+共享 versionName 取 root package.json。`build-number.json` 独立维护 `buildNumber` 与本次 `version`；当前 0.1.26 / 10。每个新预期安装构建递增一次，失败重试复用该次编号。改变共享版本时先同步版本，然后在此分配新的 build number；`ios:dev`/构建入口会拒绝未分配的版本。
 
 `pnpm release:ios -- --simulator --debug` 创建本地 arm64 模拟器 app ZIP。`pnpm release:ios -- --device --debug` 使用 Xcode development Team/profile 导出本地真机调试 IPA；非 debug 可通过 `--export-method release-testing` 或 `app-store-connect` 指定导出契约。这些命令执行本地门禁并核验身份、版本/build、架构、产物新鲜度、签名和 SHA-256，不上传、不创建标签、不更新网站或桌面 updater。`--dry-run` 仅展示计划。
 
