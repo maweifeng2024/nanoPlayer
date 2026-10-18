@@ -74,11 +74,11 @@ test("supports sorting, batch playlist actions and theme choice", async ({ page 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });
 
-test("shows three cover home lists and cover rows with artist and album", async ({ page }) => {
+test("shows recent albums and two song collections with artist and album", async ({ page }) => {
   await page.goto("/");
   const homeLists = page.getByLabel("首页歌曲推荐");
-  await expect(homeLists.getByRole("region")).toHaveCount(3);
-  await expect(homeLists.getByRole("region", { name: "最近添加" })).toBeVisible();
+  await expect(homeLists.getByRole("region")).toHaveCount(2);
+  await expect(page.getByRole("region", { name: "最近添加的专辑" })).toBeVisible();
   await expect(homeLists.getByRole("region", { name: "播放最多" })).toBeVisible();
   await expect(homeLists.getByRole("region", { name: "高评分" })).toBeVisible();
   await expect(homeLists.getByRole("table")).toHaveCount(0);

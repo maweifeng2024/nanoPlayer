@@ -437,5 +437,11 @@
   "歌词字号": "Lyric font size",
   "歌词延后 0.2 秒": "Delay lyrics by 0.2 seconds",
   "歌词提前 0.2 秒": "Advance lyrics by 0.2 seconds",
-  "歌词偏移": "Lyric offset"
+  "歌词偏移": "Lyric offset",
+  "最近添加的专辑": "Recently added albums",
+  "打开专辑 {0}": "Open album {0}",
+  "外观与操作": "Appearance & controls",
+  "资料与存储": "Library & storage",
+  "应用更新": "App updates",
+  "调整歌词阅读字号，自动保存。": "Adjust the lyric reading size. Changes are saved automatically."
 }

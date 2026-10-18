@@ -70,7 +70,7 @@ test.describe("Android touch interactions", () => {
     hasTouch: true,
   });
 
-  test("home uses twelve cards, three rows per column, in requested order", async ({ page }) => {
+  test("home shows recent albums before two touch song collections", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page.evaluate(async () => {
@@ -87,13 +87,13 @@ test.describe("Android touch interactions", () => {
         playCounts: Object.fromEntries(tracks.map((t) => [t.id, 2])),
       });
     });
-    for (const kind of ["popular", "rated", "recent"]) {
+    for (const kind of ["popular", "rated"]) {
       const list = page.locator(`.home-track-list-${kind}`);
       await expect(list.locator("li")).toHaveCount(12);
       const card = await list.locator("li").first().boundingBox();
       const artwork = await list.locator(".recommendation-art").first().boundingBox();
-      expect(card?.height).toBe(artwork?.height);
-      expect(card?.x).toBe(artwork?.x);
+      expect(card!.height).toBeGreaterThanOrEqual(72);
+      expect(artwork!.x - card!.x).toBeGreaterThanOrEqual(24);
       expect(
         await list
           .locator("li")
@@ -123,7 +123,8 @@ test.describe("Android touch interactions", () => {
         ),
       );
     expect(y["播放最多"]).toBeLessThan(y["高评分"]);
-    expect(y["高评分"]).toBeLessThan(y["最近添加"]);
+    const recent = await page.locator(".home-recent-albums").boundingBox();
+    expect(recent!.y).toBeLessThan(y["播放最多"]);
     await page.locator(".menu-button").click();
     await expect(page.locator(".sidebar-playlists")).toBeHidden();
     await page.locator(".sidebar").getByRole("button", { name: "设置", exact: true }).click();

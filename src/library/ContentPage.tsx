@@ -2,6 +2,7 @@ import { LyricText } from "../lyrics/LyricText";
 import { SleepTimer } from "../player/SleepTimer";
 import { shortcut } from "../platform/shortcuts";
 import { isMobile, isIOS, mobileCommand } from "../platform/mobile";
+import { recentAlbums } from "./recentAlbums";
 import { collectionTracks } from "./collectionTracks";
 import { t } from "../i18n";
 import {
@@ -21,6 +22,7 @@ import {
   Mic2,
   Music2,
   Play,
+  Pause,
   Plus,
   RotateCcw,
   SearchX,
@@ -260,7 +262,10 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   const [momentSeed] = useState(() => Math.random());
   const featured = tracks[0];
   const stats = { ratings, playCounts, lastPlayedAt };
-  const recent = collectionTracks(tracks, "recent", stats).slice(0, isMobile() ? 12 : 20);
+  const unknownAlbum = t("未知专辑");
+  const albums = useMemo(() => recentAlbums(tracks, unknownAlbum), [tracks, unknownAlbum]);
+  const openCollection = useNanoStore((state) => state.openCollection);
+  const setPage = useNanoStore((state) => state.setPage);
   const popular = collectionTracks(tracks, "popular", stats).slice(0, isMobile() ? 12 : 20);
   const rated = collectionTracks(tracks, "rated", stats).slice(0, isMobile() ? 12 : 20);
   if (!featured) return <EmptyLibrary />;
@@ -347,7 +352,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
     thoughtIndex >= 0 ? thoughtIndex : Math.abs(moment.track.id) % 3
   ];
   return (
-    <section>
+    <section className="home-page">
       <div className="hero">
         <Artwork
           track={moment.track}
@@ -373,15 +378,36 @@ function HomePage({ tracks }: { tracks: Track[] }) {
           </button>
         </div>
       </div>
+      <section className="home-recent-albums" aria-label={t("最近添加的专辑")}>
+        <header className="home-album-heading">
+          <h2>{t("最近添加")}</h2>
+          <button className="text-button" onClick={() => setPage("recent")} type="button">
+            {t("查看全部 ›")}
+          </button>
+        </header>
+        <div className="home-album-grid">
+          {albums.map(({ name, track, count }) => (
+            <button
+              className="home-album-card"
+              onClick={() => openCollection("album", name)}
+              key={name}
+              type="button"
+              aria-label={t("打开专辑 {0}", name)}
+            >
+              <Artwork
+                track={track}
+                className="home-album-art"
+                fallback={<AlbumIcon size={40} />}
+              />
+              <strong title={name}>{name}</strong>
+              <small title={track.albumArtist || track.artist}>
+                {track.albumArtist || track.artist} · {t("{0} 首", count)}
+              </small>
+            </button>
+          ))}
+        </div>
+      </section>
       <div className="home-track-columns" aria-label={t("首页歌曲推荐")}>
-        <HomeTrackList
-          icon={<Clock3 />}
-          kicker={t("新入库")}
-          title={t("最近添加")}
-          page="recent"
-          tracks={recent}
-          tone="recent"
-        />
         <HomeTrackList
           icon={<Headphones />}
           kicker={t("常听")}
@@ -418,8 +444,13 @@ function HomeTrackList({
   tracks: Track[];
   tone: "recent" | "popular" | "rated";
 }) {
-  const { playTrack, setPage } = useNanoStore(
-    useShallow((state) => ({ playTrack: state.playTrack, setPage: state.setPage })),
+  const { playTrack, setPage, currentTrackId, playing } = useNanoStore(
+    useShallow((state) => ({
+      playTrack: state.playTrack,
+      setPage: state.setPage,
+      currentTrackId: state.currentTrackId,
+      playing: state.playing,
+    })),
   );
   const queue = tracks.map((track) => track.id);
   return (
@@ -437,7 +468,15 @@ function HomeTrackList({
           <ol style={{ "--recommendation-rows": Math.min(3, tracks.length) } as CSSProperties}>
             {tracks.map((track) => (
               <li key={track.id}>
-                <button onClick={() => playTrack(track.id, queue)} type="button">
+                <button
+                  onClick={() => playTrack(track.id, queue)}
+                  type="button"
+                  aria-pressed={currentTrackId === track.id}
+                >
+                  <span className="home-track-status" aria-hidden="true">
+                    {currentTrackId === track.id &&
+                      (playing ? <AudioLines size={14} /> : <Pause size={14} />)}
+                  </span>
                   <Artwork
                     className="recommendation-art"
                     track={track}
@@ -520,20 +559,25 @@ function NowPlayingPage() {
         <ChevronDown size={18} />
         <span>{t("收起")}</span>
       </button>
-      <Artwork
-        className="now-playing-art"
-        track={track}
-        fallback={<img src="/nanoplayer-app-icon.png" alt="" />}
-      />
-      <div className="now-playing-copy">
-        <p className="eyebrow">
-          {t("正在播放 ·")}
-          {track.format}
-        </p>
-        <h1>{track.title}</h1>
-        <h2>
-          {track.artist} · {track.album}
-        </h2>
+      <div className="now-playing-release">
+        <Artwork
+          className="now-playing-art"
+          track={track}
+          fallback={<img src="/nanoplayer-app-icon.png" alt="" />}
+        />
+        <div className="now-playing-copy">
+          <p className="eyebrow">
+            {t("正在播放 ·")}
+            {track.format}
+          </p>
+          <h1>{track.title}</h1>
+          <h2>
+            {track.artist} · {track.album}
+          </h2>
+        </div>
+      </div>
+      <div className="now-playing-reading">
+        <h2 className="now-playing-reading-title">{t("歌词")}</h2>
         <div
           className="immersive-lyrics"
           style={{ "--font-lyric": `${state.lyricFontSize}px` } as CSSProperties}
@@ -876,7 +920,9 @@ function PlaylistPage() {
   const items = playlist.trackIds
     .map((id) => tracks.find((track) => track.id === id))
     .filter(Boolean) as Track[];
-  const playableItems = items.filter((track) => trackIsSelected(track, { roots, selectedRootIds, libraryScopes }));
+  const playableItems = items.filter((track) =>
+    trackIsSelected(track, { roots, selectedRootIds, libraryScopes }),
+  );
   const chooseCover = async () => {
     if (!isTauri()) return setNotice(t("自定义歌单图片可在 Tauri 桌面版中选择。"));
     const chosen = isMobile()
@@ -1140,6 +1186,8 @@ function NameDialog({
 }
 
 function SettingsPage() {
+  const lyricFontSize = useNanoStore((state) => state.lyricFontSize);
+  const setLyricFontSize = useNanoStore((state) => state.setLyricFontSize);
   const language = useNanoStore((state) => state.language);
   const setLanguage = useNanoStore((state) => state.setLanguage);
   const {
@@ -1271,228 +1319,265 @@ function SettingsPage() {
     <section>
       <PageHeader eyebrow={t("本地优先")} title={t("设置")} />
       <div className="settings-list">
-        <UpdateSettings />
-        <article>
-          <span className="settings-icon">
-            <Settings2 />
-          </span>
-          <div>
-            <strong>{t("界面语言")}</strong>
-            <p>{t("选择中文或英文，立即应用并自动保存。")}</p>
-          </div>
-          <select
-            aria-label={t("界面语言")}
-            value={language}
-            onChange={(event) => setLanguage(event.target.value as "zh-CN" | "en")}
-          >
-            <option value="zh-CN">简体中文</option>
-            <option value="en">English</option>
-          </select>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <Disc3 />
-          </span>
-          <div>
-            <strong>{t("播放计数")}</strong>
-            <p>{t("完整自然播放结束后计为一次；跳过或拖动进度不计次。")}</p>
-          </div>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <ShieldCheck />
-          </span>
-          <div>
-            <strong>{t("源文件只读")}</strong>
-            <p>
-              {t("nanoPlayer 没有修改标签、移动或删除音乐的命令。")}{" "}
-              {t("已授权目录：{0}", roots.length)}
-            </p>
-          </div>
-          <span className="setting-status">{t("已启用")}</span>
-        </article>
-        <article className="online-lyrics-setting">
-          <span className="settings-icon">
-            <Settings2 />
-          </span>
-          <div>
-            <strong>{t("在线歌词")}</strong>
-            <p>
-              {t(
-                "开启后，匹配时会向 LRCLIB 发送标题、艺术家、专辑与时长。结果仅缓存到应用数据库。",
-              )}
-            </p>
-          </div>
-          <button
-            className={`switch ${onlineLyrics ? "on" : ""}`}
-            role="switch"
-            aria-label={t("在线歌词")}
-            aria-checked={onlineLyrics}
-            onClick={() => setOnlineLyrics(!onlineLyrics)}
-          >
-            <span />
-          </button>
-        </article>
-        <article className="appearance-setting">
-          <span className="settings-icon">
-            <SunMoon />
-          </span>
-          <div>
-            <strong>{t("外观")}</strong>
-            <p>{t("可跟随系统，或固定使用浅色/深色主题。")}</p>
-          </div>
-          <div className="segmented" aria-label={t("外观主题")}>
-            {(
-              [
-                ["system", t(isMobile() ? "系统" : "跟随系统")],
-                ["light", t("浅色")],
-                ["dark", t("深色")],
-              ] as const
-            ).map(([value, label]) => (
+        <section className="settings-group" aria-labelledby="settings-group-0">
+          <h2 id="settings-group-0">{t("外观与操作")}</h2>
+          <article>
+            <span className="settings-icon">
+              <Settings2 />
+            </span>
+            <div>
+              <strong>{t("界面语言")}</strong>
+              <p>{t("选择中文或英文，立即应用并自动保存。")}</p>
+            </div>
+            <select
+              aria-label={t("界面语言")}
+              value={language}
+              onChange={(event) => setLanguage(event.target.value as "zh-CN" | "en")}
+            >
+              <option value="zh-CN">简体中文</option>
+              <option value="en">English</option>
+            </select>
+          </article>
+          <article className="appearance-setting">
+            <span className="settings-icon">
+              <SunMoon />
+            </span>
+            <div>
+              <strong>{t("外观")}</strong>
+              <p>{t("可跟随系统，或固定使用浅色/深色主题。")}</p>
+            </div>
+            <div className="segmented" aria-label={t("外观主题")}>
+              {(
+                [
+                  ["system", t(isMobile() ? "系统" : "跟随系统")],
+                  ["light", t("浅色")],
+                  ["dark", t("深色")],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  className={theme === value ? "active" : ""}
+                  aria-pressed={theme === value}
+                  onClick={() => setTheme(value)}
+                  key={value}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </article>
+          <article hidden={isMobile()}>
+            <span className="settings-icon">
+              <Keyboard />
+            </span>
+            <div>
+              <strong>{t("快捷键")}</strong>
+              <p>
+                {t("⌘K 搜索 · Space 播放/暂停 · ⌘L 歌词")
+                  .replace("⌘K", shortcut("K"))
+                  .replace("⌘L", shortcut("L"))}
+              </p>
+            </div>
+            <span className="setting-status">{t("已启用")}</span>
+          </article>
+        </section>
+        <section className="settings-group" aria-labelledby="settings-group-1">
+          <h2 id="settings-group-1">{t("播放")}</h2>
+          <article>
+            <span className="settings-icon">
+              <Disc3 />
+            </span>
+            <div>
+              <strong>{t("播放计数")}</strong>
+              <p>{t("完整自然播放结束后计为一次；跳过或拖动进度不计次。")}</p>
+            </div>
+          </article>
+          <article>
+            <span className="settings-icon">
+              <Disc3 />
+            </span>
+            <div>
+              <strong>{t("播放恢复")}</strong>
+              <p>{t("队列、位置、评分和歌单同步到 SQLite；重启后恢复但不自动发声。")}</p>
+            </div>
+            <span className="setting-status">{t("默认")}</span>
+          </article>
+          <article>
+            <span className="settings-icon">
+              <AudioLines />
+            </span>
+            <div>
+              <strong>{t("音频输出")}</strong>
+              <p>{t("切换设备时保留当前曲目、进度、音量和暂停状态。")}</p>
+            </div>
+            {isMobile() ? (
               <button
-                className={theme === value ? "active" : ""}
-                onClick={() => setTheme(value)}
-                key={value}
+                className="secondary-button"
+                onClick={() =>
+                  void mobileCommand("audioSettings").catch((error) => setNotice(String(error)))
+                }
               >
-                {label}
+                {t("系统音频设置")}
               </button>
-            ))}
-          </div>
-        </article>
-        <article hidden={isMobile()}>
-          <span className="settings-icon">
-            <Keyboard />
-          </span>
-          <div>
-            <strong>{t("快捷键")}</strong>
-            <p>
-              {t("⌘K 搜索 · Space 播放/暂停 · ⌘L 歌词")
-                .replace("⌘K", shortcut("K"))
-                .replace("⌘L", shortcut("L"))}
-            </p>
-          </div>
-          <span className="setting-status">{t("已启用")}</span>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <Disc3 />
-          </span>
-          <div>
-            <strong>{t("播放恢复")}</strong>
-            <p>{t("队列、位置、评分和歌单同步到 SQLite；重启后恢复但不自动发声。")}</p>
-          </div>
-          <span className="setting-status">{t("默认")}</span>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <AudioLines />
-          </span>
-          <div>
-            <strong>{t("音频输出")}</strong>
-            <p>{t("切换设备时保留当前曲目、进度、音量和暂停状态。")}</p>
-          </div>
-          {isMobile() ? (
+            ) : (
+              <div className="output-picker">
+                <select
+                  aria-label={t("音频输出设备")}
+                  value={outputDevice ?? ""}
+                  onChange={(event) => chooseOutput(event.target.value)}
+                >
+                  <option value="">{t("系统默认")}</option>
+                  {outputs.map((output) => (
+                    <option value={output.name} key={output.name}>
+                      {output.name}
+                      {output.isDefault ? t("（默认）") : ""}
+                    </option>
+                  ))}
+                </select>
+                <button className="secondary-button" onClick={reconnectAudio} type="button">
+                  {t("重新连接")}
+                </button>
+              </div>
+            )}
+          </article>
+        </section>
+        <section className="settings-group" aria-labelledby="settings-group-2">
+          <h2 id="settings-group-2">{t("歌词")}</h2>
+          <article className="online-lyrics-setting">
+            <span className="settings-icon">
+              <Settings2 />
+            </span>
+            <div>
+              <strong>{t("在线歌词")}</strong>
+              <p>
+                {t(
+                  "开启后，匹配时会向 LRCLIB 发送标题、艺术家、专辑与时长。结果仅缓存到应用数据库。",
+                )}
+              </p>
+            </div>
+            <button
+              className={`switch ${onlineLyrics ? "on" : ""}`}
+              role="switch"
+              aria-label={t("在线歌词")}
+              aria-checked={onlineLyrics}
+              onClick={() => setOnlineLyrics(!onlineLyrics)}
+            >
+              <span />
+            </button>
+          </article>
+          <article className="lyric-font-setting">
+            <span className="settings-icon">
+              <Mic2 />
+            </span>
+            <div>
+              <strong>{t("歌词字号")}</strong>
+              <p>{t("调整歌词阅读字号，自动保存。")}</p>
+            </div>
+            <label className="lyric-size-picker">
+              <input
+                type="range"
+                min="16"
+                max="40"
+                step="1"
+                aria-label={t("歌词字号")}
+                value={lyricFontSize}
+                onChange={(event) => setLyricFontSize(Number(event.target.value))}
+              />
+              <span className="lyric-size-value">{lyricFontSize} px</span>
+            </label>
+          </article>
+        </section>
+        <section className="settings-group" aria-labelledby="settings-group-3">
+          <h2 id="settings-group-3">{t("资料与存储")}</h2>
+          <article>
+            <span className="settings-icon">
+              <ShieldCheck />
+            </span>
+            <div>
+              <strong>{t("源文件只读")}</strong>
+              <p>
+                {t("nanoPlayer 没有修改标签、移动或删除音乐的命令。")}{" "}
+                {t("已授权目录：{0}", roots.length)}
+              </p>
+            </div>
+            <span className="setting-status">{t("已启用")}</span>
+          </article>
+          <article>
+            <span className="settings-icon">
+              <Archive />
+            </span>
+            <div>
+              <strong>{t("数据库备份")}</strong>
+              <p>
+                {storage
+                  ? `${formatBytes(storage.sizeBytes)} · ${storage.path}`
+                  : t("创建一份一致性 SQLite 备份，仅保存到应用数据目录。")}
+              </p>
+            </div>
+            <button className="secondary-button" onClick={backup} type="button">
+              {t("立即备份")}
+            </button>
+          </article>
+          <article>
+            <span className="settings-icon">
+              <RotateCcw />
+            </span>
+            <div>
+              <strong>{t("从最新备份恢复")}</strong>
+              <p>{t("恢复前验证 SQLite 完整性；此操作不会访问或修改音乐目录。")}</p>
+            </div>
             <button
               className="secondary-button"
-              onClick={() =>
-                void mobileCommand("audioSettings").catch((error) => setNotice(String(error)))
-              }
+              onClick={() => setRestoreConfirm(true)}
+              type="button"
             >
-              {t("系统音频设置")}
+              {t("恢复")}
             </button>
-          ) : (
-            <div className="output-picker">
-              <select
-                aria-label={t("音频输出设备")}
-                value={outputDevice ?? ""}
-                onChange={(event) => chooseOutput(event.target.value)}
-              >
-                <option value="">{t("系统默认")}</option>
-                {outputs.map((output) => (
-                  <option value={output.name} key={output.name}>
-                    {output.name}
-                    {output.isDefault ? t("（默认）") : ""}
-                  </option>
-                ))}
-              </select>
-              <button className="secondary-button" onClick={reconnectAudio} type="button">
-                {t("重新连接")}
-              </button>
+          </article>
+          <article>
+            <span className="settings-icon">
+              <Eraser />
+            </span>
+            <div>
+              <strong>{t("清除网络歌词缓存")}</strong>
+              <p>{t("仅清除 LRCLIB 结果，不会删除手动歌词、同目录 LRC 或任何音乐文件。")}</p>
             </div>
-          )}
-        </article>
-        <article>
-          <span className="settings-icon">
-            <Archive />
-          </span>
-          <div>
-            <strong>{t("数据库备份")}</strong>
-            <p>
-              {storage
-                ? `${formatBytes(storage.sizeBytes)} · ${storage.path}`
-                : t("创建一份一致性 SQLite 备份，仅保存到应用数据目录。")}
-            </p>
-          </div>
-          <button className="secondary-button" onClick={backup} type="button">
-            {t("立即备份")}
-          </button>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <RotateCcw />
-          </span>
-          <div>
-            <strong>{t("从最新备份恢复")}</strong>
-            <p>{t("恢复前验证 SQLite 完整性；此操作不会访问或修改音乐目录。")}</p>
-          </div>
-          <button
-            className="secondary-button"
-            onClick={() => setRestoreConfirm(true)}
-            type="button"
-          >
-            {t("恢复")}
-          </button>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <Eraser />
-          </span>
-          <div>
-            <strong>{t("清除网络歌词缓存")}</strong>
-            <p>{t("仅清除 LRCLIB 结果，不会删除手动歌词、同目录 LRC 或任何音乐文件。")}</p>
-          </div>
-          <button className="secondary-button" onClick={clearCache} type="button">
-            {t("清除缓存")}
-          </button>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <Eraser />
-          </span>
-          <div>
-            <strong>{t("清除封面缓存")}</strong>
-            <p>{t("仅删除应用数据库中的封面副本，不会修改音乐文件。")}</p>
-          </div>
-          <button className="secondary-button" onClick={clearCovers} type="button">
-            {t("清除封面")}
-          </button>
-        </article>
-        <article>
-          <span className="settings-icon">
-            <FileJson />
-          </span>
-          <div>
-            <strong>{t("导出脱敏诊断")}</strong>
-            <p>
-              {t(
-                "仅包含版本、平台、计数、问题分类和 SQLite 完整性；不包含路径、文件名、曲名或歌词。",
-              )}
-            </p>
-          </div>
-          <button className="secondary-button" onClick={diagnostics} type="button">
-            {t("导出诊断")}
-          </button>
-        </article>
+            <button className="secondary-button" onClick={clearCache} type="button">
+              {t("清除缓存")}
+            </button>
+          </article>
+          <article>
+            <span className="settings-icon">
+              <Eraser />
+            </span>
+            <div>
+              <strong>{t("清除封面缓存")}</strong>
+              <p>{t("仅删除应用数据库中的封面副本，不会修改音乐文件。")}</p>
+            </div>
+            <button className="secondary-button" onClick={clearCovers} type="button">
+              {t("清除封面")}
+            </button>
+          </article>
+          <article>
+            <span className="settings-icon">
+              <FileJson />
+            </span>
+            <div>
+              <strong>{t("导出脱敏诊断")}</strong>
+              <p>
+                {t(
+                  "仅包含版本、平台、计数、问题分类和 SQLite 完整性；不包含路径、文件名、曲名或歌词。",
+                )}
+              </p>
+            </div>
+            <button className="secondary-button" onClick={diagnostics} type="button">
+              {t("导出诊断")}
+            </button>
+          </article>
+        </section>
+        <section className="settings-group" aria-label={t("应用更新")}>
+          <h2>{t("应用更新")}</h2>
+          <UpdateSettings />
+        </section>
       </div>
       <ConfirmDialog
         open={restoreConfirm}

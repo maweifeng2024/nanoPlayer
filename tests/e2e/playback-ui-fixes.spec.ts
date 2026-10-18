@@ -101,8 +101,8 @@ test("desktop home lists grow with their songs and only the page scrolls", async
   expect(
     await page.locator(".page-scroll").evaluate((node) => node.scrollHeight > node.clientHeight),
   ).toBe(true);
-  await page.locator(".home-track-list-recent li").last().scrollIntoViewIfNeeded();
-  const last = await page.locator(".home-track-list-recent li").last().boundingBox();
+  await page.locator(".home-track-list-rated li").last().scrollIntoViewIfNeeded();
+  const last = await page.locator(".home-track-list-rated li").last().boundingBox();
   const player = await page.locator(".player-bar").boundingBox();
   expect(last!.y + last!.height).toBeLessThanOrEqual(player!.y);
 });

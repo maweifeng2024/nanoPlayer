@@ -3234,10 +3234,10 @@ select:focus-visible,
 .immersive-lyrics > button {
   font-size: var(--font-lyric, var(--font-section-title));
 }
-.now-playing-copy > .sleep-timer {
+:is(.now-playing-copy, .now-playing-reading) > .sleep-timer {
   margin-bottom: var(--space-3);
 }
-.now-playing-copy .sleep-timer > button {
+:is(.now-playing-copy, .now-playing-reading) .sleep-timer > button {
   width: auto;
   padding-inline: var(--space-3);
   min-height: 44px;
@@ -3278,4 +3278,169 @@ select:focus-visible,
   font-size: var(--font-section-title);
   line-height: 1.3;
   overflow-wrap: anywhere;
+}
+
+/* Accepted UI reference, batches 1–2: content hierarchy only; shell geometry is unchanged. */
+.home-album-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.home-album-heading h2,
+.settings-group > h2,
+.now-playing-reading-title {
+  margin: 0;
+  font-size: var(--font-section-title);
+  line-height: 1.5;
+}
+.home-recent-albums {
+  margin-bottom: var(--space-6);
+}
+.home-album-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+.home-album-card {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.home-album-art {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--muted);
+}
+.home-album-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.home-album-card strong,
+.home-album-card small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-album-card strong {
+  font-size: var(--font-body);
+  line-height: 1.5;
+}
+.home-album-card small {
+  color: var(--muted);
+  font-size: var(--font-caption);
+}
+.home-album-card:hover strong {
+  color: var(--accent);
+}
+.home-page .home-track-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.settings-list {
+  border-top: 0;
+  gap: var(--space-6);
+}
+.settings-group {
+  min-width: 0;
+}
+.settings-group > h2 {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+.lyric-size-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--muted);
+  font-size: var(--font-caption);
+}
+.lyric-size-picker input {
+  width: 120px;
+  min-height: var(--control-md);
+  accent-color: var(--accent);
+}
+.lyric-size-picker .lyric-size-value {
+  min-width: 44px;
+  font-variant-numeric: tabular-nums;
+}
+.now-playing-release,
+.now-playing-reading {
+  min-width: 0;
+}
+.now-playing-release .now-playing-art {
+  width: 100%;
+  max-width: 380px;
+  margin-bottom: var(--space-5);
+}
+.now-playing-copy h1 {
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+.now-playing-copy h2 {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.now-playing-reading-title {
+  color: var(--muted);
+  font-size: var(--font-caption);
+}
+.now-playing-reading .immersive-lyrics {
+  max-height: 50vh;
+  margin: var(--space-5) 0;
+}
+.now-playing-reading .immersive-lyrics > button {
+  color: var(--muted);
+  line-height: 1.75;
+  margin-bottom: var(--space-4);
+}
+.now-playing-reading .immersive-lyrics > button.active {
+  color: var(--text);
+}
+@media (max-width: 900px) {
+  .home-album-grid {
+    gap: var(--space-4);
+  }
+  .home-page .home-track-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .home-album-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.home-track-list li button {
+  display: grid;
+  grid-template-columns: 16px var(--cover-md) minmax(0, 1fr);
+}
+.home-track-list .home-track-status {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  color: var(--accent);
+}
+.home-track-list .recommendation-copy {
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  html:not([data-platform]) .home-album-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }

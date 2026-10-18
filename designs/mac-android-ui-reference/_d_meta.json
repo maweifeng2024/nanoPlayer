@@ -1,0 +1,36 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "Mac 与 Android UI 参考原型": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-10-18T11:54:26.671Z",
+          "status": "needs-review"
+        }
+      ]
+    },
+    "设计对照与选择说明": {
+      "versions": [
+        {
+          "path": "comparison.html",
+          "createdAt": "2026-10-18T12:03:46.383Z",
+          "status": "needs-review"
+        }
+      ]
+    },
+    "完整 UI 参考文档": {
+      "versions": [
+        {
+          "path": "reference.html",
+          "createdAt": "2026-10-18T12:10:39.578Z",
+          "status": "needs-review"
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-10-18T11:54:26.674Z",
+  "updatedAt": "2026-10-18T12:10:39.579Z"
+}

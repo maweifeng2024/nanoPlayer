@@ -208,16 +208,13 @@ test("native route-loss pause updates controls and preserves session accounting"
     });
   });
   await page.goto("/");
-  await expect(
-    page
-      .locator(".recommendation-copy strong")
-      .filter({ hasText: /^Native Song$/ })
-      .first(),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "打开专辑 Test Album" })).toBeVisible();
   await page.getByRole("button", { name: "播放", exact: true }).click();
   await expect.poll(() => page.getByLabel("播放进度", { exact: true }).inputValue()).not.toBe("0");
   // A route-loss pause originates in native audio, without a UI click.
-  await page.evaluate(() => { (window as any).__nativeTest.paused = true; });
+  await page.evaluate(() => {
+    (window as any).__nativeTest.paused = true;
+  });
   await expect(page.getByRole("button", { name: "播放", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "播放", exact: true }).click();
   await expect

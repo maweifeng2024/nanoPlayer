@@ -16,7 +16,6 @@ test("home collections match module default order, including ties", async ({ pag
     });
   });
   for (const [kind, name] of [
-    ["recent", "最近添加"],
     ["popular", "播放最多"],
     ["rated", "高评分"],
   ]) {

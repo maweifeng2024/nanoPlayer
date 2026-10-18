@@ -1587,3 +1587,116 @@ html:is([data-platform="android"], [data-platform="ios"]) {
 .wifi-transfer p { line-height: 1.6; overflow-wrap: anywhere; }
 .wifi-transfer > .icon-button { float: right; }
 .wifi-transfer img { display: block; margin: var(--space-4) auto; }
+
+/* Accepted batches 1–2 retain the 16% artwork tint and the existing native shell. */
+html[data-platform="android"] {
+  --font-body: 16px;
+  --font-caption: 14px;
+  --font-small: 12px;
+}
+[data-platform="android"] .home-album-grid {
+  gap: var(--space-4);
+}
+[data-platform="android"][data-device="phone"] .home-album-grid {
+  grid-template-columns: repeat(4, minmax(138px, 44%));
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  scroll-snap-type: x proximity;
+}
+[data-platform="android"] .home-album-card {
+  scroll-snap-align: start;
+}
+[data-platform="android"] .home-album-heading .text-button {
+  min-height: 44px;
+}
+[data-platform="android"] .home-page .home-track-columns {
+  grid-template-columns: minmax(0, 1fr);
+}
+[data-platform="android"] .home-track-list-body li,
+[data-platform="android"] .home-track-list-body li button {
+  height: auto;
+  min-height: 72px;
+}
+[data-platform="android"] .home-track-list-body li button {
+  padding: var(--space-2);
+  gap: var(--space-3);
+}
+[data-platform="android"] .home-track-list .recommendation-art {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: var(--radius-sm);
+}
+[data-platform="android"] .home-track-list .recommendation-copy strong {
+  font-size: var(--font-body);
+}
+[data-platform="android"] .home-track-list .recommendation-copy small {
+  font-size: var(--font-caption);
+}
+[data-platform="android"] .settings-group .lyric-font-setting {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+[data-platform="android"] .lyric-size-picker {
+  grid-column: 2;
+  width: 100%;
+}
+[data-platform="android"] .lyric-size-picker input {
+  flex: 1;
+  min-width: 0;
+}
+[data-platform="android"] .now-playing-release {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+}
+[data-platform="android"] .now-playing-release .now-playing-art {
+  width: min(100%, 320px);
+  margin-bottom: 0;
+}
+[data-platform="android"] .now-playing-copy,
+[data-platform="android"] .now-playing-reading {
+  width: 100%;
+}
+[data-platform="android"] .now-playing-reading .immersive-lyrics {
+  max-height: 44dvh;
+}
+[data-platform="android"] .now-playing-reading .sleep-timer {
+  margin-bottom: var(--space-4);
+}
+@media (min-width: 901px) {
+  [data-platform="android"][data-device="pad"] .home-page .home-track-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+[data-platform="android"] .home-track-list li button {
+  grid-template-columns: 16px 44px minmax(0, 1fr);
+}
+
+[data-platform="android"] .home-track-list li button {
+  display: grid;
+}
+:is([data-platform="android"], [data-platform="ios"]) .now-playing-reading .immersive-lyrics > button {
+  font-size: var(--font-lyric, var(--font-section-title));
+}
+[data-platform="android"][data-device="phone"] .now-playing-page {
+  min-height: 0;
+  align-content: start;
+  row-gap: var(--space-5);
+}
+[data-platform="android"][data-device="phone"] .now-playing-release .now-playing-art {
+  width: min(64vw, 26dvh, 240px);
+}
+@media (max-width: 900px) {
+  [data-platform="android"][data-device="pad"] .now-playing-release .now-playing-art {
+    width: min(42vw, 28dvh, 280px);
+  }
+}
+@media (max-width: 900px) {
+  [data-platform="android"][data-device="pad"] .home-album-grid {
+    grid-template-columns: repeat(4, minmax(138px, 1fr));
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    scroll-snap-type: x proximity;
+  }
+}

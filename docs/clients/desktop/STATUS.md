@@ -1,6 +1,14 @@
 # Desktop implementation status
 
-Updated: 2026-10-13 · Local source: 0.1.18 · Published desktop: 0.1.14 · Detailed verification below is dated where stated
+Updated: 2026-10-18 · Local source: 0.1.28 · Published/installed evidence below is dated per version
+
+
+## 2026-10-18 confirmed UI batches 1–2 (0.1.28 local)
+
+- Implemented: recent-album home entry points using the selected library and existing collection route; separate playback marker/artwork; grouped settings and persisted 16–40px lyric-size control; separate cover/metadata and lyric reading areas. Android phone/Pad retain navigation, tint, fixed transport and queue behavior. Batch 3 is not adopted.
+- Verified locally: 66 frontend tests, 97 browser tests across desktop/phone/Pad (including shared iPhone/iPad), Rust fmt/Clippy/26 tests and explicit 10k FTS gate, 19 release-script tests, website build, 15 freshly executed Android JVM cases, 75 iOS native supplemental checks. Screenshot review and full evidence: `artifacts/verification/v0.1.28/summary.md`.
+- Android local APK: `nanoPlayer-0.1.28-b1029-arm64-debug.apk`, arm64-v8a, versionName 0.1.28 / versionCode 1029, 212412240 bytes, Android Debug APK v2 signature and ZIP verified. SHA-256 `7cc1d41eee10ca31f26fe83718999ee3285c0d708aba79c1be9199774608e76c`. Directory: `artifacts/android/v0.1.28-b1029/debug/`.
+- Remaining: no Android device connected; installation, native touch/insets/back, rotation/split-screen/large text and background qualification are unverified for this build. No native Mac installer build/launch was performed. Desktop publication is user-run from main: `pnpm release 0.1.28`; no remote publication is claimed.
 
 ## 2026-10-16 headphone/output recovery (0.1.27 local)
 

@@ -1,6 +1,6 @@
 # nanoPlayer visual baseline
 
-Updated: 2026-09-22 (documentation organization only; visual rules unchanged)
+Updated: 2026-10-18 (confirmed UI reference batches 1–2; queue, frame and tint rules unchanged)
 
 This document freezes the current first-version visual decisions so implementation work does not accidentally replace the approved interface with a generic light player layout.
 
@@ -18,7 +18,7 @@ Reference images communicate direction, not hard-coded content. Current product 
 
 - Default to the dark red/black theme: near-black surfaces, restrained borders, low-saturation secondary text, and coral red only for playback, selection, and primary actions.
 - Keep the fixed application frame: sidebar, independently scrolling content, fixed player bar, and optional right drawer.
-- Use the large cover-led home hero, three title-only recommendation lists, and a dense music table. Avoid bright page-wide backgrounds, oversized shadows, or unrelated gradients.
+- Use the cover-led home hero, a bounded recent-album strip, two song recommendation lists (most played and highly rated), and a dense music table. Avoid bright page-wide backgrounds, oversized shadows, or unrelated gradients.
 - Preserve the 720, 900, and desktop responsive paths. At narrow widths the sidebar becomes an overlay and the player retains the primary transport controls.
 - System and light themes remain user choices, but they are not the release screenshot baseline.
 
@@ -99,3 +99,14 @@ The shared micro type token is 12px and medium control token is 44px. Android ic
 The lyric drawer supports a persistent 16–40px font size (24px default) and per-track ±10-second offset in 0.2-second steps. Positive user adjustment advances the display; seeking subtracts the same adjustment. Enhanced LRC `<mm:ss.xxx>` markers support progressive word fill. Plain LRC remains line-synchronized, and same-time lines can display original/translation together. Both the drawer and immersive now-playing page share word rendering. No synthetic word timing or translation is generated. Manual lyric choices and offline caches keep their existing priority; online queries remain opt-in.
 
 Android sleep timing is accessed from the expanded now-playing page. It offers 15, 30 and 60 minutes or a custom integer from 1–1440, with immediate expiry or end-of-current-song behavior. Closing the panel restores focus; Escape and Android back close it.
+
+
+## 2026-10-18 confirmed UI reference, batches 1–2 (0.1.28 local)
+
+The user approved the first two batches of `../../designs/mac-android-ui-reference/REFERENCE.md`: hierarchy, alignment, touch targets, playback markers/focus, recent-album entry points, settings grouping and expanded-player lyric layout. Queue presentation, frame/sidebar/player dimensions and artwork tint remain unchanged; batch 3 is not approved.
+
+- Home: up to four albums ordered by their latest visible addition. Counts and detail routes use only the selected library and the existing album-name collection identity. “View all” retains the full recently-added song list. Mac uses four columns including narrow windows; Android phone and narrow Pad use a horizontally scrollable strip. Missing artwork keeps the existing fallback.
+- Recommendations: most played and highly rated retain their original ordering and bounded queues. A dedicated 16px playback-marker column sits before artwork, never over it. Android rows use 72px minimum height and 44px artwork, with 16/14px main/secondary text.
+- Settings: appearance/controls, playback, lyrics, storage and app updates are distinct sections. All existing settings/actions remain; online lyrics remains opt-in. The lyric-size setting uses the existing persisted 16–40px authority, shared with the lyric drawer and expanded page. Numeric readout is not an extra live status region.
+- Expanded player: cover and metadata form one area, lyrics a separate reading area. Mobile retains its actual fixed transport controls and existing timer service. Phone cover size is bounded by viewport height to leave a lyric line visible; the timer entry retains a full-width label and 44px target. No fake lyric timing is introduced.
+- Evidence: `artifacts/verification/v0.1.28/summary.md`; current product screenshots under `tests/e2e/ui-visual.spec.ts-snapshots/`. Browser evidence does not establish native Mac installation or Android device acceptance. The independent HTML prototype remains historical reference, not the executable UI contract.

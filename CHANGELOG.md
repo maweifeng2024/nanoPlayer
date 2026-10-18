@@ -4,6 +4,12 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.28] - 2026-10-18
+
+- Improve Mac and Android home browsing with recently added album entry points and dedicated playback markers; album details respect the visible library.
+- Group settings by appearance, playback, lyrics and storage, and add a persisted lyric-size control.
+- Separate cover metadata from lyric reading on the expanded player; retain existing queue, navigation, frame sizing and artwork tint.
+
 ## [0.1.27] - 2026-10-16
 
 - 修复桌面输出设备断开后，切歌/跳转等待失效音频回调导致界面无响应；设备变化或输出停滞后保留进度、暂停并重建默认输出。
