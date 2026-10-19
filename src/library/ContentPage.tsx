@@ -1,3 +1,4 @@
+import { HomeArtworkTint } from "./HomeArtworkTint";
 import { LyricText } from "../lyrics/LyricText";
 import { SleepTimer } from "../player/SleepTimer";
 import { shortcut } from "../platform/shortcuts";
@@ -353,6 +354,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   ];
   return (
     <section className="home-page">
+      <HomeArtworkTint track={moment.track} />
       <div className="hero">
         <Artwork
           track={moment.track}

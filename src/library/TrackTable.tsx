@@ -2,7 +2,8 @@ import { trackIsSelected } from "./folderFilter";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "./Artwork";
 import { ConfirmDialog } from "../ConfirmDialog";
-import { isMobile } from "../platform/mobile";
+import { createPortal } from "react-dom";
+import { isMobile, isIOS, mobileDevice } from "../platform/mobile";
 import { t } from "../i18n";
 import {
   CheckSquare,
@@ -44,6 +45,7 @@ export function TrackTable({
   toolbar?: React.ReactNode;
 }) {
   const phone = isMobile();
+  const bottomSheet = isIOS() && mobileDevice() === "phone";
   const state = useNanoStore(
     useShallow((store) => ({
       roots: store.roots,
@@ -145,11 +147,47 @@ export function TrackTable({
   useLayoutEffect(() => {
     const menu = contextRef.current;
     if (!menu || !contextMenu) return;
-    menu.style.left =
-      Math.max(8, Math.min(contextMenu.x, window.innerWidth - menu.offsetWidth - 8)) + "px";
-    menu.style.top =
-      Math.max(8, Math.min(contextMenu.y, window.innerHeight - menu.offsetHeight - 8)) + "px";
-  }, [contextMenu]);
+    const viewport = window.visualViewport;
+    const place = () => {
+      const left = viewport?.offsetLeft ?? 0;
+      const top = viewport?.offsetTop ?? 0;
+      const width = viewport?.width ?? window.innerWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      menu.style.maxHeight = `${Math.max(44, height - 16)}px`;
+      if (bottomSheet) {
+        menu.style.left = `${left}px`;
+        menu.style.width = `${width}px`;
+        menu.style.top = `${top + height - menu.offsetHeight}px`;
+      } else {
+        menu.style.left = `${Math.max(left + 8, Math.min(contextMenu.x, left + width - menu.offsetWidth - 8))}px`;
+        menu.style.top = `${Math.max(top + 8, Math.min(contextMenu.y, top + height - menu.offsetHeight - 8))}px`;
+      }
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(menu);
+    window.addEventListener("resize", place);
+    viewport?.addEventListener("resize", place);
+    viewport?.addEventListener("scroll", place);
+    const shell = document.querySelector<HTMLElement>(".app-shell");
+    const scroller = tableRef.current?.closest<HTMLElement>(".page-scroll");
+    const previousInert = shell?.inert;
+    const previousOverflow = scroller?.style.overflow;
+    if (bottomSheet) {
+      if (shell) shell.inert = true;
+      if (scroller) scroller.style.overflow = "hidden";
+    }
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", place);
+      viewport?.removeEventListener("resize", place);
+      viewport?.removeEventListener("scroll", place);
+      if (bottomSheet) {
+        if (shell) shell.inert = previousInert ?? false;
+        if (scroller) scroller.style.overflow = previousOverflow ?? "";
+      }
+    };
+  }, [contextMenu, bottomSheet]);
 
   const setSortKey = (key: SortKey) =>
     setSort((current) =>
@@ -730,20 +768,50 @@ export function TrackTable({
           setConfirmRemoval(false);
         }}
       />
-      {contextMenu ? (
-        <div
-          ref={(node) => {
-            contextRef.current = node;
-          }}
-          className="context-menu menu-popover"
-          role="menu"
-
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => setContextMenu(undefined)}
-        >
-          {menu(contextMenu.track)}
-        </div>
-      ) : null}
+      {contextMenu
+        ? createPortal(
+            <>
+              {bottomSheet ? (
+                <div
+                  className="track-menu-backdrop"
+                  aria-hidden="true"
+                  onPointerDown={() => setContextMenu(undefined)}
+                />
+              ) : null}
+              <div
+                ref={(node) => {
+                  contextRef.current = node;
+                }}
+                className={`context-menu menu-popover track-context-menu${bottomSheet ? " track-menu-sheet" : ""}`}
+                role="menu"
+                aria-label={t("{0} 更多操作", contextMenu.track.title)}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={() => setContextMenu(undefined)}
+              >
+                {bottomSheet ? (
+                  <div className="track-menu-heading">
+                    <Artwork
+                      track={contextMenu.track}
+                      className="track-cover"
+                      fallback={<Music2 size={20} />}
+                    />
+                    <span>
+                      <strong>{contextMenu.track.title}</strong>
+                      <small>{contextMenu.track.artist}</small>
+                    </span>
+                  </div>
+                ) : null}
+                {menu(contextMenu.track)}
+                {bottomSheet ? (
+                  <button role="menuitem" type="button" className="track-menu-cancel">
+                    {t("取消")}
+                  </button>
+                ) : null}
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

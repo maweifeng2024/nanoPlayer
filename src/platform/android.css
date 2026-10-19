@@ -1700,3 +1700,11 @@ html[data-platform="android"] {
     scroll-snap-type: x proximity;
   }
 }
+
+/* Recent covers never grow beyond two thirds of the featured cover. */
+[data-platform="android"] .home-page { --home-hero-size: 88px; }
+[data-platform="android"] .home-page .home-album-grid {
+  grid-template-columns: repeat(4, minmax(100px, 1fr));
+}
+[data-platform="android"][data-device="phone"] .home-page .home-album-grid { grid-template-columns: repeat(4, 112px); }
+:root .track-menu-sheet { max-height: calc(100dvh - 16px); }

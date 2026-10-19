@@ -1,0 +1,18 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "iOS UI 与交互重构评审": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-10-19T00:26:47.633Z",
+          "status": "approved"
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-10-19T00:26:47.633Z",
+  "updatedAt": "2026-10-19T00:37:36.240Z"
+}

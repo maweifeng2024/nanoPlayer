@@ -1,6 +1,6 @@
 # nanoPlayer visual baseline
 
-Updated: 2026-10-18 (confirmed UI reference batches 1–2; queue, frame and tint rules unchanged)
+Updated: 2026-10-19 (approved iOS review and shared homepage/menu corrections)
 
 This document freezes the current first-version visual decisions so implementation work does not accidentally replace the approved interface with a generic light player layout.
 
@@ -110,3 +110,16 @@ The user approved the first two batches of `../../designs/mac-android-ui-referen
 - Settings: appearance/controls, playback, lyrics, storage and app updates are distinct sections. All existing settings/actions remain; online lyrics remains opt-in. The lyric-size setting uses the existing persisted 16–40px authority, shared with the lyric drawer and expanded page. Numeric readout is not an extra live status region.
 - Expanded player: cover and metadata form one area, lyrics a separate reading area. Mobile retains its actual fixed transport controls and existing timer service. Phone cover size is bounded by viewport height to leave a lyric line visible; the timer entry retains a full-width label and 44px target. No fake lyric timing is introduced.
 - Evidence: `artifacts/verification/v0.1.28/summary.md`; current product screenshots under `tests/e2e/ui-visual.spec.ts-snapshots/`. Browser evidence does not establish native Mac installation or Android device acceptance. The independent HTML prototype remains historical reference, not the executable UI contract.
+
+
+## 2026-10-19 approved iOS UI and shared corrections (0.1.29 local)
+
+The user approved `../../designs/ios-ui-refactor/index.html` and authorized implementation. The prototype records direction; complete product actions, menu order and persisted state remain authoritative.
+
+- iPhone retains three primary navigation destinations and the existing sidebar for additional destinations, with a visible settings entry beside search. The fixed mini player is inset on a raised surface. Queue/lyric drawers rise from above the fixed transport and scroll independently; the expanded player retains its real controls and sleep timer.
+- iPad retains its existing complete sidebar and compact 72px navigation; the independent phone layout never replaces iPad navigation on rotation or narrow split view.
+- iOS home uses 132px phone / 192px Pad featured artwork (108px short phone landscape, 132px narrow Pad). Recent artwork is capped at two thirds of the featured-artwork authority. All clients enforce this cap; album text may use a wider card. Phone album strips scroll horizontally.
+- Recommendations have no container border or per-row inset outline. iOS uses continuous rows with 44px artwork, 74px minimum height and subtle separators. Android preserves its previously approved 16% row fill and horizontal recommendation structure; removing the outline does not change that fill.
+- iOS/desktop home tint follows the displayed recommendation, using quantized bucket-average colors, area-biased weighting, chroma/brightness limiting and fixed top gradient anchors. A bounded palette cache avoids repeated extraction. Placeholder/decode failure uses a neutral home palette; stale asynchronous requests cannot replace the current recommendation palette. Reduced-motion disables tint transitions. Non-home ambient behavior and Android tint geometry/strength remain unchanged.
+- Track menus render in a body portal, outside scrollers and virtualized rows. Height and placement use the visual viewport and recalculate on resize/viewport scroll. iPhone uses a safe-area-aware, scrollable bottom sheet with song metadata and Cancel, trapping focus and making the application shell inert while open. Android and iPad retain anchored menus, second-click toggle, Escape/outside/back handling and focus return.
+- Verification is tracked in `artifacts/verification/v0.1.29/summary.md`; browser evidence is separate from iOS WKWebView/simulator evidence and physical-device acceptance. No source-audio or native queue semantics changed.

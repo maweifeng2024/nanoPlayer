@@ -158,6 +158,33 @@ final class LaunchTests: XCTestCase {
     XCTAssertTrue((content["entries"] as? [[String: Any]])?.contains { $0["name"] as? String == "fixture.wav" } == true)
     app.buttons["停止传输"].tap()
     app.buttons["关闭"].firstMatch.tap()
+    // Exercise the real WKWebView menu with the synthetic audio imported above.
+    let songsButton = try XCTUnwrap(app.buttons.matching(identifier: "歌曲").allElementsBoundByIndex.first { $0.isHittable })
+    songsButton.tap()
+    let songMore = app.buttons["fixture.wav 更多操作"].firstMatch
+    XCTAssertTrue(songMore.waitForExistence(timeout: 10))
+    if !songMore.isHittable { app.swipeUp() }
+    songMore.tap()
+    let details = app.buttons["查看详情"]
+    XCTAssertTrue(details.waitForExistence(timeout: 5))
+    XCTAssertTrue(details.isHittable, "Menu actions must remain reachable inside WKWebView")
+    let cancel = app.buttons["取消"].firstMatch
+    if cancel.exists {
+      XCTAssertTrue(cancel.isHittable)
+      let shot = XCTAttachment(screenshot: app.screenshot())
+      shot.name = "ios-song-bottom-sheet"; shot.lifetime = .keepAlways; add(shot)
+      cancel.tap()
+    } else {
+      // iPad keeps its anchored menu; tapping the same trigger closes it.
+      songMore.tap()
+    }
+    XCTAssertTrue(details.waitForNonExistence(timeout: 5))
+    let home = try XCTUnwrap(app.buttons.matching(identifier: "首页").allElementsBoundByIndex.first { $0.isHittable })
+    home.tap()
+    let homeShot = XCTAttachment(screenshot: app.screenshot())
+    homeShot.name = "ios-home-redesign"; homeShot.lifetime = .keepAlways; add(homeShot)
+    if app.buttons["打开导航"].exists && app.buttons["打开导航"].isHittable { app.buttons["打开导航"].tap() }
+    app.buttons["本地资料库"].firstMatch.tap()
     app.buttons["浏览 nanoPlayer 根目录"].tap()
     app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "收件箱")).firstMatch.tap()
     let more = app.buttons["更多操作 \(name)"]

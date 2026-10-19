@@ -1,6 +1,15 @@
 # Android implementation status
 
-Updated 2026-10-18; local source version 0.1.28. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+Updated 2026-10-19; local source version 0.1.29. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+
+
+## 2026-10-19 shared homepage/menu fixes (0.1.29 local)
+
+- Recent artwork is capped at two thirds of featured artwork on every width; text keeps wider cards where needed. Recommendation inset outlines are removed while the approved 16% row fill and horizontal layout remain.
+- TrackTable menus now render outside scrolling/virtualization containers. Visual-viewport bounds, scrollable height and resize handling prevent lower-row clipping. Android retains its anchored menu, second-click toggle, back/Escape and focus behavior. iOS bottom sheets are platform-scoped.
+- 69 Vitest, 102 E2E, 26 Rust tests plus explicit 10k gate, 23 release/iOS script tests, 15 Android JVM cases and website build passed. Source-audio and native queue logic are unchanged. Full evidence: `artifacts/verification/v0.1.29/summary.md`.
+- APK: `artifacts/android/v0.1.29-b1030/debug/nanoPlayer-0.1.29-b1030-arm64-debug.apk`, 0.1.29 / 1030, arm64-v8a, minSdk 29, ZIP/manifest/SHA-256/APK v2 Android Debug signature verified. SHA-256: `9d9dc6bd54856701d71f1a4db1ffdc12e4f5cd1b6a0a534875f55240ea8788a9`.
+- This APK was not installed on an Android device; native touch/insets/back and physical-device acceptance remain unverified for this build. No desktop/website publication was performed. User-run publication from main: `pnpm release 0.1.29`.
 
 
 ## 2026-10-18 confirmed UI batches 1–2 (0.1.28 local)

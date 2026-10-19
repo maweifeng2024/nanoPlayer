@@ -4,6 +4,13 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.29] - 2026-10-19
+
+- 按已评审方案重构 iOS 首页、推荐列表、迷你播放器、队列面板和设置入口，保留现有资料库及播放语义。
+- iPhone 歌曲操作改为可滚动底部面板；列表菜单通过顶层渲染、可视区域避让和旋转重算修复移动端底部裁切。
+- 首页取色跟随推荐封面，使用平均色、受控彩度和固定渐变；缺图回退中性色，Android 保留既有 16% 染色强度。
+- 取消推荐歌曲行外框，最近添加封面在所有宽度限制为推荐封面的三分之二。
+
 ## [0.1.28] - 2026-10-18
 
 - Improve Mac and Android home browsing with recently added album entry points and dedicated playback markers; album details respect the visible library.

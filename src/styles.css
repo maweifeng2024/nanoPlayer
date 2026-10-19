@@ -3444,3 +3444,69 @@ select:focus-visible,
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Home artwork has one sizing authority, including wide windows. */
+.home-page {
+  --home-hero-size: 210px;
+  position: relative;
+  isolation: isolate;
+}
+.home-page .hero { grid-template-columns: var(--home-hero-size) minmax(0, 1fr); }
+.home-page .hero-art { width: var(--home-hero-size); height: var(--home-hero-size); }
+.home-page .home-album-grid { grid-template-columns: repeat(4, minmax(0, calc(var(--home-hero-size) * 2 / 3))); }
+.home-page .home-album-art { max-width: calc(var(--home-hero-size) * 2 / 3); }
+:root .home-page .home-track-list {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.home-artwork-tint {
+  position: absolute;
+  top: calc(-1 * var(--page-gutter));
+  left: calc(-1 * var(--page-gutter));
+  right: calc(-1 * var(--page-gutter));
+  height: 520px;
+  max-height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--home-tint-primary) 24%, transparent), transparent 72%),
+    radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--home-tint-secondary) 12%, transparent), transparent 64%);
+  transition: --home-tint-primary 650ms ease, --home-tint-secondary 650ms ease;
+}
+@property --home-tint-primary { syntax: "<color>"; inherits: true; initial-value: #66768c; }
+@property --home-tint-secondary { syntax: "<color>"; inherits: true; initial-value: #7c6c87; }
+:root[data-theme="light"] .home-artwork-tint { opacity: 0.55; }
+html:not([data-platform="android"]) .app-shell[data-page="home"] > .ambient-background { display: none; }
+[data-platform="android"] .home-artwork-tint { display: none; }
+.track-context-menu { z-index: 70; overscroll-behavior: contain; }
+.track-menu-backdrop { position: fixed; inset: 0; background: #0008; z-index: 69; touch-action: none; }
+:root .track-menu-sheet {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  max-width: none;
+  padding: var(--space-3) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--panel-raised);
+}
+.track-menu-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0 var(--space-4);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+.track-menu-heading > span { display: grid; min-width: 0; gap: var(--space-1); }
+.track-menu-heading strong { overflow-wrap: anywhere; font-size: var(--font-body); }
+.track-menu-heading small { color: var(--muted); font-size: var(--font-caption); }
+.track-menu-heading .track-cover { flex-shrink: 0; }
+.track-menu-sheet .track-menu-cancel { color: var(--accent); border-top: 1px solid var(--line); margin-top: var(--space-2); }
+@media (max-width: 1100px) { .home-page { --home-hero-size: 160px; } }
+@media (max-width: 900px) { .home-page { --home-hero-size: 120px; } }
+@media (max-width: 719px) { .home-page { --home-hero-size: 96px; } }
+@media (prefers-reduced-motion: reduce) { .home-artwork-tint { transition: none; } }
+:root .home-page .home-track-list-body li { box-shadow: none; outline: 0; }
