@@ -1,0 +1,179 @@
+/* Approved review 2026-10-19. One shared type/control scale; platform geometry stays native. */
+:root {
+  font-family: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+  --control-sm: 36px;
+  --font-section-title: 18px;
+  --space-page-phone: 20px;
+}
+:root:is([data-platform="android"], [data-platform="ios"]) {
+  --control-sm: 44px;
+  --control-md: 44px;
+  --font-page-title: 28px;
+  --font-body: 16px;
+  --font-caption: 14px;
+  --font-small: 12px;
+  --page-gutter: 24px;
+}
+:root[data-device="phone"] {
+  --font-page-title: 26px;
+  --page-gutter: var(--space-page-phone);
+}
+:root :is(.primary-button, .secondary-button, .danger-button, .text-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-sm);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-body);
+  font-weight: 550;
+  line-height: 1.35;
+}
+:root .primary-button {
+  box-shadow: none;
+}
+:root .icon-button {
+  width: var(--control-sm);
+  height: var(--control-sm);
+  min-width: var(--control-sm);
+  min-height: var(--control-sm);
+  padding: 0;
+  border-radius: var(--radius-sm);
+}
+:root :is(.primary-button, .secondary-button, .text-button, .danger-button, .icon-button) > svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+:root :is(.menu-popover, .context-menu) button {
+  min-height: var(--control-sm);
+  font-size: var(--font-body);
+  line-height: 1.5;
+  border-radius: var(--radius-sm);
+}
+:root .segmented button,
+:root .settings-list select,
+:root .track-sort select {
+  min-height: var(--control-sm);
+  font-size: var(--font-body);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+:root .settings-list :is(strong, h3) {
+  font-size: var(--font-body);
+  font-weight: 550;
+}
+:root .settings-list :is(p, .setting-status) {
+  font-size: var(--font-caption);
+  line-height: 1.65;
+}
+:root .settings-list :is(.primary-button, .secondary-button, summary) {
+  font-size: var(--font-body);
+}
+:root .settings-list {
+  gap: var(--space-6);
+  margin-top: var(--space-5);
+}
+:root .settings-list article {
+  column-gap: var(--space-3);
+  padding-block: var(--space-4);
+}
+:root .page-header {
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+:root :is(.inline-actions, .update-actions, .playlist-list-actions, .history-controls) {
+  gap: var(--space-2);
+}
+:root .page-scroll {
+  padding-inline: var(--page-gutter);
+}
+:root .topbar {
+  padding-inline: var(--page-gutter);
+}
+:root .home-page .home-album-grid {
+  display: grid;
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: max(120px, calc(var(--home-hero-size) * 2 / 3));
+  justify-content: start;
+  gap: var(--space-4);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-3);
+}
+:root .home-album-card {
+  scroll-snap-align: start;
+}
+:root .home-album-heading {
+  margin-bottom: var(--space-3);
+}
+:root .home-track-list-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: var(--control-sm);
+  gap: var(--space-3);
+  padding: 0;
+  margin-bottom: var(--space-3);
+}
+:root .home-track-heading-icon,
+:root .home-track-heading-copy small {
+  display: none;
+}
+:root .home-track-heading-copy strong {
+  font-size: var(--font-section-title);
+  font-weight: 650;
+}
+:root .home-track-heading-link {
+  font-size: var(--font-caption);
+}
+:root .home-page .home-track-list li button {
+  display: grid;
+  grid-template-columns: var(--cover-md) minmax(0, 1fr);
+  justify-content: start;
+  min-height: 64px;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+:root .home-track-list ol {
+  padding-block: 0;
+}
+:root .home-track-list .recommendation-copy strong {
+  font-size: var(--font-body);
+  font-weight: 500;
+  line-height: 1.5;
+}
+:root .home-track-list .recommendation-copy small {
+  font-size: var(--font-caption);
+  line-height: 1.5;
+}
+:root:is([data-platform="android"], [data-platform="ios"]) .home-page .home-track-list li button {
+  grid-template-columns: 44px minmax(0, 1fr);
+  min-height: 74px;
+  height: auto;
+}
+:root[data-device="phone"] .home-track-list-body ol {
+  grid-template-rows: repeat(var(--recommendation-rows, 3), 74px);
+}
+:root .track-menu-sheet .phone-rating button {
+  padding-inline: 0;
+}
+@media (max-width: 599px) {
+  :root .page-header {
+    flex-wrap: wrap;
+  }
+  :root .page-header .inline-actions {
+    flex-wrap: wrap;
+  }
+}
+:root .settings-list .segmented button {
+  font-size: var(--font-body);
+}
+:root .settings-list .segmented button {
+  min-height: var(--control-sm);
+  min-width: var(--control-sm);
+  padding: var(--space-2) var(--space-3);
+}

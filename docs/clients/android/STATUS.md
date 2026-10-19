@@ -1,7 +1,15 @@
 # Android implementation status
 
-Updated 2026-10-19; local source version 0.1.29. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
+Updated 2026-10-19; local source version 0.1.30. User approved full phone/Pad development and P1–P5. Development is continuing; this is not a production-release acceptance certificate.
 
+
+
+## 2026-10-19 shared consistency (0.1.30 local)
+
+- Implemented: approved type/spacing/control scale; recent albums share desktop20/mobile12 limits and horizontal scrolling; home recommendation artwork aligns to section titles without playback markers. Playlist menu IDs are unique; independent same-name destinations are labeled separately. Native queue and source-audio semantics are unchanged.
+- Shared checks: 73 Vitest, 110 E2E, Rust fmt/Clippy/26 tests plus explicit10k, 23 release/iOS script tests and website build passed. Android JVM15 and Swift75 passed. See [dated acceptance checklist](../../archive/2026-10-19-ui-consistency.md) and `artifacts/verification/v0.1.30/summary.md` for actual commands/screenshots and limits.
+- Final local APK: `artifacts/android/v0.1.30-b1031/debug/nanoPlayer-0.1.30-b1031-arm64-debug.apk`; arm64-v8a, 0.1.30/1031, ZIP/manifest/hash/APK v2 Android Debug signature verified. SHA-256 `d55cbc7be27ba755bbf833dba78f5fbbddcc465628f5508392859165f2c01971`. No Android device connected; this package has not been installed. Native touch/back/insets and physical-device qualification remain pending.
+- No remote release/deployment was executed. Desktop publication is user-run from main: `pnpm release 0.1.30`.
 
 ## 2026-10-19 shared homepage/menu fixes (0.1.29 local)
 

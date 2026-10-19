@@ -21,11 +21,15 @@ test("module headings and settings use a consistent type scale in both themes", 
   const titleSizes = await page
     .locator(".settings-list strong, .settings-list h3")
     .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).fontSize));
-  expect(new Set(titleSizes)).toEqual(new Set(["13px"]));
+  expect(new Set(titleSizes)).toEqual(new Set(["14px"]));
   const bodySizes = await page
-    .locator(".settings-list p, .settings-list select, .settings-list .secondary-button")
+    .locator(".settings-list p")
     .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).fontSize));
   expect(new Set(bodySizes)).toEqual(new Set(["13px"]));
+  await expect(page.locator(".settings-list .secondary-button").first()).toHaveCSS(
+    "font-size",
+    "14px",
+  );
   await page.screenshot({ path: "test-results/settings-typography-dark.png", fullPage: true });
   await page.getByRole("button", { name: "浅色", exact: true }).click();
   await page.screenshot({ path: "test-results/settings-typography-light.png", fullPage: true });

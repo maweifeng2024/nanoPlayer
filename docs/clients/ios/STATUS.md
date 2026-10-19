@@ -1,8 +1,16 @@
 # iOS / iPadOS 状态
 
-2026-10-19。当前本地源版本 0.1.29，iOS build 11。用户已评审通过 iOS UI 与交互方案并授权实现：首页推荐取色、无框列表、封面尺寸上限、底部歌曲菜单、迷你播放器及队列布局已完成。开发签名 IPA 已生成并核验；本轮真机安装、后台音频及最低系统运行验收尚未进行。详细本次证据见下节，历史版本结论不继承到本次构建。
+2026-10-19。当前本地源版本0.1.30，iOS build12；共享视觉规范与首页/菜单修正已实现，模拟器构建及iPhone/iPad测试通过。真实设备、真实音频和最低系统运行验收仍待完成。历史版本结论不继承到本次构建。
 
-## 0.1.29 UI 与交互重构（2026-10-19，当前）
+
+## 2026-10-19 shared consistency (0.1.30 local)
+
+- Implemented: approved type/spacing/control scale; recent albums share desktop20/mobile12 limits and horizontal scrolling; home recommendation artwork aligns to section titles without playback markers. Playlist menu IDs are unique; independent same-name destinations are labeled separately. Native queue and source-audio semantics are unchanged.
+- Shared checks: 73 Vitest, 110 E2E, Rust fmt/Clippy/26 tests plus explicit10k, 23 release/iOS script tests and website build passed. Android JVM15 and Swift75 passed. See [dated acceptance checklist](../../archive/2026-10-19-ui-consistency.md) and `artifacts/verification/v0.1.30/summary.md` for actual commands/screenshots and limits.
+- Local arm64 simulator ZIP: `artifacts/ios/v0.1.30-b12/simulator-debug/nanoPlayer-0.1.30-b12-arm64-simulator.zip`; 0.1.30/12, minimumOS16.0, adhoc deep/strict and ZIP verified; SHA-256 `0379c4bbbd51f6933152e8875068677f135c8703c26e6bbd2214858e0a4b473a`. iPhone18Pro/iPad(A16), iOS27.0 each passed2 native tests; initial-empty-library playback skipped1 each. Native home screenshots reviewed. No new device IPA or physical install is claimed.
+- No remote release/deployment was executed. Desktop publication is user-run from main: `pnpm release 0.1.30`.
+
+## 0.1.29 UI 与交互重构（2026-10-19，历史）
 
 - iPhone 保留三项主导航与补充侧栏，顶栏增加可见设置入口。首页推荐行取消外框，44px 封面和74px行高；迷你播放器使用独立圆角底面，队列/歌词面板从固定播放区上方展开。
 - 推荐封面作为首页取色源，平均色桶与受控彩度代替高饱和像素优先；固定渐变位置，缓存结果，缺图或解析失败回退中性色，异步旧请求不覆盖新推荐。iPad 保留完整侧栏和72px窄栏。

@@ -1,7 +1,15 @@
 # Desktop implementation status
 
-Updated: 2026-10-18 · Local source: 0.1.28 · Published/installed evidence below is dated per version
+Updated: 2026-10-19 · Local source: 0.1.30 · Published/installed evidence below is dated per version
 
+
+
+## 2026-10-19 shared consistency (0.1.30 local)
+
+- Implemented: approved type/spacing/control scale; recent albums share desktop20/mobile12 limits and horizontal scrolling; home recommendation artwork aligns to section titles without playback markers. Playlist menu IDs are unique; independent same-name destinations are labeled separately. Native queue and source-audio semantics are unchanged.
+- Shared checks: 73 Vitest, 110 E2E, Rust fmt/Clippy/26 tests plus explicit10k, 23 release/iOS script tests and website build passed. Android JVM15 and Swift75 passed. See [dated acceptance checklist](../../archive/2026-10-19-ui-consistency.md) and `artifacts/verification/v0.1.30/summary.md` for actual commands/screenshots and limits.
+- No native desktop bundle was built/installed this turn. The six reviewed browser baselines cover the changed shared presentation; native Mac acceptance is separate.
+- No remote release/deployment was executed. Desktop publication is user-run from main: `pnpm release 0.1.30`.
 
 ## 2026-10-18 confirmed UI batches 1–2 (0.1.28 local)
 

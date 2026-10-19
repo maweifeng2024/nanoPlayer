@@ -1,3 +1,4 @@
+import { uniquePlaylists } from "./playlistTargets";
 import type { LibraryRoot, Track, Playlist } from "../domain";
 
 // Match directory boundaries, including nested roots and Windows separators.
@@ -11,15 +12,33 @@ export function trackInRoots(path: string, roots: Pick<LibraryRoot, "path">[]) {
   return Boolean(path) && roots.some((root) => candidate.startsWith(`${normalize(root.path)}/`));
 }
 
-export interface LibraryScope { id: string; path: string; selected: boolean; directOnly?: boolean }
-export type LibrarySelection = { libraryScopes?: LibraryScope[]; roots: LibraryRoot[]; selectedRootIds: number[] | null };
-const selectionCache = new WeakMap<number[], WeakMap<LibraryRoot[], {
-  ids: Set<number>;
+export interface LibraryScope {
+  id: string;
+  path: string;
+  selected: boolean;
+  directOnly?: boolean;
+}
+export type LibrarySelection = {
+  libraryScopes?: LibraryScope[];
   roots: LibraryRoot[];
-}>>();
+  selectedRootIds: number[] | null;
+};
+const selectionCache = new WeakMap<
+  number[],
+  WeakMap<
+    LibraryRoot[],
+    {
+      ids: Set<number>;
+      roots: LibraryRoot[];
+    }
+  >
+>();
 export function trackIsSelected(track: Track, state: LibrarySelection) {
-  const scope = state.libraryScopes?.find((item) => track.path.startsWith(item.path + "/") &&
-    (!item.directOnly || !track.path.slice(item.path.length + 1).includes("/")));
+  const scope = state.libraryScopes?.find(
+    (item) =>
+      track.path.startsWith(item.path + "/") &&
+      (!item.directOnly || !track.path.slice(item.path.length + 1).includes("/")),
+  );
   if (scope) return scope.selected;
   if (state.selectedRootIds === null) return true;
   let byRoots = selectionCache.get(state.selectedRootIds);
@@ -40,9 +59,10 @@ export function trackIsSelected(track: Track, state: LibrarySelection) {
 export function visiblePlaylists(
   state: LibrarySelection & { tracks: Track[]; playlists: Playlist[] },
 ) {
-  if (state.selectedRootIds === null && !state.libraryScopes?.some((scope) => !scope.selected)) return state.playlists;
+  if (state.selectedRootIds === null && !state.libraryScopes?.some((scope) => !scope.selected))
+    return uniquePlaylists(state.playlists);
   const ids = new Set(
     state.tracks.filter((track) => trackIsSelected(track, state)).map((track) => track.id),
   );
-  return state.playlists.filter((list) => list.trackIds.some((id) => ids.has(id)));
+  return uniquePlaylists(state.playlists.filter((list) => list.trackIds.some((id) => ids.has(id))));
 }

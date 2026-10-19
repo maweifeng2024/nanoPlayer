@@ -1,0 +1,18 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "nanoPlayer 界面一致性评审": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-10-19T08:09:37.546Z",
+          "status": "approved"
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-10-19T08:09:37.546Z",
+  "updatedAt": "2026-10-19T08:29:25.956Z"
+}

@@ -23,7 +23,6 @@ import {
   Mic2,
   Music2,
   Play,
-  Pause,
   Plus,
   RotateCcw,
   SearchX,
@@ -264,11 +263,15 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   const featured = tracks[0];
   const stats = { ratings, playCounts, lastPlayedAt };
   const unknownAlbum = t("未知专辑");
-  const albums = useMemo(() => recentAlbums(tracks, unknownAlbum), [tracks, unknownAlbum]);
+  const homeLimit = isMobile() ? 12 : 20;
+  const albums = useMemo(
+    () => recentAlbums(tracks, unknownAlbum, homeLimit),
+    [tracks, unknownAlbum, homeLimit],
+  );
   const openCollection = useNanoStore((state) => state.openCollection);
   const setPage = useNanoStore((state) => state.setPage);
-  const popular = collectionTracks(tracks, "popular", stats).slice(0, isMobile() ? 12 : 20);
-  const rated = collectionTracks(tracks, "rated", stats).slice(0, isMobile() ? 12 : 20);
+  const popular = collectionTracks(tracks, "popular", stats).slice(0, homeLimit);
+  const rated = collectionTracks(tracks, "rated", stats).slice(0, homeLimit);
   if (!featured) return <EmptyLibrary />;
   const moment = (() => {
     const defaultTrack = tracks[Math.floor(momentSeed * tracks.length)] ?? featured;
@@ -446,12 +449,10 @@ function HomeTrackList({
   tracks: Track[];
   tone: "recent" | "popular" | "rated";
 }) {
-  const { playTrack, setPage, currentTrackId, playing } = useNanoStore(
+  const { playTrack, setPage } = useNanoStore(
     useShallow((state) => ({
       playTrack: state.playTrack,
       setPage: state.setPage,
-      currentTrackId: state.currentTrackId,
-      playing: state.playing,
     })),
   );
   const queue = tracks.map((track) => track.id);
@@ -470,15 +471,7 @@ function HomeTrackList({
           <ol style={{ "--recommendation-rows": Math.min(3, tracks.length) } as CSSProperties}>
             {tracks.map((track) => (
               <li key={track.id}>
-                <button
-                  onClick={() => playTrack(track.id, queue)}
-                  type="button"
-                  aria-pressed={currentTrackId === track.id}
-                >
-                  <span className="home-track-status" aria-hidden="true">
-                    {currentTrackId === track.id &&
-                      (playing ? <AudioLines size={14} /> : <Pause size={14} />)}
-                  </span>
+                <button onClick={() => playTrack(track.id, queue)} type="button">
                   <Artwork
                     className="recommendation-art"
                     track={track}

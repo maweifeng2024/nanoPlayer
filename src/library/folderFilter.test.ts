@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Track, LibraryRoot } from "../domain";
-import { trackInRoots, trackIsSelected } from "./folderFilter";
+import { trackInRoots, trackIsSelected, visiblePlaylists } from "./folderFilter";
 describe("folder filtering", () => {
   it("includes descendants and multiple roots without sibling prefix collisions", () => {
     const roots = [{ path: "/Music/Jazz/" }, { path: "/Music/Rock" }];
@@ -25,8 +25,22 @@ it("invalidates cached selection when roots or selected IDs change", () => {
   const selectedRootIds = [2];
   const legacy = { path: "/Music/a.flac" } as Track;
   expect(trackIsSelected(legacy, { roots, selectedRootIds })).toBe(true);
-  expect(trackIsSelected(legacy, {
-    roots: [{ id: 2, path: "/Other" }] as LibraryRoot[], selectedRootIds,
-  })).toBe(false);
+  expect(
+    trackIsSelected(legacy, {
+      roots: [{ id: 2, path: "/Other" }] as LibraryRoot[],
+      selectedRootIds,
+    }),
+  ).toBe(false);
   expect(trackIsSelected(track, { roots: [], selectedRootIds: null })).toBe(true);
+});
+
+it("filters before deduplicating playlist identities so a stale empty copy cannot hide a selected list", () => {
+  const selected = { id: "same", name: "Mix", trackIds: [1] };
+  const state = {
+    roots: [{ id: 2, path: "/Music" }] as LibraryRoot[],
+    selectedRootIds: [2],
+    tracks: [{ id: 1, rootId: 2, path: "/Music/a.flac" }] as Track[],
+    playlists: [{ id: "same", name: "Mix", trackIds: [] }, selected, selected],
+  };
+  expect(visiblePlaylists(state)).toEqual([selected]);
 });

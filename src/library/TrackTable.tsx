@@ -1,3 +1,4 @@
+import { playlistTargets } from "./playlistTargets";
 import { trackIsSelected } from "./folderFilter";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "./Artwork";
@@ -69,6 +70,7 @@ export function TrackTable({
       openCollection: store.openCollection,
     })),
   );
+  const targets = useMemo(() => playlistTargets(state.playlists), [state.playlists]);
   const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 } | null>(
     popular ? { key: "lastPlayedAt", direction: -1 } : null,
   );
@@ -299,7 +301,7 @@ export function TrackTable({
         ))}
       </div>
       {!playlistId
-        ? state.playlists.map((playlist) => (
+        ? targets.map(({ playlist, label }) => (
             <button
               role="menuitem"
               key={playlist.id}
@@ -307,7 +309,7 @@ export function TrackTable({
               type="button"
             >
               {t("添加到“")}
-              {playlist.name}”
+              {label}”
             </button>
           ))
         : null}
@@ -353,14 +355,14 @@ export function TrackTable({
               </summary>
               <div className="menu-popover">
                 {state.playlists.length ? (
-                  state.playlists.map((playlist) => (
+                  targets.map(({ playlist, label }) => (
                     <button
                       disabled={!selected.size}
                       key={playlist.id}
                       onClick={() => addSelected(playlist.id)}
                       type="button"
                     >
-                      {playlist.name}
+                      {label}
                     </button>
                   ))
                 ) : (

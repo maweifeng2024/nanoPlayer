@@ -6,6 +6,7 @@ import "./styles.css";
 import "./platform/android.css";
 import "./platform/iosLibrary.css";
 import "./platform/ios.css";
+import "./design/consistency.css";
 
 if (isMobile()) {
   document.documentElement.dataset.platform = isIOS() ? "ios" : "android";

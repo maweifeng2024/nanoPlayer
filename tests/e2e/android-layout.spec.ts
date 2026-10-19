@@ -93,7 +93,7 @@ test.describe("Android touch interactions", () => {
       const card = await list.locator("li").first().boundingBox();
       const artwork = await list.locator(".recommendation-art").first().boundingBox();
       expect(card!.height).toBeGreaterThanOrEqual(72);
-      expect(artwork!.x - card!.x).toBeGreaterThanOrEqual(24);
+      expect(Math.abs(artwork!.x - card!.x)).toBeLessThanOrEqual(1);
       expect(
         await list
           .locator("li")

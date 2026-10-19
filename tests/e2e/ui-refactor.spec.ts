@@ -114,8 +114,8 @@ test.describe("touch layouts", () => {
       expect(last!.y + last!.height).toBeLessThanOrEqual(player!.y);
       const more = page.locator(".track-row .more-menu").last();
       const box = await more.boundingBox();
-      expect(box!.width).toBeGreaterThanOrEqual(48);
-      expect(box!.height).toBeGreaterThanOrEqual(48);
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
       await more.click();
       const bounds = await page.getByRole("menu").boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);

@@ -38,3 +38,5 @@ Latest iOS review: [2026-10-14 player fix and pending library design](archive/20
 Latest iOS implementation: [2026-10-15 three-source library](archive/2026-10-15-ios-library-implementation.md).
 
 Latest iOS library review: [2026-10-16 implementation and validation](archive/2026-10-16-ios-library-redesign.md).
+
+Latest shared UI implementation and acceptance checklist: [2026-10-19 consistency, home collections and playlist menus](archive/2026-10-19-ui-consistency.md).
