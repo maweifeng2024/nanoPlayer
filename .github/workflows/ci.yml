@@ -20,7 +20,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: npm ci --prefix website
-      - run: npm run build --prefix website
+      - run: pnpm website:check
 
   rust:
     strategy:

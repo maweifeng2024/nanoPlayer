@@ -132,7 +132,7 @@ function main() {
   retryHint = `Retry the same tagged release (including an interrupted push): pnpm release --resume ${tag}. GitHub connectivity is required.`;
   runGitNetwork(['push', '--atomic', 'origin', 'main', tag]);
 
-  console.log(`\n${tag} is pushed. GitHub Actions will build all three platforms, publish the Release, update the website, and deploy it to Vercel.`);
+  console.log(`\n${tag} is pushed. GitHub Actions will build all three platforms, publish the Release, update the website, and deploy it to Cloudflare.`);
   console.log('Track it with: gh run watch');
   run('node', ['scripts/release/watch-release.mjs', tag]);
 

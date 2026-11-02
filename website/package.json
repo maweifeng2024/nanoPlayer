@@ -1,6 +1,6 @@
 {
   "name": "nanoplayer-website",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -10,7 +10,10 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "oxlint app components/NanoHome.tsx",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "deploy": "wrangler deploy",
+    "deploy:check": "wrangler deploy --dry-run",
+    "preview": "wrangler dev"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
@@ -42,7 +45,8 @@
     "oxlint": "1.76.0",
     "oxlint-tsgolint": "7.0.2001",
     "tailwindcss": "4.2.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "wrangler": "4.152.0"
   },
   "type": "module"
 }

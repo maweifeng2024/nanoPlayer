@@ -5,7 +5,7 @@ const clients = [
     name: "desktop",
     ua: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
     widths: [720, 1200],
-    limit: 20,
+    limit: 12,
   },
   {
     name: "android",
@@ -71,6 +71,8 @@ for (const client of clients) {
           for (const kind of ["popular", "rated"]) {
             const list = page.locator(`.home-track-list-${kind}`);
             await expect(list.locator("li")).toHaveCount(client.limit);
+            if (client.name !== "desktop")
+              await expect(list.locator("li").first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
             await expect(list.locator(".home-track-status")).toHaveCount(0);
             await expect(list.locator("button[aria-pressed]")).toHaveCount(0);
             const title = await list.locator(".home-track-heading-copy strong").boundingBox();
@@ -146,6 +148,7 @@ for (const client of clients) {
       await page.keyboard.press("Escape");
       await expect(trigger).toBeFocused();
       await expect(menu).toHaveCount(0);
+
     });
   });
 }

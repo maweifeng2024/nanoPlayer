@@ -1,5 +1,5 @@
 import { playlistTargets } from "./playlistTargets";
-import { trackIsSelected } from "./folderFilter";
+import { visiblePlaylists, trackIsSelected } from "./folderFilter";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "./Artwork";
 import { ConfirmDialog } from "../ConfirmDialog";
@@ -70,7 +70,8 @@ export function TrackTable({
       openCollection: store.openCollection,
     })),
   );
-  const targets = useMemo(() => playlistTargets(state.playlists), [state.playlists]);
+  const visibleLists = useNanoStore(useShallow((store) => visiblePlaylists(store)));
+  const targets = useMemo(() => playlistTargets(visibleLists), [visibleLists]);
   const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 } | null>(
     popular ? { key: "lastPlayedAt", direction: -1 } : null,
   );

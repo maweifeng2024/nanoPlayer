@@ -2,13 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000',
-  ),
+  metadataBase: new URL('https://nanoplayer.nanodo.cc'),
   title: {
     default: 'nanoPlayer — 本地音乐播放器',
     template: '%s · nanoPlayer',

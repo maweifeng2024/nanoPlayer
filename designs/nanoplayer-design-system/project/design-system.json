@@ -1,0 +1,24 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-02T06:02:49.873660+00:00"
+  },
+  "title": "nanoPlayer 设计系统",
+  "namespace": "NanoPlayer",
+  "libraries": [],
+  "sections": {},
+  "groups": [],
+  "assetGroups": {},
+  "blobs": {},
+  "docs": {
+    "sections": []
+  },
+  "lastChange": {
+    "by": "Codex",
+    "via": "Codex",
+    "at": "2026-11-02T06:02:49.873660+00:00",
+    "note": "源码设计评审与后续开发规范；未修改产品"
+  }
+}

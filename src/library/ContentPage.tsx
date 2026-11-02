@@ -10,7 +10,6 @@ import {
   Album as AlbumIcon,
   Archive,
   AudioLines,
-  Clock3,
   ChevronDown,
   Disc3,
   Eraser,
@@ -263,7 +262,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   const featured = tracks[0];
   const stats = { ratings, playCounts, lastPlayedAt };
   const unknownAlbum = t("未知专辑");
-  const homeLimit = isMobile() ? 12 : 20;
+  const homeLimit = 12;
   const albums = useMemo(
     () => recentAlbums(tracks, unknownAlbum, homeLimit),
     [tracks, unknownAlbum, homeLimit],

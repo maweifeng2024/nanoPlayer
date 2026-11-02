@@ -136,3 +136,7 @@ The user approved `../../designs/ui-consistency-review/` for implementation, wit
 - Playlist add menus deduplicate targets by ID; independent same-name playlists get ordered labels instead of being merged or deleted. Single and batch menus share this view rule, without rewriting user data.
 
 Verification/remaining native acceptance is recorded in `../../artifacts/verification/v0.1.30/summary.md` and its test checklist; design approval alone does not qualify device behavior or a published release.
+
+## 2026-11-02 homepage and playlist corrections
+
+All clients cap recent album cards, most-played and highly-rated tracks at 12; View all remains unbounded. Mobile recommendation rows have transparent backgrounds, superseding the historical Android 16% fill. Track and batch playlist menus use the same selected-library visibility as navigation, then deduplicate IDs and distinguish independent same-name targets. The latest component contracts are in `../../designs/nanoplayer-design-system/project/RULES.md`.

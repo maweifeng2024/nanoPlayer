@@ -2,7 +2,7 @@
 
 [English](#english) · [中文](#中文)
 
-[Website / 官网](https://nanoplayer-wei-feng.vercel.app) · [Downloads / 下载](https://nanoplayer-wei-feng.vercel.app/download)
+[Website / 官网](https://nanoplayer.nanodo.cc) · [Downloads / 下载](https://nanoplayer.nanodo.cc/download)
 
 ![nanoPlayer actual desktop interface / 实际桌面界面](website/public/product-home-current.png)
 

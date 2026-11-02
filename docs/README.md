@@ -4,6 +4,10 @@ Start here instead of relying on dated files discovered by search.
 
 ## Current documents
 
+- [本轮 UI 测试清单](development/UI_REVIEW_2026-11-02.md)
+
+- [设计系统与源码评审](../designs/nanoplayer-design-system/project/README.md)：当前 token 快照、问题优先级、组件契约与后续验收清单；建议尚未落地。
+
 - [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md): repository boundaries and the client-extension contract.
 - [`product/PRODUCT_AND_TECHNICAL_PLAN.md`](product/PRODUCT_AND_TECHNICAL_PLAN.md): product scope and long-term technical baseline.
 - [`architecture/OVERVIEW.md`](architecture/OVERVIEW.md): implemented shared architecture and safety boundaries.
@@ -14,6 +18,8 @@ Start here instead of relying on dated files discovered by search.
 - [`release/RELEASE_PROCESS.md`](release/RELEASE_PROCESS.md): versioning and publication workflow.
 - [`release/DISTRIBUTION_MATRIX.md`](release/DISTRIBUTION_MATRIX.md): client/package support and qualification boundaries.
 - [`clients/README.md`](clients/README.md): current desktop, Android, iOS, and website lifecycle matrix.
+
+- [`../website/README.md`](../website/README.md): Cloudflare hosting, download synchronization and website-only deployment.
 
 ## Client documents
 

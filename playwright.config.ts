@@ -12,6 +12,7 @@ export default defineConfig({
   },
   use: {
     baseURL,
+    channel: process.env.NANOPLAYER_E2E_CHANNEL,
     trace: 'on-first-retry',
   },
 });

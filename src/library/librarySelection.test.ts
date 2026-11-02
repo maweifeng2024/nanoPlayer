@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useNanoStore, getNativeUserState, applyNativeUserState } from "../store";
 import { demoRoot, demoTracks } from "../domain";
+import { playlistTargets } from "./playlistTargets";
 import { trackIsSelected, visiblePlaylists } from "./folderFilter";
 
 const original = useNanoStore.getState();
@@ -32,6 +33,15 @@ beforeEach(() =>
 );
 afterEach(() => useNanoStore.setState(original));
 describe("shared library selection", () => {
+  it("excludes hidden same-name playlists from menu labels without deleting data", () => {
+    useNanoStore.setState({ selectedRootIds: [1], playlists: [
+      { id: "shown", name: "Night", trackIds: [1] },
+      { id: "hidden", name: "Night", trackIds: [2] },
+    ] });
+    const targets = playlistTargets(visiblePlaylists(useNanoStore.getState()));
+    expect(targets.map(({ label, playlist }) => [label, playlist.id])).toEqual([["Night", "shown"]]);
+    expect(useNanoStore.getState().playlists).toHaveLength(2);
+  });
   it("defaults to all and uses native root IDs for opaque Android URIs", () => {
     expect(tracks.every((track) => trackIsSelected(track, useNanoStore.getState()))).toBe(true);
     useNanoStore.getState().setSelectedRootIds([1]);

@@ -1351,7 +1351,7 @@ html:is([data-platform="android"], [data-platform="ios"]) {
 }
 :is([data-platform="android"], [data-platform="ios"]) .home-track-list-body li {
   height: 56px;
-  background: color-mix(in srgb, var(--panel) 16%, transparent);
+  background: transparent;
   border: 0;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   backdrop-filter: none;

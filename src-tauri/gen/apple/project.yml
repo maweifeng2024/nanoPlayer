@@ -65,8 +65,8 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        CFBundleShortVersionString: 0.1.30
-        CFBundleVersion: "12"
+        CFBundleShortVersionString: 0.1.31
+        CFBundleVersion: "13"
     entitlements:
       path: nanoplayer_iOS/nanoplayer_iOS.entitlements
     scheme:

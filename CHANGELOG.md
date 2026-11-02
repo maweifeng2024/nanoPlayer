@@ -4,6 +4,12 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.31] - 2026-11-02
+
+- 首页最近专辑、播放最多与高评分统一最多12项，移动推荐行移除背景填色。
+- 单曲与批量添加菜单遵循当前资料库歌单可见性，避免隐藏同名歌单制造重复目标。
+- 设计 token 检查补充 iOS 样式，增加隐藏同名歌单回归。
+
 ## [0.1.30] - 2026-10-19
 
 - 按已评审规范统一桌面、手机和 Pad 字号、间距、按钮热区与样式，保留平台导航和播放结构。

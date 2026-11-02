@@ -73,7 +73,7 @@ export default function NanoHome() {
       </section>
 
       <section className="feature-section" id="clients">
-        <div className="section-heading"><div><p className="kicker">DESKTOP · PHONE · PAD</p><h2>同一个音乐库体验，适配不同屏幕。</h2></div><p>截至 2026-10-15：桌面 v{release.version} 已发布；Android 和 iOS/iPadOS 已有本地测试构建，尚未公开分发。以下为 v0.1.23 共享 UI 的浏览器演示截图，不代表真机播放验收。</p></div>
+        <div className="section-heading"><div><p className="kicker">DESKTOP · PHONE · PAD</p><h2>同一个音乐库体验，适配不同屏幕。</h2></div><p>截至 2026-10-26：桌面 v{release.version} 已发布；Android 和 iOS/iPadOS 已有本地测试构建，尚未公开分发。以下为 v0.1.23 共享 UI 的浏览器演示截图，不代表真机播放验收。</p></div>
         <div className="client-gallery">
           <article><h3>Android 手机 / Pad</h3><p>SAF 目录授权、原生播放队列、后台会话与睡眠定时器。当前 APK 的真机与长时验收仍待完成。</p><Image src="/product-android-current.png" alt="Android 手机共享首页预览，使用演示歌曲" width={390} height={844} /></article>
           <article><h3>iPhone</h3><p>nanoPlayer、Files、其他音乐 App 三类来源。外部音乐只读引用或复制，自有管理区支持文件夹与批量移动。</p><Image src="/product-iphone-current.png" alt="iPhone 三类资料库的共享界面预览" width={390} height={844} /></article>

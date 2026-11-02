@@ -1,6 +1,6 @@
 {
   "name": "nanoplayer",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "private": true,
   "type": "module",
   "engines": {
@@ -34,7 +34,11 @@
     "android:build:debug": "bash scripts/android/build-debug.sh",
     "android:test:emulator": "bash scripts/android/test-emulator.sh",
     "ios:build:debug": "node scripts/ios/lifecycle.mjs build-device",
-    "ios:test:wifi": "node scripts/ios/test-wifi.mjs"
+    "ios:test:wifi": "node scripts/ios/test-wifi.mjs",
+    "website:sync": "node scripts/website/sync-release.mjs",
+    "website:check": "node --test scripts/website/*.test.mjs && npm --prefix website run lint && pnpm website:build && npm --prefix website run deploy:check",
+    "website:deploy": "pnpm website:build && npm --prefix website run deploy",
+    "website:verify": "node scripts/release/verify-website.mjs https://nanoplayer.nanodo.cc"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.3",

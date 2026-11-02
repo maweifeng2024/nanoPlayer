@@ -13,7 +13,7 @@ Public announcements are a separate, explicitly approved step. The current autom
 
 ## One-command release
 
-First configure CI deployment credentials with `node scripts/release/setup-vercel.mjs`. It reads the existing Vercel project link and prompts for a token using GitHub CLI's hidden input. A connector login does not provision GitHub Actions secrets.
+Configure Cloudflare Actions credentials before publication; see [website deployment](../../website/README.md). The legacy `setup-vercel.mjs` helper does not configure the current deployment target.
 
 `pnpm release` now waits for the tag's GitHub workflow and exits nonzero if builds, asset publishing, or deployment fails. After committing and pushing a publishing-script fix, use `pnpm release --resume vX.Y.Z`: it reuses the original tag artifacts with the current main publishing workflow. A rerun of an old build still uses its old source; never move an existing tag.
 
@@ -21,9 +21,9 @@ Before dispatching publication recovery, the local command requires successful o
 
 Run `pnpm release` from `main`. It increments the patch version by default, runs the local quality gates, commits every tracked and untracked change, creates and pushes the version tag, and starts `.github/workflows/release.yml`. Pass an explicit version for a minor or major release, for example `pnpm release -- 0.2.0`.
 
-The GitHub workflow builds on macOS, Windows, and Linux, publishes one GitHub Release with checksums, updates `website/public/downloads/latest.json` from the actual uploaded artifacts, deploys the static website to Vercel, verifies it, then writes the generated manifest back to `main`. Configure these GitHub Actions repository secrets before the first run:
+The GitHub workflow builds on macOS, Windows, and Linux, publishes one GitHub Release with checksums, updates `website/public/downloads/latest.json` from the actual uploaded artifacts, deploys the static website to Cloudflare Workers at `https://nanoplayer.nanodo.cc`, verifies it, then writes the generated manifest back to `main`. Configure these GitHub Actions repository secrets before the first run:
 
-- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` (required for website deployment).
+- `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (required for website deployment).
 - `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID` (required for signed/notarized macOS releases).
 - `TAURI_SIGNING_PRIVATE_KEY` (required by the current updater publication flow); `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` is optional for an unencrypted key.
 
@@ -48,3 +48,7 @@ iOS lifecycle and local packaging commands now exist; see [workflow](../clients/
 ## 2026-10-13 local version preparation
 
 The v0.1.15 tag build failed Rust Clippy verification (run 38362786908); no desktop bundles were built, and recovery run 38363315079 correctly rejected its source. 0.1.16 contains the source fix and local recovery preflight, with Android versionCode 1014 allocated once (reuse only on retries). Desktop publication remains user-run with `pnpm release 0.1.16` from `main`; local preparation does not establish remote publication.
+
+## Website-only distribution updates
+
+For existing published installers, use `pnpm website:sync`, `pnpm website:check`, then the explicitly authorized/user-run `pnpm website:deploy` and `pnpm website:verify <version>`. This does not allocate a client version, rebuild installers, create tags or push code. The website and its deployment workflow are distribution surfaces; client runtime and packaging are unchanged.

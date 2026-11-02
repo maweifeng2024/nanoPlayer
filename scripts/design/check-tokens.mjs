@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 // Layout geometry (window chrome, lyrics breathing room and button offsets) is
 // intentionally separate from the seven decorative spacing steps.
 const geometry = new Set([50, 56, 58, 64, 70, 90, 100, 120]);
-const files = ["src/styles.css", "src/platform/android.css", "src/design/consistency.css"];
+const files = ["src/styles.css", "src/platform/android.css", "src/platform/ios.css", "src/platform/iosLibrary.css", "src/design/consistency.css"];
 const issues = [];
 for (const file of files) {
   const css = readFileSync(file, "utf8");

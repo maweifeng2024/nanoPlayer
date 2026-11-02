@@ -197,3 +197,18 @@ git push origin main
 - [推送恢复](../../scripts/release/recover-push.mjs)、[发布恢复](../../scripts/release/resume-release.mjs)
 - [安卓打包](../../scripts/release/android.mjs)、[安卓工具脚本](../../scripts/android/)
 - [桌面构建工作流](../../.github/workflows/release.yml)、[发布与官网工作流](../../.github/workflows/publish-release.yml)
+
+## Cloudflare 官网
+
+| 命令 | 行为 |
+| --- | --- |
+| `pnpm website:sync` | 从最新稳定 GitHub Release 校验并同步下载清单，不发布 |
+| `pnpm website:check` | 同步脚本/配置测试、官网 lint、静态构建和 Wrangler dry-run，不发布 |
+| `pnpm website:deploy` | 构建并部署至 Cloudflare，自定义域名 nanoplayer.nanodo.cc；需要明确发布授权 |
+| `pnpm website:verify <version>` | 检查线上首页、下载页及三平台版本清单 |
+
+认证、CI secrets 与边界见 [官网说明](../../website/README.md)。构建不会自动同步下载，以保证构建可重现；部署前先运行 `website:sync` 并审核清单。
+
+### 本机 E2E 浏览器选择
+
+默认 `pnpm test:e2e` 使用 Playwright 配套 Chromium，首次运行需 `pnpm exec playwright install chromium`。本机已安装 Chrome 时，可使用 `NANOPLAYER_E2E_CHANNEL=chrome pnpm test:e2e`；同一变量也会由发布命令继承：`NANOPLAYER_E2E_CHANNEL=chrome pnpm release 0.1.31`（版本以本次准备版本为准）。这只选择浏览器，不跳过任何门禁，CI未设置变量时保持默认。Mac沙箱启动异常仍按回归清单先做最小预检。
