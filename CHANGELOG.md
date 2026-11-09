@@ -4,6 +4,10 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.33] - 2026-11-09
+
+- 启用 Cloudflare 在线歌单推荐，后端接入 AICodeMirror 的 gpt-6-astra。
+
 ## [0.1.32] - 2026-11-09
 
 - iOS 首页与 Android 统一卡片布局，移动列表压缩标题留白及行列间距。

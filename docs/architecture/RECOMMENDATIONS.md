@@ -30,6 +30,8 @@
 
 设置中的“开启推荐”默认打开；设置项说明发送信息，用户关闭后持久保留选择，首页不放开关。开关仅保存在设备。无 endpoint/token、断网或服务出错时保留现有推荐歌单。关闭后不采用尚在途返回结果。Worker 无用户账户、数据库和音乐库状态；IP 频控由 Cloudflare 处理。共享客户端令牌可以被提取，不能实现强应用认证，部署边界见 [Worker 说明](../../services/recommendations/README.md)。
 
+配置 AICodeMirror 时，Worker 将同一批歌曲编号、标题和艺术家转发至其 Responses API。模型 Key 由 Worker Secret 提供，配置与线上验收见 [Worker 说明](../../services/recommendations/README.md)。
+
 ## 验证边界
 
 本次命令、截图、失败与工具链阻塞记录于 [验收记录](../development/RECOMMENDATIONS_VERIFICATION.md)。线上模型质量/花费、不同客户端真实 Origin、安装升级、后台/锁屏、手机和 Pad 原生性能、iPhone/iPad 编译/设备验收仍需部署及对应工具链后完成。Windows 浏览器通过不代替这些原生结论。

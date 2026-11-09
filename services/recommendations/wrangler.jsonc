@@ -2,10 +2,13 @@
   "name": "nanoplayer-recommendations",
   "main": "worker.mjs",
   "compatibility_date": "2026-10-19",
-  "workers_dev": true,
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "recommendations.nanodo.cc", "custom_domain": true }],
   "ai": { "binding": "AI" },
   "vars": {
-    "MODEL": "@cf/meta/llama-3.1-8b-instruct-fast",
+    "MODEL": "gpt-6-astra",
+    "MODEL_BASE_URL": "https://api.aicodemirror.ai/v1",
     "ALLOWED_ORIGINS": "tauri://localhost,http://tauri.localhost,https://tauri.localhost,http://localhost:1420"
   },
   "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1031", "simple": { "limit": 5, "period": 60 } }],

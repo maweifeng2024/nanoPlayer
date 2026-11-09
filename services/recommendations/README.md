@@ -4,16 +4,18 @@
 
 ## 在另一台计算机部署
 
-先安装根目录及 `website/` 的锁定依赖，使用 `website` 已锁定的 Wrangler。下列命令在仓库根目录执行；本轮没有执行部署。
+先安装根目录及 `website/` 的锁定依赖，使用 `website` 已锁定的 Wrangler。下列命令在仓库根目录执行；命令会明确区分本地校验与远端部署。
 
-1. `node website/node_modules/wrangler/bin/wrangler.js login`：登录具有 Workers AI 权限的 Cloudflare 账户。
-2. `node website/node_modules/wrangler/bin/wrangler.js secret put APP_TOKEN --config services/recommendations/wrangler.jsonc`：交互输入随机长令牌，勿把真实值提交到源码。
-3. `pnpm recommendations:deploy:check`：本地校验 Worker。
-4. `pnpm recommendations:deploy`：发布独立 Worker，记录返回的 HTTPS 地址。这不会发布播放器或官网。
+1. `node website/node_modules/wrangler/bin/wrangler.js login`：登录管理目标域名及 Workers 的 Cloudflare 账户。
+2. `pnpm recommendations:deploy:check`：本地校验 Worker。
+3. `pnpm recommendations:deploy`：发布独立 Worker，记录返回的 HTTPS 地址。这不会发布播放器或官网。
+4. `node website/node_modules/wrangler/bin/wrangler.js secret put APP_TOKEN --config services/recommendations/wrangler.jsonc`：交互输入独立随机长令牌，供客户端验证。勿把真实值提交到源码。
 
-建议绑定自己的域名。客户端 CSP 已预留 `https://recommendations.nanodo.cc`，这只是配置约定，**不代表域名已创建/部署**。若使用其他域名或 workers.dev 地址，构建前将准确 origin 加入 `src-tauri/tauri.conf.json` 的 `connect-src`，不要使用 `*`。在 Cloudflare 控制台设置自定义域名后，检查实际路由可访问。
+部署配置将独立 Worker 绑定到 `recommendations.nanodo.cc`，关闭 workers.dev 和预览 URL。客户端 CSP 已允许该域名。部署后用 HTTPS 验证路由；若更换域名，构建前同步更新 `src-tauri/tauri.conf.json` 的 `connect-src`。
 
-`wrangler.jsonc` 提供 AI binding `AI`、`MODEL`（默认 `@cf/meta/llama-3.1-8b-instruct-fast`）、IP 限流 binding `RATE_LIMITER`。实际账户需验证模型可用性、额度、限流配置兼容性与输出。更换模型前校验上下文及 JSON 输出；本轮仅 mock 测试，没有在线推理验收。
+当前 `wrangler.jsonc` 通过文本变量 `MODEL_BASE_URL=https://api.aicodemirror.ai/v1` 和 `MODEL=gpt-6-astra` 选用 AICodeMirror Responses API。部署 Worker 后，在 Cloudflare **Workers & Pages → nanoplayer-recommendations → Settings → Variables and Secrets** 新增 `MODEL_API_KEY`（类型 Secret），填入供应商 API Key。也可在终端交互运行 `node website/node_modules/wrangler/bin/wrangler.js secret put MODEL_API_KEY --config services/recommendations/wrangler.jsonc`。模型 Key 只保存在 Worker。客户端用的 `APP_TOKEN` 是另一个独立随机令牌。
+
+配置外部模型时，Worker 将请求里的歌曲编号、标题和艺术家转交给 AICodeMirror，并请求 `store: false`。已使用合成曲目通过线上推理。Worker 手动处理上游重定向并拒绝非 2xx 响应，避免将模型密钥转发至其他地址。若切回 Workers AI，移除 `MODEL_BASE_URL` 并将 `MODEL` 改为账户可用的 Workers AI 模型。
 
 在**未跟踪的** `.env.local` 配置构建参数：
 

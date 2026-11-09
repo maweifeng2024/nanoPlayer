@@ -40,3 +40,17 @@
 1. 按 [Worker 部署说明](../../services/recommendations/README.md) 配置并部署独立服务；客户端构建注入 endpoint/token、准确 CSP origin。桌面 CI 已读取同名 Actions secrets，未提供时只启用本地推荐。
 2. 在具备原生工具链的机器完成上述剩余门禁；为计划中的 Android 构建把 `packaging/android/version-code.json` 从 1032 分配为未使用的下一个编号（先核对另一台机器的当前 authority，仅分配一次），再 `pnpm release:android -- --debug`。验证新 APK 的版本/编号、ABI、SHA-256、ZIP 和调试签名；不是生产签名发布。
 3. 全部门禁满足后，由用户在 `main` 执行 `pnpm release 0.1.32`，提交/推送、构建并发布桌面及官网。本轮未执行推送、标签、远程工作流或桌面安装包构建；不要使用 `--skip-checks`，未创建标签时不使用 resume。
+
+### AICodeMirror 接入
+
+- 外部模型使用 Responses API，模型密钥只从 Worker Secret 读取。验证 HTTPS、禁止重定向、限定请求超时、解析输出文本及候选 ID 白名单。
+- 缺少密钥和上游错误返回受控失败，客户端保留本地推荐。非法请求 JSON 或候选含 null 返回 400。
+- 以 mock 验证协议、权限及故障。真实模型调用待配置 Secret 和部署后验收。
+
+2026-11-09（Asia/Shanghai）结果：Worker 5 项通过，含 AICodeMirror 请求与白名单、缺密钥、非 HTTPS、上游错误、非法 JSON 和 null 输入。Wrangler dry-run 通过。推荐 Playwright 套件用拦截 endpoint 验证 5/5 通过，生成桌面、手机、Pad 截图。Cloudflare 账户登录过期，模型 Key、实际推理、生产域名和原生设备验收待完成。三端构建与全套回归状态见 [本轮任务记录](../DEVELOPMENT_LOG.md)。
+
+2026-11-09 部署复测（Asia/Shanghai）：OAuth 刷新后已绑定生产子域名。Worker 单测 5/5、dry-run、权威 DNS 和 HTTPS 路由通过。无应用令牌返回 401，带应用令牌的合成数据在缺模型 Key 时返回 503。等待模型 Secret 后执行真实推理与客户端联通验证。
+
+模型密钥录入后的线上排查验证上游 HTTP 状态及响应格式，诊断日志只记录状态和错误类别，使用合成曲目复测。
+
+0.1.33 线上验收：最终 Worker 使用权威 DNS 返回的地址进行 HTTPS 验证，合成曲目推理返回 200，候选 ID 校验通过。三种 Tauri Origin 的 CORS 预检通过。5 项 Worker 单测和 5 项推荐浏览器专项通过。已在三端产物验证在线配置，默认 DNS 和客户端实机安装、启动及线上请求仍待验收。上一轮完整浏览器最终 108 通过、1 跳过、6 个截图基线比较失败。详见 [任务记录](../DEVELOPMENT_LOG.md)。
