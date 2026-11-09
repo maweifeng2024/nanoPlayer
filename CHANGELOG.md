@@ -4,6 +4,13 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.32] - 2026-11-09
+
+- iOS 首页与 Android 统一卡片布局，移动列表压缩标题留白及行列间距。
+- 首页左上角替换为含名称与一句话描述的推荐歌单卡片，最多 12 首，播放页可保存；设置中默认开启 Cloudflare AI 推荐、候选跨启动轮换、1/3/7 天后台生成并在下次启动采用。
+- 独立 Worker 提供令牌认证、IP 限流、上下文边界及候选编号校验；云端部署与真实模型验收待另一台计算机完成。
+- 修复 Windows 浏览器回归入口直接启动 pnpm.cmd 导致的 spawn EINVAL。
+
 ## [0.1.31] - 2026-11-02
 
 - 首页最近专辑、播放最多与高评分统一最多12项，移动推荐行移除背景填色。

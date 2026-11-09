@@ -61,7 +61,7 @@ test("home artwork feathers into both backgrounds without a border", async ({ pa
     await expect(page.locator(".hero-art")).toHaveCSS("box-shadow", "none");
     expect(
       await page.locator(".hero-art").evaluate((element) => getComputedStyle(element).maskImage),
-    ).toContain("linear-gradient");
+    ).toBe("none");
     await page.screenshot({
       path: `test-results/home-feather-${theme === "深色" ? "dark" : "light"}.png`,
       fullPage: true,

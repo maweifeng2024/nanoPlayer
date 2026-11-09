@@ -1,6 +1,6 @@
 {
   "name": "nanoplayer",
-  "version": "0.1.31",
+  "version": "0.1.32",
   "private": true,
   "type": "module",
   "engines": {
@@ -16,7 +16,7 @@
     "test:e2e": "node scripts/test-e2e.mjs",
     "lint": "oxlint src tests",
     "format": "oxfmt --write src tests",
-    "check": "pnpm lint && pnpm check:ui && pnpm test && pnpm build",
+    "check": "pnpm lint && pnpm check:ui && pnpm test && pnpm recommendations:test && pnpm build",
     "check:ui": "node scripts/design/check-tokens.mjs",
     "website:dev": "npm --prefix website run dev",
     "website:build": "npm --prefix website run build",
@@ -38,7 +38,10 @@
     "website:sync": "node scripts/website/sync-release.mjs",
     "website:check": "node --test scripts/website/*.test.mjs && npm --prefix website run lint && pnpm website:build && npm --prefix website run deploy:check",
     "website:deploy": "pnpm website:build && npm --prefix website run deploy",
-    "website:verify": "node scripts/release/verify-website.mjs https://nanoplayer.nanodo.cc"
+    "website:verify": "node scripts/release/verify-website.mjs https://nanoplayer.nanodo.cc",
+    "recommendations:test": "node --test services/recommendations/worker.test.mjs",
+    "recommendations:deploy:check": "node website/node_modules/wrangler/bin/wrangler.js deploy --dry-run --config services/recommendations/wrangler.jsonc --outdir ../../artifacts/recommendations/worker",
+    "recommendations:deploy": "node website/node_modules/wrangler/bin/wrangler.js deploy --config services/recommendations/wrangler.jsonc"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.3",

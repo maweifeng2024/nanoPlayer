@@ -18,7 +18,7 @@ test("English applies throughout the UI and survives reload", async ({ page }) =
   );
   await page.getByRole("button", { name: "Home", exact: true }).click();
   await expect(page.locator(".hero h1")).toContainText(
-    /Listen|Make|here|space|melody|music|time|today/i,
+    /Discover your music/,
   );
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");

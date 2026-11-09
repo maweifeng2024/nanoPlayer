@@ -1,3 +1,9 @@
+import {
+  onlineEnabled,
+  toggleOnline,
+  useRecommendations,
+  recommendationCopy,
+} from "../recommendations/RecommendationLifecycle";
 import { HomeArtworkTint } from "./HomeArtworkTint";
 import { LyricText } from "../lyrics/LyricText";
 import { SleepTimer } from "../player/SleepTimer";
@@ -80,12 +86,6 @@ const labels: Record<string, { eyebrow: string; title: string }> = {
   albums: { eyebrow: "按专辑艺术家聚合", title: "专辑" },
   artists: { eyebrow: "本地音乐人", title: "艺术家" },
 };
-
-const musicThoughts = [
-  ["留一点空白", "音乐响起的时候，不必急着去往哪里。"],
-  ["让旋律慢一点", "有些熟悉的声音，值得重新认真听一次。"],
-  ["今天也要好好听歌", "把片刻交给音乐，把喧闹留在门外。"],
-] as const;
 
 export function ContentPage() {
   const state = useNanoStore(
@@ -258,7 +258,6 @@ function HomePage({ tracks }: { tracks: Track[] }) {
       lastPlayedAt: state.lastPlayedAt,
     })),
   );
-  const [momentSeed] = useState(() => Math.random());
   const featured = tracks[0];
   const stats = { ratings, playCounts, lastPlayedAt };
   const unknownAlbum = t("未知专辑");
@@ -271,114 +270,34 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   const setPage = useNanoStore((state) => state.setPage);
   const popular = collectionTracks(tracks, "popular", stats).slice(0, homeLimit);
   const rated = collectionTracks(tracks, "rated", stats).slice(0, homeLimit);
+  const recommended = useRecommendations(tracks, stats);
+  const copy = recommendationCopy();
+  const name = copy.title || t("收藏新发现");
+  const description = copy.description || t("从最近听过的旋律出发，发现收藏里较少播放的好歌。");
   if (!featured) return <EmptyLibrary />;
-  const moment = (() => {
-    const defaultTrack = tracks[Math.floor(momentSeed * tracks.length)] ?? featured;
-    const moments: Array<{
-      eyebrow: string;
-      title: string;
-      copy: string;
-      action: string;
-      track: Track;
-    }> = [];
-    const lastPlayed = [...tracks]
-      .filter((track) => lastPlayedAt[track.id])
-      .sort((a, b) => lastPlayedAt[b.id].localeCompare(lastPlayedAt[a.id]))[0];
-    if (lastPlayed)
-      moments.push({
-        eyebrow: t("刚刚听过"),
-        title: t("再听一次《{0}》？", lastPlayed.title),
-        copy: t("熟悉的旋律还在这里，随时可以接着听。"),
-        action: t("继续播放"),
-        track: lastPlayed,
-      });
-    const mostPlayed = popular[0];
-    if (mostPlayed)
-      moments.push({
-        eyebrow: t("你的常听"),
-        title: t("《{0}》总会等你回来", mostPlayed.title),
-        copy: t("它已经陪你播放了 {0} 次。", playCounts[mostPlayed.id]),
-        action: t("再听一次"),
-        track: mostPlayed,
-      });
-    const highestRated = rated[0];
-    if (highestRated)
-      moments.push({
-        eyebrow: t("珍藏的声音"),
-        title: t("为《{0}》留一点时间", highestRated.title),
-        copy: t("你给了它 {0} 星，今天也值得重温。", ratings[highestRated.id]),
-        action: t("播放这首"),
-        track: highestRated,
-      });
-    const artistScores = new Map<string, number>();
-    tracks.forEach((track) =>
-      artistScores.set(
-        track.artist,
-        (artistScores.get(track.artist) ?? 0) +
-          (playCounts[track.id] ?? 0) +
-          (ratings[track.id] ?? 0),
-      ),
-    );
-    const favoriteArtist = [...artistScores].sort((a, b) => b[1] - a[1])[0];
-    const artistTrack = favoriteArtist
-      ? tracks.find((track) => track.artist === favoriteArtist[0])
-      : undefined;
-    if (favoriteArtist && favoriteArtist[1] > 0 && artistTrack)
-      moments.push({
-        eyebrow: t("常伴左右"),
-        title: t("{0}，今天也在这里", favoriteArtist[0]),
-        copy: t("从熟悉的声音开始，或许正合适。"),
-        action: t("听听看"),
-        track: artistTrack,
-      });
-    musicThoughts.forEach(([title, copy]) =>
-      moments.push({
-        eyebrow: t("此刻想对你说"),
-        title: t(title),
-        copy: t(copy),
-        action: t("随便听听"),
-        track: defaultTrack,
-      }),
-    );
-    return (
-      moments[Math.floor(momentSeed * moments.length)] ?? {
-        eyebrow: t("今天听点什么"),
-        title: t("回到你的音乐"),
-        copy: t("本地收藏，私密播放。"),
-        action: t("播放资料库"),
-        track: defaultTrack,
-      }
-    );
-  })();
-  const thoughtIndex = musicThoughts.findIndex(([title]) => t(title) === moment.title);
-  const illustration = ["quiet", "slow", "today"][
-    thoughtIndex >= 0 ? thoughtIndex : Math.abs(moment.track.id) % 3
-  ];
   return (
     <section className="home-page">
-      <HomeArtworkTint track={moment.track} />
-      <div className="hero">
-        <Artwork
-          track={moment.track}
-          className="hero-art"
-          fallback={<img src={`/home/${illustration}.svg`} alt="" />}
-        />
+      <HomeArtworkTint track={recommended[0] ?? featured} />
+      <div className="hero home-discovery" aria-label={t("为你推荐")}>
+        <Artwork track={recommended[0] ?? featured} className="hero-art" />
         <div>
-          <p className="eyebrow">{moment.eyebrow}</p>
-          <h1>{moment.title}</h1>
-          <p className="hero-copy">{moment.copy}</p>
+          <p className="eyebrow">
+            {t("为你推荐")} · {t("{0} 首", recommended.length)}
+          </p>
+          <h1>{name}</h1>
+          <p className="hero-copy">{description}</p>
           <button
             className="primary-button hero-play"
-            onClick={() =>
-              playTrack(
-                moment.track.id,
-                tracks.map((track) => track.id),
-              )
-            }
             type="button"
+            disabled={!recommended.length}
+            onClick={() => {
+              const trackIds = recommended.map((track) => track.id);
+              playTrack(trackIds[0], trackIds);
+              useNanoStore.setState({ recommendationSession: { name, description, trackIds } });
+            }}
           >
             <Play size={17} fill="currentColor" />
-            {moment.action}
+            {t("播放推荐歌单")}
           </button>
         </div>
       </div>
@@ -539,6 +458,12 @@ function NowPlayingPage() {
         </button>
       </div>
     );
+  const recommendation = state.recommendationSession;
+  const canSaveRecommendation =
+    recommendation &&
+    state.queue.length > 0 &&
+    state.queue.every((id) => recommendation.trackIds.includes(id)) &&
+    recommendation.trackIds.includes(track.id);
   const offset = state.lyricOffsets[track.id] ?? 0;
   const active = activeLyricIndex(parsed.lines, state.progressMs + offset);
   const start = Math.max(0, active - 2);
@@ -565,6 +490,39 @@ function NowPlayingPage() {
             {track.format}
           </p>
           <h1>{track.title}</h1>
+          {canSaveRecommendation && (
+            <div className="recommendation-save">
+              <p>{recommendation.name}</p>
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={Boolean(recommendation.savedPlaylistId)}
+                onClick={() => {
+                  const current = useNanoStore.getState();
+                  if (current.recommendationSession?.savedPlaylistId) return;
+                  const existing = new Set(current.tracks.map((item) => item.id));
+                  const trackIds = recommendation.trackIds.filter((id) => existing.has(id));
+                  if (!trackIds.length) return;
+                  const id = crypto.randomUUID();
+                  useNanoStore.setState({
+                    playlists: [
+                      ...current.playlists,
+                      {
+                        id,
+                        name: recommendation.name,
+                        description: recommendation.description,
+                        trackIds,
+                      },
+                    ],
+                    recommendationSession: { ...recommendation, savedPlaylistId: id },
+                    notice: t("已保存推荐歌单"),
+                  });
+                }}
+              >
+                {recommendation.savedPlaylistId ? t("已保存") : t("保存歌单")}
+              </button>
+            </div>
+          )}
           <h2>
             {track.artist} · {track.album}
           </h2>
@@ -993,6 +951,7 @@ function PlaylistPage() {
         <div>
           <p className="eyebrow">{t("歌单 · {0} 首", items.length)}</p>
           <h1>{playlist.name}</h1>
+          {playlist.description && <p>{playlist.description}</p>}
           <p>{formatDuration(items.reduce((sum, track) => sum + track.durationMs, 0))}</p>
           <div className="inline-actions">
             <button
@@ -1180,6 +1139,7 @@ function NameDialog({
 }
 
 function SettingsPage() {
+  const [recommendationsEnabled, setRecommendationsEnabled] = useState(onlineEnabled);
   const lyricFontSize = useNanoStore((state) => state.lyricFontSize);
   const setLyricFontSize = useNanoStore((state) => state.setLyricFontSize);
   const language = useNanoStore((state) => state.language);
@@ -1434,8 +1394,38 @@ function SettingsPage() {
             )}
           </article>
         </section>
+        <section className="settings-group" aria-labelledby="settings-recommendations">
+          <h2 id="settings-recommendations">{t("为你推荐")}</h2>
+          <article>
+            <span className="settings-icon">
+              <Headphones />
+            </span>
+            <div>
+              <strong>{t("开启推荐")}</strong>
+              <p>
+                {t(
+                  "将部分歌名和艺术家发送给 Cloudflare AI，从本地资料库推荐较少播放的歌曲。不发送音频或路径；后台生成，下次启动更新。",
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              className={`switch ${recommendationsEnabled ? "on" : ""}`}
+              role="switch"
+              aria-label={t("开启推荐")}
+              aria-checked={recommendationsEnabled}
+              onClick={() => {
+                toggleOnline();
+                setRecommendationsEnabled(onlineEnabled());
+              }}
+            >
+              <span />
+            </button>
+          </article>
+        </section>
         <section className="settings-group" aria-labelledby="settings-group-2">
           <h2 id="settings-group-2">{t("歌词")}</h2>
+
           <article className="online-lyrics-setting">
             <span className="settings-icon">
               <Settings2 />

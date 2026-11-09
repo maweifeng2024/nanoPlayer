@@ -149,3 +149,7 @@ iPhone 模拟器 XCUITest 已通过：iPhone 18 Pro / iOS 27；结果 `artifacts
 - 最终 iOS 0.1.26 / build 10，arm64 开发签名 IPA；Android 0.1.26 / versionCode 1027，arm64-v8a、APK v2 调试签名，未安装 Android。产物清单、SHA-256、签名、真机和模拟器日志见 `artifacts/verification/v0.1.26/`；打包 manifest 中 installed=false 是打包时状态，安装结果单独保存。
 
 原有真实云端下载/失权恢复、全格式音频输出、长时后台/锁屏与无障碍边界继续保留。桌面/官网未发布；用户在 main 执行 `pnpm release 0.1.26` 进行发布。
+
+## 2026-11-09 首页推荐（0.1.32，本地开发）
+
+实现：共享推荐队列、候选轮换和下次启动缓存采用；iOS/Android 首页卡片几何统一。验证结果与尚未完成的云端/原生安装包、设备验收见 [本轮验收](../../development/RECOMMENDATIONS_VERIFICATION.md)。此前首页描述为旧版证据，当前设计以 [推荐设计](../../architecture/RECOMMENDATIONS.md) 为准。

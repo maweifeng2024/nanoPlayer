@@ -36,7 +36,7 @@ test("filters tracks globally and exposes privacy settings", async ({ page }) =>
   await expect(page.getByRole("row")).toHaveCount(2);
   await page.getByRole("button", { name: "设置" }).click();
   await expect(page.getByText("源文件只读")).toBeVisible();
-  await expect(page.getByRole("switch")).toHaveAttribute("aria-checked", "false");
+  await expect(page.getByRole("switch", { name: "在线歌词", exact: true })).toHaveAttribute("aria-checked", "false");
   await expect(page.getByRole("button", { name: "立即备份" })).toBeVisible();
   await page.getByRole("button", { name: "立即备份" }).click();
   await expect(page.getByRole("status")).toContainText("仅在桌面版可用");

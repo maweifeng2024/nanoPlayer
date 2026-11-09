@@ -32,6 +32,7 @@ for (const client of clients) {
     test("shared controls, home collection limits, alignment and horizontal access", async ({
       page,
     }) => {
+      if (client.name === "desktop") await page.addInitScript(() => Object.defineProperty(navigator, "maxTouchPoints", { get: () => 0 }));
       await page.goto("/");
       await page.evaluate(async () => {
         const { useNanoStore } = await import("/src/store.ts");

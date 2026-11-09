@@ -4,6 +4,8 @@ Start here instead of relying on dated files discovered by search.
 
 ## Current documents
 
+- [首页推荐设计](architecture/RECOMMENDATIONS.md)、[本轮验收](development/RECOMMENDATIONS_VERIFICATION.md)、[Worker 部署](../services/recommendations/README.md)。
+
 - [本轮 UI 测试清单](development/UI_REVIEW_2026-11-02.md)
 
 - [设计系统与源码评审](../designs/nanoplayer-design-system/project/README.md)：当前 token 快照、问题优先级、组件契约与后续验收清单；建议尚未落地。

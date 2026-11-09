@@ -443,5 +443,19 @@
   "外观与操作": "Appearance & controls",
   "资料与存储": "Library & storage",
   "应用更新": "App updates",
-  "调整歌词阅读字号，自动保存。": "Adjust the lyric reading size. Changes are saved automatically."
+  "调整歌词阅读字号，自动保存。": "Adjust the lyric reading size. Changes are saved automatically.",
+  "为你推荐": "For You",
+  "发现收藏里的新声音": "Discover your collection",
+  "从最近听过的音乐出发，发现收藏里较少播放的歌曲。": "Discover less-played songs in your collection based on recent listening.",
+  "开启在线推荐后，将向 Cloudflare AI 发送部分歌名和艺术家，不发送音频或文件路径。后台生成，下次启动更新。": "Online recommendations send a selection of song titles and artists to Cloudflare AI, never audio or file paths. Results appear on your next launch.",
+  "关闭在线推荐": "Turn off online recommendations",
+  "开启在线推荐": "Enable online recommendations",
+  "开启推荐": "Enable recommendations",
+  "将部分歌名和艺术家发送给 Cloudflare AI，从本地资料库推荐较少播放的歌曲。不发送音频或路径；后台生成，下次启动更新。": "Send selected song titles and artists to Cloudflare AI to discover less-played songs in your local library. No audio or paths are sent. Generated in the background for your next launch.",
+  "收藏新发现": "Discover your music",
+  "从最近听过的旋律出发，发现收藏里较少播放的好歌。": "Follow familiar melodies to discover the less-played gems in your collection.",
+  "播放推荐歌单": "Play recommendations",
+  "已保存推荐歌单": "Recommendation playlist saved",
+  "保存歌单": "Save playlist",
+  "已保存": "Saved"
 }

@@ -39,7 +39,7 @@ for (const width of [390, 600, 1024]) {
       const hero = await page.locator(".hero-art").boundingBox();
       const title = await page.locator(".hero h1").boundingBox();
       expect(hero!.x + hero!.width).toBeLessThan(title!.x);
-      await expect(page.locator(".hero .hero-copy")).toBeHidden();
+      await expect(page.locator(".hero .hero-copy")).toBeVisible();
       const cards = await page
         .locator(".home-track-list li button")
         .evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().width));

@@ -84,6 +84,8 @@ jobs:
       - run: node scripts/release/check-version.mjs
       - uses: tauri-apps/tauri-action@v0
         env:
+          VITE_RECOMMENDATIONS_URL: ${{ secrets.VITE_RECOMMENDATIONS_URL }}
+          VITE_RECOMMENDATIONS_TOKEN: ${{ secrets.VITE_RECOMMENDATIONS_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}

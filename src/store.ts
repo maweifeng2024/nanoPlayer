@@ -42,6 +42,7 @@ interface NanoState {
   currentTrackId?: number;
   selectedTrackId?: number;
   queue: number[];
+  recommendationSession?: { name: string; description: string; trackIds: number[]; savedPlaylistId?: string };
   playing: boolean;
   queueEnded: boolean;
   progressMs: number;

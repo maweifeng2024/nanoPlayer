@@ -92,7 +92,8 @@ test.describe("Android touch interactions", () => {
       await expect(list.locator("li")).toHaveCount(12);
       const card = await list.locator("li").first().boundingBox();
       const artwork = await list.locator(".recommendation-art").first().boundingBox();
-      expect(card!.height).toBeGreaterThanOrEqual(72);
+      expect(card!.height).toBeGreaterThanOrEqual(64);
+      expect(card!.height).toBeLessThanOrEqual(65);
       expect(Math.abs(artwork!.x - card!.x)).toBeLessThanOrEqual(1);
       expect(
         await list
@@ -176,7 +177,7 @@ test.describe("Android touch interactions", () => {
 
     await page.locator(".menu-button").click();
     await page.locator(".sidebar").getByRole("button", { name: "设置", exact: true }).click();
-    const switchBox = await page.getByRole("switch").boundingBox();
+    const switchBox = await page.getByRole("switch", { name: "在线歌词", exact: true }).boundingBox();
     expect(switchBox?.height).toBeLessThanOrEqual(30);
     const widths = await page
       .locator(".appearance-setting .segmented button")

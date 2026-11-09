@@ -1,3 +1,4 @@
+import { RecommendationLifecycle } from "./recommendations/RecommendationLifecycle";
 import { visiblePlaylists } from "./library/folderFilter";
 import { shortcut } from "./platform/shortcuts";
 import { chooseLibraryFolders } from "./library/importFolders";
@@ -359,6 +360,8 @@ export default function App() {
 
   return (
     <div className={`app-shell ${drawer ? "has-drawer" : ""}`} data-page={page}>
+      {libraryLoaded && <RecommendationLifecycle />}
+      <RecommendationLifecycle />
       <AmbientBackground />
       {!isMobile() && <UpdateNotifier />}
       <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label={t("主导航")}>

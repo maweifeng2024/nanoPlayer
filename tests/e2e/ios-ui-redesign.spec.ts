@@ -17,6 +17,7 @@ for (const [client, widths] of Object.entries({
   test.describe(client, () => {
     test.use({ userAgent: agents[client as keyof typeof agents], hasTouch: client !== "desktop" });
     test("home cover cap, frameless lists and responsive menus", async ({ page }) => {
+      if (client === "desktop") await page.addInitScript(() => Object.defineProperty(navigator, "maxTouchPoints", { get: () => 0 }));
       await page.goto("/");
       await page.evaluate(async () => {
         const { useNanoStore } = await import("/src/store.ts");
@@ -56,11 +57,11 @@ for (const [client, widths] of Object.entries({
             const { useNanoStore } = await import("/src/store.ts");
             useNanoStore.getState().setTheme(theme);
           }, theme);
-          const hero = await page.locator(".hero-art").boundingBox();
+          const maxCover = await page.locator(".home-page").evaluate((el) => Math.max(120, parseFloat(getComputedStyle(el).getPropertyValue("--home-hero-size")) * 2 / 3));
           const covers = await page.locator(".home-album-art").all();
           for (const cover of covers)
             expect((await cover.boundingBox())!.width).toBeLessThanOrEqual(
-              (hero!.width * 2) / 3 + 1,
+              maxCover + 1,
             );
           await expect(page.locator(".home-track-list").first()).toHaveCSS(
             "border-top-width",

@@ -1,64 +1,56 @@
-/* Approved iOS review: same brand, touch-first browsing and stable artwork wash. */
-[data-platform="ios"] .home-page { --home-hero-size: 192px; }
-[data-platform="ios"][data-device="phone"] .home-page { --home-hero-size: 132px; }
-[data-platform="ios"] .home-page .hero {
-  grid-template-columns: var(--home-hero-size) minmax(0, 1fr);
-  gap: var(--space-4);
-  padding: var(--space-4) 0 var(--space-6);
-}
-[data-platform="ios"] .home-page .hero-art { width: var(--home-hero-size); height: var(--home-hero-size); mask: none; }
-[data-platform="ios"] .home-album-grid {
-  display: grid;
-  grid-template-columns: repeat(4, calc(var(--home-hero-size) * 2 / 3));
-  gap: var(--space-4);
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  padding-bottom: var(--space-3);
-}
-[data-platform="ios"] .home-album-card { scroll-snap-align: start; }
-[data-platform="ios"] .home-track-list-body ol { display: block; overflow: visible; }
-[data-platform="ios"] .home-track-list-body li { background: transparent; border-radius: 0; }
-[data-platform="ios"] .home-track-list-body li + li { border-top: 1px solid var(--line); }
-[data-platform="ios"] .home-track-list li button { min-height: 74px; }
-[data-platform="ios"] .home-track-heading-icon { display: none; }
-[data-platform="ios"] .home-track-list-heading { grid-template-columns: minmax(0, 1fr) auto; }
-[data-platform="ios"] .home-track-heading-copy small { display: none; }
-[data-platform="ios"] .home-track-heading-copy strong { font-size: var(--font-section-title); }
-[data-platform="ios"] .home-track-list li button .recommendation-copy strong { font-size: var(--font-body); }
-[data-platform="ios"] .home-track-list li button .recommendation-copy small { font-size: var(--font-caption); }
-[data-platform="ios"] .home-artwork-tint { left: calc(-1 * var(--space-4)); right: calc(-1 * var(--space-4)); }
+/* iOS native shell; homepage geometry is shared with Android. */
 [data-platform="ios"][data-device="phone"] .app-shell:not([data-page="now-playing"]) > .player-bar {
   margin: var(--space-1) var(--space-3);
   border: 0;
   border-radius: var(--radius-lg);
   background: var(--panel-raised);
 }
-[data-platform="ios"][data-device="phone"] .phone-navigation { border: 0; }
-[data-platform="ios"][data-device="phone"] .phone-navigation button { font-size: var(--font-micro); }
-[data-platform="ios"][data-device="phone"] .phone-library-tabs { flex-wrap: nowrap; overflow-x: auto; }
-[data-platform="ios"][data-device="phone"] .topbar { padding-inline: var(--space-4); }
-[data-platform="ios"] .track-menu-sheet button { min-height: 52px; }
-[data-platform="ios"] .track-menu-sheet .phone-rating button { min-height: 52px; }
-@media (max-width: 599px) {
-  [data-platform="ios"][data-device="pad"] .home-page { --home-hero-size: 132px; }
-  [data-platform="ios"] .home-page .home-track-columns { grid-template-columns: minmax(0, 1fr); }
+[data-platform="ios"][data-device="phone"] .phone-navigation {
+  border: 0;
 }
-@media (max-height: 500px) {
-  [data-platform="ios"][data-device="phone"] .home-page { --home-hero-size: 108px; }
+[data-platform="ios"][data-device="phone"] .phone-navigation button {
+  font-size: var(--font-micro);
 }
-[data-platform="ios"] .home-track-list-body li { height: auto; min-height: 74px; box-shadow: none; }
-[data-platform="ios"] .home-track-list .recommendation-art { width: 44px; height: 44px; flex: 0 0 44px; }
-[data-platform="ios"][data-device="phone"] .phone-settings { display: grid; flex-shrink: 0; }
-[data-platform="ios"][data-device="phone"] .search-box { flex: 1; width: 0; }
+[data-platform="ios"][data-device="phone"] .phone-library-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+[data-platform="ios"][data-device="phone"] .topbar {
+  padding-inline: var(--space-4);
+}
+[data-platform="ios"] .track-menu-sheet button {
+  min-height: 52px;
+}
+[data-platform="ios"] .track-menu-sheet .phone-rating button {
+  min-height: 52px;
+}
+
+[data-platform="ios"][data-device="phone"] .phone-settings {
+  display: grid;
+  flex-shrink: 0;
+}
+[data-platform="ios"][data-device="phone"] .search-box {
+  flex: 1;
+  width: 0;
+}
 [data-platform="ios"][data-device="phone"] .app-shell .player-drawer {
   top: auto;
   height: min(66dvh, 560px);
-  max-height: calc(100dvh - var(--player-height) - var(--navigation-height) - env(safe-area-inset-top));
+  max-height: calc(
+    100dvh - var(--player-height) - var(--navigation-height) - env(safe-area-inset-top)
+  );
   border: 1px solid var(--line);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -16px 48px #0003;
 }
-[data-platform="ios"][data-device="phone"] .player-drawer > header { flex-shrink: 0; }
-[data-platform="ios"][data-device="phone"] .player-drawer .queue-list { flex: 1; min-height: 0; height: auto; overscroll-behavior: contain; }
+[data-platform="ios"][data-device="phone"] .player-drawer > header {
+  flex-shrink: 0;
+}
+[data-platform="ios"][data-device="phone"] .player-drawer .queue-list {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  overscroll-behavior: contain;
+}

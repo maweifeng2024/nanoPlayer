@@ -142,3 +142,7 @@ Native tests live in `src-tauri/plugins/nanoplayer-mobile/android/src/test/` and
 ## 2026-11-02 local UI correction build
 
 0.1.31 / versionCode 1032 arm64 debug APK built and verified locally. Home limits are 12 recent albums and 12 tracks per recommendation, mobile recommendation backgrounds are transparent, and add-to-playlist menus follow the same library visibility as navigation. Package metadata, ZIP and v2 debug signature verified; SHA256 `88b9b0ba0261160e1053bb469abbc55ef42ba7de033336c345059a1ada33bfd2`. Artifact and test evidence: [current verification](../../development/UI_REVIEW_2026-11-02.md). Android installation/device UI acceptance for this build remains unexecuted; no public release claimed.
+
+## 2026-11-09 首页推荐（0.1.32，本地开发）
+
+实现：共享推荐队列、候选轮换和下次启动缓存采用；iOS/Android 首页卡片几何统一。验证结果与尚未完成的云端/原生安装包、设备验收见 [本轮验收](../../development/RECOMMENDATIONS_VERIFICATION.md)。此前首页描述为旧版证据，当前设计以 [推荐设计](../../architecture/RECOMMENDATIONS.md) 为准。

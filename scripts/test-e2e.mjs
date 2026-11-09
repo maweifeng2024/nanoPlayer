@@ -1,12 +1,14 @@
 import { spawn } from 'node:child_process';
 import { createServer as createHttpServer } from 'node:http';
 import { createServer as createViteServer } from 'vite';
+import { createRequire } from 'node:module';
 
 const vite = await createViteServer({
   server: { middlewareMode: true },
 });
 const server = createHttpServer(vite.middlewares);
-const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+const require = createRequire(import.meta.url);
+const playwrightCli = require.resolve('@playwright/test/cli');
 
 try {
   await new Promise((resolve, reject) => {
@@ -20,7 +22,7 @@ try {
   console.log(`Running E2E tests against ${baseURL}.`);
 
   const exitCode = await new Promise((resolve, reject) => {
-    const child = spawn(pnpm, ['exec', 'playwright', 'test'], {
+    const child = spawn(process.execPath, [playwrightCli, 'test', ...process.argv.slice(2)], {
       stdio: 'inherit',
       env: { ...process.env, NANOPLAYER_E2E_BASE_URL: baseURL },
     });

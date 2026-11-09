@@ -117,3 +117,7 @@ Only paths returned by the native folder picker are passed to the Rust scanner. 
 - Saved ratings now use visibly filled gold stars; rating changes are saved immediately to native state. Unchanged persisted fields skip serialization during navigation.
 - Local shared checks, Rust formatting/Clippy/tests, 10k FTS gate, release-script tests and website build passed. Browser screenshot confirms ratings; desktop installers/publication remain user-run with `pnpm release 0.1.19` from `main`.
 - [Detailed verification and client boundaries](../../archive/2026-10-14-ratings-scan-startup-review.md).
+
+## 2026-11-09 首页推荐（0.1.32，本地开发）
+
+实现：共享推荐队列、候选轮换和下次启动缓存采用；iOS/Android 首页卡片几何统一。验证结果与尚未完成的云端/原生安装包、设备验收见 [本轮验收](../../development/RECOMMENDATIONS_VERIFICATION.md)。此前首页描述为旧版证据，当前设计以 [推荐设计](../../architecture/RECOMMENDATIONS.md) 为准。

@@ -140,3 +140,7 @@ Verification/remaining native acceptance is recorded in `../../artifacts/verific
 ## 2026-11-02 homepage and playlist corrections
 
 All clients cap recent album cards, most-played and highly-rated tracks at 12; View all remains unbounded. Mobile recommendation rows have transparent backgrounds, superseding the historical Android 16% fill. Track and batch playlist menus use the same selected-library visibility as navigation, then deduplicate IDs and distinguish independent same-name targets. The latest component contracts are in `../../designs/nanoplayer-design-system/project/RULES.md`.
+
+## 2026-11-09 homepage recommendation card
+
+The top-left homepage hero now represents one recommendation playlist with its name, one-sentence description and play action, above recent albums. It does not expose a new song list. iOS shares Android homepage geometry; touch collections use 64px rows, 44px artwork and a smaller heading gap. Recommendations default on in Settings; saving the playing recommendation is available on the Now Playing page. See [current recommendation design](../architecture/RECOMMENDATIONS.md) and [verification boundaries](../development/RECOMMENDATIONS_VERIFICATION.md); the preceding dated visual evidence does not qualify this revision.

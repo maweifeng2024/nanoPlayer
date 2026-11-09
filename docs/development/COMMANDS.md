@@ -212,3 +212,9 @@ git push origin main
 ### 本机 E2E 浏览器选择
 
 默认 `pnpm test:e2e` 使用 Playwright 配套 Chromium，首次运行需 `pnpm exec playwright install chromium`。本机已安装 Chrome 时，可使用 `NANOPLAYER_E2E_CHANNEL=chrome pnpm test:e2e`；同一变量也会由发布命令继承：`NANOPLAYER_E2E_CHANNEL=chrome pnpm release 0.1.31`（版本以本次准备版本为准）。这只选择浏览器，不跳过任何门禁，CI未设置变量时保持默认。Mac沙箱启动异常仍按回归清单先做最小预检。
+
+## 首页推荐服务（独立 Cloudflare Worker）
+
+- `pnpm recommendations:test`：本地 Worker 认证、限流、请求和输出边界测试；已纳入 `pnpm check`。
+- `pnpm recommendations:deploy:check`：使用官网锁定 Wrangler 本地 dry-run，不部署；先安装 `website` 依赖。
+- `pnpm recommendations:deploy`：部署独立推荐 Worker；本轮按用户安排由另一台计算机执行。令牌、模型、Origin 与客户端构建配置见 [部署说明](../../services/recommendations/README.md)。
