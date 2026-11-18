@@ -11,7 +11,7 @@ import {
   LIMIT,
   readCache,
   recentTracks,
-  shuffled,
+  rankedCandidates,
   validatedIds,
   boundedCopy,
 } from "./recommendations";
@@ -54,7 +54,7 @@ export function useRecommendations(
     window.addEventListener("recommendations-changed", listener);
     return () => window.removeEventListener("recommendations-changed", listener);
   }, []);
-  const eligible = eligibleTracks(tracks, stats);
+  const eligible = rankedCandidates(tracks, stats);
   const allowed = new Set(eligible.map((track) => track.id));
   const ids = validatedIds(sessionIds, allowed);
   const byId = new Map(eligible.map((track) => [track.id, track]));
@@ -91,7 +91,7 @@ export function RecommendationLifecycle() {
         delete cache.pendingTitle;
         delete cache.pendingDescription;
         if (!cache.active.length)
-          cache.active = shuffled(eligibleTracks(library, state))
+          cache.active = rankedCandidates(library, state)
             .slice(0, LIMIT)
             .map((track) => track.id);
         sessionIds = cache.active;
@@ -116,7 +116,7 @@ export function RecommendationLifecycle() {
         let title = "";
         let description = "";
         if (!request.recent.length) {
-          ids = shuffled(eligibleTracks(library, state))
+          ids = rankedCandidates(library, state)
             .slice(0, LIMIT)
             .map((track) => track.id);
         } else {

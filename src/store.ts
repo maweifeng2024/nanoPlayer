@@ -1,3 +1,4 @@
+import { toggleAndroidQueue } from "./platform/android";
 import { changedStorage } from "./state/changedStorage";
 import { type LibraryScope, trackIsSelected } from "./library/folderFilter";
 import { t, setActiveLanguage } from "./i18n";
@@ -471,6 +472,7 @@ export const useNanoStore = create<NanoState>()(
         }),
       togglePlay: () => {
         const state = get();
+        if (state.queue.length && toggleAndroidQueue()) return;
         if (state.queueEnded && state.queue.length) {
           const order = state.orderMode === "shuffle" ? shuffleTracks(state.queue) : state.queue;
           state.playTrack(order[0], state.queue);

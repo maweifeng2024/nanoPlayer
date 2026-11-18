@@ -3,7 +3,11 @@ import type { Track } from "../domain";
 export const LIMIT = 12;
 export const CACHE_KEY = "nanoplayer.recommendations.v1";
 export const CONSENT_KEY = "nanoplayer.recommendations.consent";
-export type Stats = { playCounts: Record<number, number>; lastPlayedAt: Record<number, string> };
+export type Stats = {
+  ratings?: Record<number, number>;
+  playCounts: Record<number, number>;
+  lastPlayedAt: Record<number, string>;
+};
 export type RecommendationCache = {
   version: 1;
   active: number[];
@@ -47,13 +51,33 @@ export function eligibleTracks(tracks: Track[], stats: Stats) {
   );
 }
 
-export function shuffled<T>(items: T[], random = Math.random): T[] {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
+export function rankedCandidates(tracks: Track[], stats: Stats, sentIds: number[] = []) {
+  const recent = new Set(recentTracks(tracks, stats).map((track) => track.id));
+  const affinity = new Map<string, number>();
+  const artistKey = (track: Track) => track.artist.trim().toLowerCase();
+  const rating = (track: Track) => stats.ratings?.[track.id] || 0;
+  const plays = (track: Track) => stats.playCounts[track.id] ?? 0;
+  for (const track of tracks) {
+    const artist = artistKey(track);
+    if (!artist) continue;
+    const preference = (rating(track) ? rating(track) - 3 : 0) * 2;
+    const familiarity = Math.min(4, Math.log2(1 + plays(track)));
+    const signal = preference + familiarity + (recent.has(track.id) ? 3 : 0);
+    affinity.set(artist, Math.max(affinity.get(artist) ?? 0, signal));
   }
-  return result;
+  const sent = new Set(sentIds);
+  return eligibleTracks(tracks, stats)
+    .map((track) => ({
+      track,
+      score: (rating(track) ? rating(track) - 3 : 0) * 5 +
+        (affinity.get(artistKey(track)) ?? 0) -
+        Math.min(4, Math.log2(1 + plays(track))),
+    }))
+    .sort((a, b) =>
+      Number(sent.has(a.track.id)) - Number(sent.has(b.track.id)) ||
+      b.score - a.score || a.track.id - b.track.id,
+    )
+    .map(({ track }) => track);
 }
 
 export function intervalMs(tracks: Track[], stats: Stats, now: number) {
@@ -77,12 +101,10 @@ export function validatedIds(value: unknown, allowed: Set<number>) {
 // artwork, lyrics or stable client identifier leave the device.
 export function buildRequest(tracks: Track[], stats: Stats, sentIds: number[] = []) {
   const recent = recentTracks(tracks, stats);
-  const artists = new Set(recent.map((track) => track.artist));
-  const eligible = shuffled(eligibleTracks(tracks, stats));
+  const ranked = rankedCandidates(tracks, stats, sentIds);
   const sent = new Set(sentIds);
-  const fresh = eligible.filter((track) => !sent.has(track.id));
-  const pool = fresh.length ? fresh : eligible;
-  pool.sort((a, b) => Number(artists.has(b.artist)) - Number(artists.has(a.artist)));
+  const fresh = ranked.filter((track) => !sent.has(track.id));
+  const pool = fresh.length ? fresh : ranked;
   const compact = (track: Track) => ({
     id: track.id,
     title: track.title.slice(0, 100),

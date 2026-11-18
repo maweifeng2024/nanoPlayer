@@ -11,6 +11,7 @@ export const androidCommand = <T = unknown>(action: string, args: Record<string,
       "setQueue",
       "updateQueue",
       "play",
+      "togglePlay",
       "pause",
       "seek",
       "next",
@@ -29,6 +30,14 @@ let transportSender: ((action: string, args?: Record<string, unknown>) => void) 
 /** Route transport through the same queue as mode changes and polling. */
 export function sendAndroidPlayback(action: string, args: Record<string, unknown> = {}) {
   transportSender?.(action, args);
+}
+
+let androidQueueToggle: (() => void) | undefined;
+
+export function toggleAndroidQueue() {
+  if (!androidQueueToggle) return false;
+  androidQueueToggle();
+  return true;
 }
 
 interface NativePlayback {
@@ -135,6 +144,8 @@ export function connectAndroidPlayback(
         pending--;
       });
   };
+  const toggle = () => send("togglePlay");
+  if (command === androidCommand) androidQueueToggle = toggle;
   transportSender = send;
   send("snapshot");
   const initial = useNanoStore.getState();
@@ -191,6 +202,7 @@ export function connectAndroidPlayback(
   }, 500);
   return () => {
     disposed = true;
+    if (androidQueueToggle === toggle) androidQueueToggle = undefined;
     if (transportSender === send) transportSender = undefined;
     unsubscribe();
     window.clearInterval(timer);

@@ -1,3 +1,4 @@
+import { placeRowMenu } from "../placeRowMenu";
 import { playlistTargets } from "./playlistTargets";
 import { visiblePlaylists, trackIsSelected } from "./folderFilter";
 import { useModalBehavior } from "../useModalBehavior";
@@ -36,12 +37,14 @@ export function TrackTable({
   tracks,
   playlistId,
   popular = false,
+  recentlyPlayed = false,
   rated = false,
   toolbar,
 }: {
   tracks: Track[];
   playlistId?: string;
   popular?: boolean;
+  recentlyPlayed?: boolean;
   rated?: boolean;
   toolbar?: React.ReactNode;
 }) {
@@ -78,7 +81,7 @@ export function TrackTable({
   const [confirmRemoval, setConfirmRemoval] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
-  const [contextMenu, setContextMenu] = useState<{ track: Track; x: number; y: number }>();
+  const [contextMenu, setContextMenu] = useState<{ track: Track; x: number; y: number; anchor?: HTMLElement }>();
   const [draggingTrackId, setDraggingTrackId] = useState<number>();
   const [dragTarget, setDragTarget] = useState<{
     trackId: number;
@@ -157,7 +160,9 @@ export function TrackTable({
       const width = viewport?.width ?? window.innerWidth;
       const height = viewport?.height ?? window.innerHeight;
       menu.style.maxHeight = `${Math.max(44, height - 16)}px`;
-      if (bottomSheet) {
+      if (contextMenu.anchor) {
+        placeRowMenu(menu, contextMenu.anchor.getBoundingClientRect());
+      } else if (bottomSheet) {
         menu.style.left = `${left}px`;
         menu.style.width = `${width}px`;
         menu.style.top = `${top + height - menu.offsetHeight}px`;
@@ -176,7 +181,7 @@ export function TrackTable({
     const scroller = tableRef.current?.closest<HTMLElement>(".page-scroll");
     const previousInert = shell?.inert;
     const previousOverflow = scroller?.style.overflow;
-    if (bottomSheet) {
+    if (bottomSheet && !contextMenu.anchor) {
       if (shell) shell.inert = true;
       if (scroller) scroller.style.overflow = "hidden";
     }
@@ -185,7 +190,7 @@ export function TrackTable({
       window.removeEventListener("resize", place);
       viewport?.removeEventListener("resize", place);
       viewport?.removeEventListener("scroll", place);
-      if (bottomSheet) {
+      if (bottomSheet && !contextMenu.anchor) {
         if (shell) shell.inert = previousInert ?? false;
         if (scroller) scroller.style.overflow = previousOverflow ?? "";
       }
@@ -319,7 +324,7 @@ export function TrackTable({
 
   return (
     <>
-      <div className="table-toolbar" onKeyDown={selectionKeys}>
+      <div className="table-toolbar" data-selecting={selecting || undefined} onKeyDown={selectionKeys}>
         <button
           className="text-button"
           onClick={() => {
@@ -376,15 +381,13 @@ export function TrackTable({
           <span>
             {playlistId && !phone
               ? t("拖动左侧手柄自由排序 · {0} 首", tracks.length)
-              : tracks.length > 200
-                ? t("{0} 首", tracks.length)
-                : t("{0} 首", tracks.length)}
+              : t("{0} 首", tracks.length)}
           </span>
         )}
         {toolbar}
         {!playlistId && (
           <label className="track-sort">
-            {t("排序")}
+            <span>{t("排序")}</span>
             <select
               aria-label={t("排序")}
               value={sort?.key ?? ""}
@@ -402,7 +405,7 @@ export function TrackTable({
                   ["rating", "评分"],
                   ["durationMs", "时长"],
                   ["playCount", "播放次数"],
-                  ["lastPlayedAt", "最后一次播放时间"],
+                  ["lastPlayedAt", "最近播放"],
                 ] as const
               ).map(([key, label]) => (
                 <option key={key} value={key}>
@@ -429,8 +432,8 @@ export function TrackTable({
           <span>
             {toolbar
               ? t("调整筛选条件或添加音乐文件夹。")
-              : popular
-                ? t("完整播放一首歌后，它会出现在这里。")
+              : popular || recentlyPlayed
+                ? t("播放达到计数条件后，歌曲会出现在这里。")
                 : t("从“歌曲”页面的更多菜单添加。")}
           </span>
         </div>
@@ -735,11 +738,11 @@ export function TrackTable({
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => {
                     event.stopPropagation();
-                    const bounds = event.currentTarget.getBoundingClientRect();
+                    const anchor = event.currentTarget;
                     setContextMenu((current) =>
                       current?.track.id === track.id
                         ? undefined
-                        : { track, x: bounds.right - 248, y: bounds.bottom },
+                        : { track, x: 0, y: 0, anchor },
                     );
                   }}
                 >
@@ -774,24 +777,24 @@ export function TrackTable({
       {contextMenu
         ? createPortal(
             <>
-              {bottomSheet ? (
+              {bottomSheet && !contextMenu.anchor ? (
                 <div
                   className="track-menu-backdrop"
                   aria-hidden="true"
-                  onPointerDown={() => setContextMenu(undefined)}
+                  onClick={() => setContextMenu(undefined)}
                 />
               ) : null}
               <div
                 ref={(node) => {
                   contextRef.current = node;
                 }}
-                className={`context-menu menu-popover track-context-menu${bottomSheet ? " track-menu-sheet" : ""}`}
+                className={`context-menu menu-popover track-context-menu${bottomSheet && !contextMenu.anchor ? " track-menu-sheet" : ""}`}
                 role="menu"
                 aria-label={t("{0} 更多操作", contextMenu.track.title)}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={() => setContextMenu(undefined)}
               >
-                {bottomSheet ? (
+                {bottomSheet && !contextMenu.anchor ? (
                   <div className="track-menu-heading">
                     <Artwork
                       track={contextMenu.track}

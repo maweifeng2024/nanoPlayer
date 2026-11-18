@@ -150,6 +150,12 @@ class NanoPlayerPlugin(private val activity: Activity) : Plugin(activity) {
                                 .setAction("app.nanoplayer.SLEEP_TIMER").putExtra("minutes", args.minutes)
                                 .putExtra("finishTrack", args.finishTrack))
                         }
+                        "togglePlay" -> {
+                            if (player.mediaItemCount > 0) {
+                                if (player.playWhenReady && player.playbackState != Player.STATE_ENDED) player.pause()
+                                else resumeQueue(player)
+                            }
+                        }
                         "play" -> resumeQueue(player)
                         "pause" -> player.pause()
                         "seek" -> player.seekTo(args.positionMs.coerceAtLeast(0))

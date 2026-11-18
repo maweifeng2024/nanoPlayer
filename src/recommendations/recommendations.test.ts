@@ -22,6 +22,19 @@ describe("local discovery", () => {
     expect(ids).toContain(4);
     expect(ids).toContain(5);
   });
+  it("ranks high ratings and artists with frequent and recent listening without sending those signals", () => {
+    const library = tracks.slice(0, 6).map((track, i) => ({
+      ...track,
+      artist: ["recent", "frequent", "recent", "frequent", "other", "other"][i],
+    }));
+    const request = buildRequest(library, {
+      ratings: { 5: 5, 6: 1 },
+      playCounts: { 1: 5, 2: 30 },
+      lastPlayedAt: { 1: "2026-11-09" },
+    });
+    expect(request.candidates.map(({ id }) => id)).toEqual([5, 3, 4, 6]);
+    expect(Object.keys(request.candidates[0]).sort()).toEqual(["artist", "id", "title"]);
+  });
   it("rotates candidates without repeats until the available pool is exhausted", () => {
     const stats = { lastPlayedAt: { 1: "2026-11-09" }, playCounts: { 1: 5 } };
     let sent: number[] = [];
@@ -36,7 +49,7 @@ describe("local discovery", () => {
     expect(sent).toHaveLength(999);
     expect(buildRequest(tracks, stats, sent).candidates.length).toBeGreaterThan(0);
   });
-  it("uses weekly random local discovery without history and validates model output", () => {
+  it("uses weekly local discovery without history and validates model output", () => {
     const stats = { lastPlayedAt: {}, playCounts: {} };
     expect(eligibleTracks(tracks, stats)).toHaveLength(1000);
     expect(intervalMs(tracks, stats, Date.now())).toBe(7 * 86400000);

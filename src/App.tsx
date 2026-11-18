@@ -358,10 +358,11 @@ export default function App() {
 
   const addPlaylist = () => setNewPlaylistOpen(true);
 
+  const fullPlayer = drawer === "queue" || page === "now-playing";
+
   return (
-    <div className={`app-shell ${drawer ? "has-drawer" : ""}`} data-page={page}>
+    <div className={`app-shell ${drawer ? "has-drawer" : ""}`} data-page={page} data-full-player={fullPlayer || undefined} data-queue-open={drawer === "queue" || undefined}>
       {libraryLoaded && <RecommendationLifecycle />}
-      <RecommendationLifecycle />
       <AmbientBackground />
       {!isMobile() && <UpdateNotifier />}
       <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label={t("主导航")}>
@@ -449,7 +450,7 @@ export default function App() {
         />
       )}
       <main className="content">
-        <header className="topbar" data-tauri-drag-region onMouseDown={startWindowDrag}>
+        {!fullPlayer && <header className="topbar" data-tauri-drag-region onMouseDown={startWindowDrag}>
           <button
             className="icon-button menu-button"
             onClick={() => setSidebarOpen(true)}
@@ -504,7 +505,7 @@ export default function App() {
             )}
           </label>}
           {isMobile() && <PhoneSettingsButton />}
-        </header>
+        </header>}
         <div className="page-scroll">
           {isMobile() && <PhoneLibraryTabs />}
           {!libraryLoaded ? null : page === "playlists" ? (

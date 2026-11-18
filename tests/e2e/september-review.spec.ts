@@ -38,7 +38,8 @@ for (const width of [390, 600, 1024]) {
       await page.goto("/");
       const hero = await page.locator(".hero-art").boundingBox();
       const title = await page.locator(".hero h1").boundingBox();
-      expect(hero!.x + hero!.width).toBeLessThan(title!.x);
+      if (width < 900) expect(hero!.y + hero!.height).toBeLessThan(title!.y);
+      else expect(hero!.x + hero!.width).toBeLessThan(title!.x);
       await expect(page.locator(".hero .hero-copy")).toBeVisible();
       const cards = await page
         .locator(".home-track-list li button")
@@ -82,7 +83,7 @@ for (const width of [390, 600, 1024]) {
         .first()
         .getByRole("button", { name: /更多操作/ })
         .click();
-      await expect(page.locator(".queue-menu button")).toHaveText(["上移", "下移", "移除"]);
+      await expect(page.locator(".queue-menu button")).toHaveText(["上移", "下移", "添加到“安静的晚上”", "移除"]);
       await page.locator(".queue-menu").getByRole("menuitem", { name: "下移" }).click();
       await page
         .locator(".queue-item")

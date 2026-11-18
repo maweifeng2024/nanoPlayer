@@ -119,6 +119,24 @@ it("keeps queue identity during polling so menus and scroll do not reset", async
   expect(useNanoStore.getState().queue).toBe(queue);
 });
 
+it("resumes a native pause even when the page last saw playback running", async () => {
+  disconnect = connectAndroidPlayback();
+  await flush();
+  expect(useNanoStore.getState().playing).toBe(true);
+  vi.mocked(invoke).mockResolvedValue({ ...snapshot, positionMs: 1234 });
+  useNanoStore.getState().togglePlay();
+  await flush();
+  expect(invoke).toHaveBeenLastCalledWith("android_playback", {
+    payload: { action: "togglePlay" },
+  });
+  expect(useNanoStore.getState()).toMatchObject({
+    queue: [1, 2],
+    currentTrackId: 1,
+    progressMs: 1234,
+    playing: true,
+  });
+});
+
 it("adopts the native shuffle timeline and end-of-queue state", async () => {
   vi.mocked(invoke).mockResolvedValue({
     ...snapshot,
@@ -140,7 +158,8 @@ it("adopts the native shuffle timeline and end-of-queue state", async () => {
   const calls = vi
     .mocked(invoke)
     .mock.calls.map((call) => (call[1] as { payload: Record<string, unknown> }).payload);
-  expect(calls.find((payload) => payload.action === "setQueue")?.queue).toContain('"id":"2"');
+  expect(calls.at(-1)).toEqual({ action: "togglePlay" });
+  expect(calls.some((payload) => payload.action === "setQueue")).toBe(false);
 });
 
 it("an in-flight old snapshot cannot undo immediate shuffle feedback", async () => {

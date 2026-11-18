@@ -144,3 +144,24 @@ All clients cap recent album cards, most-played and highly-rated tracks at 12; V
 ## 2026-11-09 homepage recommendation card
 
 The top-left homepage hero now represents one recommendation playlist with its name, one-sentence description and play action, above recent albums. It does not expose a new song list. iOS shares Android homepage geometry; touch collections use 64px rows, 44px artwork and a smaller heading gap. Recommendations default on in Settings; saving the playing recommendation is available on the Now Playing page. See [current recommendation design](../architecture/RECOMMENDATIONS.md) and [verification boundaries](../development/RECOMMENDATIONS_VERIFICATION.md); the preceding dated visual evidence does not qualify this revision.
+
+
+### 首页封面色过渡
+
+播放曲目有封面时，首页背景跟随封面提取的颜色。新封面解码时保留当前色，取色后以 900 ms 缓出过渡。Android 使用固定渐变位置并保留上次有效颜色，桌面和 iOS 的首页背景在无封面时过渡回中性色。系统启用减少动态效果时立即换色。
+
+### 全页播放界面与更多操作
+
+正在播放与队列占据播放器控件以上的完整内容区，隐藏顶部搜索和主导航。队列关闭后恢复之前的内容，列表滚动与歌曲顺序维持独立。手机播放页可隐藏封面以扩展歌词，较宽 Pad 以两列展示封面与歌词。
+
+队列行的更多菜单与资料库复用歌单目标命名和可见范围。按下触发按钮不会触发外部关闭，随后点击同一按钮负责开关。点击触发的菜单按视口空间在按钮上方或下方打开，超高时内部滚动，保留触发按钮的点击空间。iPhone 长按和上下文操作仍用底部面板。
+
+### 0.1.36 布局定稿
+
+首页推荐卡在桌面及横屏 Pad 用 A 等高布局，手机及竖屏 Pad 用 C 横幅，拼图只用实际加载成功的专辑封面。正在播放背景与首页共用对应客户端的当前曲目封面取色和过渡，收起控制是透明的向下图标。手机正在播放和队列保留下方三个导航入口与播放控制，点击底部导航可退出队列并跳转。
+
+Android 资料库的歌曲行把播放标记留在内容线左侧的小沟槽，封面与页面主内容线对齐。手机的普通筛选和排序同排，窄屏筛选图标仍有无障碍标签，批量操作可分行。队列的歌曲与菜单占各自的显式列，手机隐藏拖动手柄时不占列。验收覆盖文字可见宽度、触发按钮的右边缘和控件是否互相覆盖。
+
+### 0.1.40 桌面侧栏与封面叠放
+
+桌面正在播放保留左侧主导航，内容显示在右侧；窄窗使用紧凑的独立栏位。横屏 Pad 和桌面推荐卡最多 2×2 真实封面。手机及竖屏 Pad 的横幅在两张及以上时叠放正方形封面，按数量计算铺满宽度，点击展开不拉伸封面。

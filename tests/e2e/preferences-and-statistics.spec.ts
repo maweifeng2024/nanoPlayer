@@ -40,7 +40,7 @@ test("most played excludes unplayed tracks and sorts count and last-played time"
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "播放最多", exact: true }).click();
-  await expect(page.getByText("完整播放一首歌后，它会出现在这里。")).toBeVisible();
+  await expect(page.getByText("播放达到计数条件后，歌曲会出现在这里。")).toBeVisible();
   await page.evaluate(async () => {
     const { useNanoStore } = await import("/src/store.ts");
     useNanoStore.setState({
@@ -105,7 +105,7 @@ test("natural end counts once; seeking to the end does not count", async ({ page
   await page.getByLabel("播放进度", { exact: true }).fill("9900");
   await expect(page.getByRole("button", { name: "播放", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "播放最多", exact: true }).click();
-  await expect(page.getByText("完整播放一首歌后，它会出现在这里。")).toBeVisible();
+  await expect(page.getByText("播放达到计数条件后，歌曲会出现在这里。")).toBeVisible();
 });
 
 test("placeholder artwork keeps the neutral background in both themes", async ({ page }) => {

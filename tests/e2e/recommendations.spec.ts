@@ -128,8 +128,8 @@ for (const client of [
       const expectedIds = await page.evaluate(async () => {
         const { useNanoStore } = await import("/src/store.ts");
         const state = useNanoStore.getState();
-        const { eligibleTracks } = await import("/src/recommendations/recommendations.ts");
-        const eligible = eligibleTracks(state.tracks, state);
+        const { rankedCandidates } = await import("/src/recommendations/recommendations.ts");
+        const eligible = rankedCandidates(state.tracks, state);
         return [
           -3,
           -2,

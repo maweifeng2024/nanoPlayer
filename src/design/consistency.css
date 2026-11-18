@@ -234,3 +234,139 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* A shares its height with the copy. C stacks a cropped banner above it. */
+:root .home-page .home-discovery {
+  --discovery-cover-width: clamp(120px, 28%, var(--home-hero-cover-limit, 240px));
+  grid-template-columns: var(--discovery-cover-width) minmax(0, 1fr);
+  align-items: stretch;
+}
+:root .home-discovery .hero-art {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: auto;
+  min-height: var(--home-hero-size);
+  aspect-ratio: auto;
+}
+:root .home-discovery .auto-playlist-cover {
+  position: absolute;
+  inset: 0;
+  background: var(--panel-raised);
+}
+:root .home-discovery .auto-playlist-cover img {
+  min-width: 0;
+  min-height: 0;
+}
+:root .home-discovery .cover-count-3 img:first-child {
+  grid-row: span 2;
+}
+:root .home-discovery > .home-discovery-copy {
+  grid-area: 1 / 2;
+  align-self: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+:root .home-discovery .eyebrow {
+  display: block;
+}
+:root[data-device="phone"] .home-page .home-discovery {
+  grid-template-columns: minmax(0, 1fr);
+}
+:root[data-device="phone"] .home-discovery .hero-art {
+  min-height: 0;
+  aspect-ratio: var(--discovery-banner-ratio, 2.7);
+}
+:root[data-device="phone"] .home-discovery > .home-discovery-copy {
+  grid-area: 2 / 1;
+}
+@media (orientation: portrait) {
+  :root[data-device="pad"] .home-page .home-discovery {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :root[data-device="pad"] .home-discovery .hero-art {
+    min-height: 0;
+    aspect-ratio: var(--discovery-banner-ratio, 2.7);
+  }
+  :root[data-device="pad"] .home-discovery > .home-discovery-copy {
+    grid-area: 2 / 1;
+  }
+}
+:root[data-platform="android"] .app-shell[data-page="home"] .page-scroll {
+  padding-block-start: var(--space-2);
+}
+:root[data-platform="android"] .home-page .home-discovery {
+  padding-block-start: 0;
+}
+
+:root .discovery-gallery {
+  display: none;
+}
+:root[data-device="phone"] .home-discovery .hero-art,
+:root[data-device="pad"] .home-discovery .hero-art {
+  --gallery-show: flex;
+}
+@media (orientation: landscape) {
+  :root[data-device="pad"] .home-discovery .hero-art {
+    --gallery-show: none;
+  }
+}
+:root .home-discovery .discovery-gallery {
+  position: absolute;
+  inset: 0;
+  display: var(--gallery-show, none);
+  container-type: size;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  background: var(--panel-raised);
+}
+:root .home-discovery .discovery-gallery button {
+  position: relative;
+  flex: 0 0 100cqh;
+  inline-size: 100cqh;
+  block-size: 100cqh;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  overflow: hidden;
+  transition: margin-inline-start 280ms ease;
+}
+:root .home-discovery .discovery-gallery button + button {
+  margin-inline-start: var(--discovery-overlap, -54cqh);
+}
+:root .home-discovery .discovery-gallery button[aria-pressed="true"],
+:root .home-discovery .discovery-gallery button[aria-pressed="true"] + button {
+  margin-inline-start: 0;
+}
+:root .home-discovery .discovery-gallery button[aria-pressed="true"] {
+  z-index: 1;
+}
+:root .home-discovery .discovery-gallery img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+:root .home-discovery .discovery-gallery button:focus-visible {
+  outline-offset: -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root .home-discovery .discovery-gallery button {
+    transition: none;
+  }
+}
+
+
+/* Match the banner ratio to the combined width of its overlapping squares. */
+:root .home-discovery .hero-art:has(.cover-count-2) {
+  --discovery-banner-ratio: 1.7;
+  --discovery-overlap: -30cqh;
+}
+:root .home-discovery .hero-art:has(.cover-count-3) {
+  --discovery-banner-ratio: 2.06;
+  --discovery-overlap: -47cqh;
+}
+:root .home-discovery .hero-art:has(.cover-count-4) {
+  --discovery-banner-ratio: 2.38;
+}

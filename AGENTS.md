@@ -55,6 +55,8 @@ See `docs/development/COMMANDS.md` for arguments and boundaries.
 
 Read [the regression review checklist](docs/development/REGRESSION_CHECKLIST.md) before implementing changes. For every executable change, run its common checks and select the additional checks by affected behavior and client; shared UI/state changes require desktop, phone and Pad coverage. Record commands, outcomes, visual/device evidence and remaining acceptance work. Historical passing counts or an older APK never qualify a new change.
 
+For visible layout changes, verify the rendered child geometry as well as the enclosing panel and interactions. Check the content edges, readable text width, control order and overlap against adjacent elements across affected clients. For changes to a shared layout primitive, capture affected views on desktop, Android phone/Pad and iPhone/iPad. Record installed-build visual evidence separately from browser screenshots and APK installation.
+
 Repeated-risk areas are responsive layout and artwork/playback-marker overlap, menu toggle/focus behavior, library selection across all collections and native queues, large-library Android responsiveness, persisted-data migrations, lyrics timing, background playback/counting/sleep timers, and release-source validation. A browser or frontend performance pass cannot establish native Android responsiveness; queue changes need native checks and device reproduction when a device is available. Add a regression at the layer where a reproduced defect occurs.
 
 Documentation-only changes require diff/path checks and confirmation that executable inputs, tests, packaging, versions and published metadata remain unchanged; do not allocate a version, build an APK or trigger publication for such changes.

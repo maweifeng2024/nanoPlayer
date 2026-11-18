@@ -208,7 +208,7 @@ export function LibraryPage({ issuesOnly = false }: { issuesOnly?: boolean }) {
                     <span
                       className={`status-dot ${root.availability !== "available" ? "unavailable" : ""}`}
                     >
-                      {root.availability === "available" ? t("可用") : t("不可用")}
+                      {root.availability !== "available" ? t("不可用") : root.lastScannedAt ? t("可用") : t("尚未扫描")}
                     </span>
                   </div>
                   {expandedRootId === root.id && (

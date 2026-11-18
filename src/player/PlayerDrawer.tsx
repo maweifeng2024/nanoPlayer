@@ -1,3 +1,7 @@
+import { createPortal } from "react-dom";
+import { playlistTargets } from "../library/playlistTargets";
+import { visiblePlaylists } from "../library/folderFilter";
+import { placeRowMenu } from "../placeRowMenu";
 import { LyricText } from "../lyrics/LyricText";
 import { useModalBehavior } from "../useModalBehavior";
 import { Artwork } from "../library/Artwork";
@@ -44,9 +48,12 @@ export function PlayerDrawer() {
       reorderQueue: store.reorderQueue,
       playTrack: store.playTrack,
       removeFromQueue: store.removeFromQueue,
+      addToPlaylist: store.addToPlaylist,
     })),
   );
-  const [menu, setMenu] = useState<{ index: number; x: number; y: number }>();
+  const lists = useNanoStore(useShallow(visiblePlaylists));
+  const targets = useMemo(() => playlistTargets(lists), [lists]);
+  const [menu, setMenu] = useState<{ index: number; anchor: HTMLButtonElement }>();
   const menuRef = useModalBehavior(!!menu, () => setMenu(undefined), true);
   useEffect(() => {
     const close = () => setMenu(undefined);
@@ -73,9 +80,15 @@ export function PlayerDrawer() {
   useLayoutEffect(() => {
     if (!menu || !menuRef.current) return;
     const element = menuRef.current;
-    element.style.left = Math.max(8, Math.min(menu.x, innerWidth - element.offsetWidth - 8)) + "px";
-    element.style.top =
-      Math.max(8, Math.min(menu.y, innerHeight - element.offsetHeight - 8)) + "px";
+    const reposition = () => placeRowMenu(element, menu.anchor.getBoundingClientRect());
+    reposition();
+    window.addEventListener("resize", reposition);
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      viewport?.removeEventListener("resize", reposition);
+    };
   }, [menu]);
   const trackMap = useMemo(
     () => new Map(state.tracks.map((track) => [track.id, track])),
@@ -95,7 +108,7 @@ export function PlayerDrawer() {
   }, [state.drawer, state.currentTrackId, state.queue, state.tracks]);
   if (!state.drawer) return null;
   const track = state.tracks.find((item) => item.id === state.currentTrackId);
-  const queueTracks = state.queue.map((id) => trackMap.get(id)).filter(Boolean);
+  const queueTracks = state.queue.map((id) => trackMap.get(id));
   const order =
     state.orderMode === "shuffle" && state.shuffleOrder.length === state.queue.length
       ? state.shuffleOrder
@@ -108,7 +121,7 @@ export function PlayerDrawer() {
   const nextTrack = nextId === undefined ? undefined : trackMap.get(nextId);
   return (
     <aside
-      className="player-drawer"
+      className={`player-drawer${state.drawer === "queue" ? " full-queue" : ""}`}
       aria-label={state.drawer === "queue" ? t("播放队列") : t("歌词")}
     >
       <header>
@@ -124,14 +137,14 @@ export function PlayerDrawer() {
           <X size={17} />
         </button>
       </header>
-      {menu && (
+      {menu && createPortal(
         <div
           ref={(node) => {
             menuRef.current = node;
           }}
           className="context-menu menu-popover queue-menu"
           role="menu"
-          style={{ left: menu.x, top: menu.y }}
+          aria-label={t("播放队列")}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => setMenu(undefined)}
         >
@@ -151,17 +164,23 @@ export function PlayerDrawer() {
             <ChevronDown size={16} />
             {t("下移")}
           </button>
+          {targets.map(({ playlist, label }) => (
+            <button role="menuitem" key={playlist.id} type="button"
+              onClick={() => state.addToPlaylist(playlist.id, state.queue[menu.index])}>
+              {t("添加到“")}{label}”
+            </button>
+          ))}
           <button role="menuitem" onClick={() => state.removeFromQueue(menu.index)}>
             <Trash2 size={16} />
             {t("移除")}
           </button>
-        </div>
+        </div>, document.body
       )}
       {state.drawer === "queue" ? (
         <>
           <div className="drawer-subhead">
             <span>
-              {queueTracks.length}
+              {queueTracks.filter(Boolean).length}
               {t("首 · 可拖动排序")}
             </span>
             <button className="text-button" onClick={state.clearQueue}>
@@ -203,11 +222,13 @@ export function PlayerDrawer() {
                       </span>
                     </button>
                     <button
-                      className="icon-button"
+                      className="icon-button queue-more"
                       aria-label={t("{0} 更多操作", item.title)}
+                      aria-expanded={menu?.index === index}
+                      onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => {
-                        const bounds = event.currentTarget.getBoundingClientRect();
-                        setMenu({ index, x: Math.max(8, bounds.right - 200), y: bounds.bottom });
+                        const anchor = event.currentTarget;
+                        setMenu((current) => current?.index === index ? undefined : { index, anchor });
                       }}
                     >
                       <MoreHorizontal size={20} />

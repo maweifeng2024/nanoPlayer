@@ -11,9 +11,14 @@ import { PlaylistListArtwork } from "../library/PlaylistArtwork";
 export function PhoneNavigation() {
   const page = useNanoStore((state) => state.page);
   const setPage = useNanoStore((state) => state.setPage);
+  const navigate = (destination: "home" | "songs" | "playlists") => {
+    const state = useNanoStore.getState();
+    if (state.drawer === "queue") state.toggleDrawer("queue");
+    setPage(destination);
+  };
   return (
     <nav className="phone-navigation" aria-label={t("主导航")}>
-      <button aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
+      <button aria-current={page === "home" ? "page" : undefined} onClick={() => navigate("home")}>
         <Home />
         {t("首页")}
       </button>
@@ -23,14 +28,14 @@ export function PhoneNavigation() {
             ? "page"
             : undefined
         }
-        onClick={() => setPage("songs")}
+        onClick={() => navigate("songs")}
       >
         <FolderCog />
         {t("资料库")}
       </button>
       <button
         aria-current={["playlists", "playlist"].includes(page) ? "page" : undefined}
-        onClick={() => setPage("playlists")}
+        onClick={() => navigate("playlists")}
       >
         <Heart />
         {t("歌单")}

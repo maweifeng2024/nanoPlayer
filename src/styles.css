@@ -1415,6 +1415,10 @@ h1 {
   padding: var(--space-1);
   border-radius: var(--radius-sm);
 }
+.queue-item > .queue-more {
+  grid-column: -2 / -1;
+  justify-self: end;
+}
 .queue-item:hover {
   background: #242529;
 }
@@ -1425,6 +1429,7 @@ h1 {
   color: #555860;
 }
 .queue-play {
+  grid-column: -3 / -2;
   display: flex;
   min-width: 0;
   align-items: center;
@@ -2428,8 +2433,8 @@ a:focus-visible {
       transparent 75%
     );
   transition:
-    --ambient-primary 1.8s ease,
-    --ambient-secondary 1.8s ease;
+    --ambient-primary 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    --ambient-secondary 900ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .app-shell > .sidebar {
   background: #18191d66;
@@ -2682,10 +2687,15 @@ html[lang="en"] .section-label {
   position: relative;
   padding-top: 56px;
 }
-.collapse-player {
+:root .icon-button.collapse-player {
+  border: 0;
+  background: transparent;
   position: absolute;
   top: 0;
   left: 0;
+}
+.now-playing-page {
+  isolation: isolate;
 }
 .playlist-list-row {
   display: flex;
@@ -3473,12 +3483,12 @@ select:focus-visible,
   background:
     radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--home-tint-primary) 24%, transparent), transparent 72%),
     radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--home-tint-secondary) 12%, transparent), transparent 64%);
-  transition: --home-tint-primary 650ms ease, --home-tint-secondary 650ms ease;
+  transition: --home-tint-primary 900ms cubic-bezier(0.22, 1, 0.36, 1), --home-tint-secondary 900ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 @property --home-tint-primary { syntax: "<color>"; inherits: true; initial-value: #66768c; }
 @property --home-tint-secondary { syntax: "<color>"; inherits: true; initial-value: #7c6c87; }
 :root[data-theme="light"] .home-artwork-tint { opacity: 0.55; }
-html:not([data-platform="android"]) .app-shell[data-page="home"] > .ambient-background { display: none; }
+html:not([data-platform="android"]) .app-shell:is([data-page="home"], [data-page="now-playing"]) > .ambient-background { display: none; }
 [data-platform="android"] .home-artwork-tint { display: none; }
 .track-context-menu { z-index: 70; overscroll-behavior: contain; }
 .track-menu-backdrop { position: fixed; inset: 0; background: #0008; z-index: 69; touch-action: none; }
@@ -3508,5 +3518,83 @@ html:not([data-platform="android"]) .app-shell[data-page="home"] > .ambient-back
 @media (max-width: 1100px) { .home-page { --home-hero-size: 160px; } }
 @media (max-width: 900px) { .home-page { --home-hero-size: 120px; } }
 @media (max-width: 719px) { .home-page { --home-hero-size: 96px; } }
-@media (prefers-reduced-motion: reduce) { .home-artwork-tint { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .home-artwork-tint, .ambient-background { transition: none; }
+}
 :root .home-page .home-track-list-body li { box-shadow: none; outline: 0; }
+
+/* Expanded playback views own the content area above the transport. */
+:root[data-platform] .app-shell[data-full-player][data-page],
+:root .app-shell[data-full-player][data-queue-open] {
+  --ambient-left: 0px;
+  --ambient-right: 0px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) var(--player-height);
+}
+:root[data-device="phone"] .app-shell[data-full-player][data-page] {
+  grid-template-rows: minmax(0, 1fr) var(--player-height) var(--navigation-height);
+}
+html[data-platform] .app-shell[data-full-player] > :is(.sidebar, .sidebar-backdrop),
+html .app-shell[data-queue-open] > :is(.sidebar, .sidebar-backdrop),
+html .app-shell[data-queue-open] > .content {
+  display: none;
+}
+:root[data-platform] .app-shell[data-full-player][data-page] > .content {
+  grid-column: 1;
+}
+:root .app-shell[data-full-player][data-page] .page-scroll {
+  height: 100%;
+}
+:root .app-shell[data-full-player][data-queue-open] > .player-drawer.full-queue {
+  position: relative;
+  inset: auto;
+  width: auto;
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  box-shadow: none;
+}
+.full-queue .queue-list {
+  min-height: 0;
+  height: auto;
+  flex: 1;
+}
+:root .now-playing-page .now-playing-cover-toggle {
+  display: none;
+}
+:root[data-device="phone"] .now-playing-page .now-playing-cover-toggle {
+  display: inline-flex;
+}
+[data-device="phone"] .now-playing-release[data-cover-hidden] .now-playing-art {
+  display: none;
+}
+[data-device="phone"] .now-playing-page:has([data-cover-hidden]) .immersive-lyrics {
+  max-height: 45dvh;
+}
+@media (min-width: 760px) {
+  [data-device="pad"] .app-shell[data-full-player] .now-playing-page {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 760px) {
+  :root:not([data-platform]) .app-shell[data-page="now-playing"]:not([data-queue-open]) {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+  :root:not([data-platform]) .app-shell[data-page="now-playing"]:not([data-queue-open]) > .sidebar {
+    position: relative;
+    inset: auto;
+    width: auto;
+    transform: none;
+    box-shadow: none;
+  }
+  :root:not([data-platform]) .app-shell[data-page="now-playing"]:not([data-queue-open]) > .content {
+    grid-column: 2;
+  }
+  :root:not([data-platform]) .app-shell[data-page="now-playing"] .sidebar-close {
+    display: none !important;
+  }
+}

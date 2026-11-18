@@ -40,7 +40,7 @@ for (const screen of screens) {
           "background-color",
           "rgba(0, 0, 0, 0)",
         );
-      await expect(page.locator(".hero-art img")).toBeVisible();
+      await expect(page.locator(".hero-art")).toBeVisible();
       await page.evaluate(async () => {
         await document.fonts.ready;
         await Promise.all(Array.from(document.images, (image) => image.decode()));

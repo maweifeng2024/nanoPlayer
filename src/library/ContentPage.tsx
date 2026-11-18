@@ -58,7 +58,7 @@ import { trackIsSelected } from "./folderFilter";
 import { UpdateSettings } from "../updates/UpdateSettings";
 import { TrackTable } from "./TrackTable";
 import { Artwork } from "./Artwork";
-import { AutoPlaylistCover } from "./PlaylistArtwork";
+import { AutoPlaylistCover, DiscoveryArtwork } from "./PlaylistArtwork";
 import {
   clearArtworkCache,
   clearOnlineLyricsCache,
@@ -183,6 +183,7 @@ export function ContentPage() {
           key={state.page}
           tracks={filtered}
           popular={state.page === "popular"}
+          recentlyPlayed={state.page === "played"}
           rated={state.page === "rated"}
           toolbar={
             state.page === "songs" && !isIOS() ? (
@@ -198,7 +199,7 @@ export function ContentPage() {
                   title={t("按文件夹筛选")}
                 >
                   <Filter size={16} />
-                  {selectedRootIds === null ? t("筛选") : t("{0} 个文件夹", selectedRoots.length)}
+                  <span>{selectedRootIds === null ? t("筛选") : t("{0} 个文件夹", selectedRoots.length)}</span>
                 </summary>
                 <div className="folder-filter-panel">
                   <label>
@@ -259,6 +260,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
     })),
   );
   const featured = tracks[0];
+  const playingTrack = useNanoStore((state) => state.tracks.find((track) => track.id === state.currentTrackId));
   const stats = { ratings, playCounts, lastPlayedAt };
   const unknownAlbum = t("未知专辑");
   const homeLimit = 12;
@@ -277,10 +279,10 @@ function HomePage({ tracks }: { tracks: Track[] }) {
   if (!featured) return <EmptyLibrary />;
   return (
     <section className="home-page">
-      <HomeArtworkTint track={recommended[0] ?? featured} />
+      <HomeArtworkTint track={playingTrack ?? recommended[0] ?? featured} />
       <div className="hero home-discovery" aria-label={t("为你推荐")}>
-        <Artwork track={recommended[0] ?? featured} className="hero-art" />
-        <div>
+        <DiscoveryArtwork items={recommended} name={name} />
+        <div className="home-discovery-copy">
           <p className="eyebrow">
             {t("为你推荐")} · {t("{0} 首", recommended.length)}
           </p>
@@ -288,6 +290,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
           <p className="hero-copy">{description}</p>
           <button
             className="primary-button hero-play"
+            aria-label={t("播放推荐歌单")}
             type="button"
             disabled={!recommended.length}
             onClick={() => {
@@ -297,7 +300,7 @@ function HomePage({ tracks }: { tracks: Track[] }) {
             }}
           >
             <Play size={17} fill="currentColor" />
-            {t("播放推荐歌单")}
+            {t("播放")}
           </button>
         </div>
       </div>
@@ -443,11 +446,15 @@ function NoResults() {
 
 function NowPlayingPage() {
   const state = useNanoStore();
+  const [showCover, setShowCover] = useState(true);
   const track = state.tracks.find((item) => item.id === state.currentTrackId);
   const parsed = useMemo(() => parseLyrics(track?.lyrics), [track?.lyrics]);
   if (!track)
     return (
       <div className="empty-state">
+        <button className="icon-button collapse-player" onClick={state.collapsePlayer} aria-label={t("收起正在播放")}>
+          <ChevronDown size={18} />
+        </button>
         <span className="empty-icon">
           <Headphones size={28} />
         </span>
@@ -470,15 +477,19 @@ function NowPlayingPage() {
   const lyrics = parsed.lines.slice(start, Math.max(8, active + 6));
   return (
     <section className="now-playing-page">
+      <HomeArtworkTint track={track} />
       <button
-        className="secondary-button collapse-player"
+        className="icon-button collapse-player"
         onClick={() => state.collapsePlayer()}
         aria-label={t("收起正在播放")}
       >
         <ChevronDown size={18} />
-        <span>{t("收起")}</span>
       </button>
-      <div className="now-playing-release">
+      <div className="now-playing-release" data-cover-hidden={!showCover || undefined}>
+        <button className="text-button now-playing-cover-toggle" type="button"
+          aria-expanded={showCover} onClick={() => setShowCover(!showCover)}>
+          {showCover ? t("隐藏封面") : t("显示封面")}
+        </button>
         <Artwork
           className="now-playing-art"
           track={track}
@@ -955,7 +966,7 @@ function PlaylistPage() {
           <p>{formatDuration(items.reduce((sum, track) => sum + track.durationMs, 0))}</p>
           <div className="inline-actions">
             <button
-              className="primary-button"
+              className={items.length ? "primary-button" : "secondary-button"}
               disabled={!playableItems.length}
               onClick={() =>
                 playTrack(
@@ -967,7 +978,7 @@ function PlaylistPage() {
               <Play size={16} fill="currentColor" />
               {t("播放")}
             </button>
-            <button className="secondary-button" onClick={() => setAdding(true)}>
+            <button className={items.length ? "secondary-button" : "primary-button"} onClick={() => setAdding(true)}>
               <Plus size={15} />
               {t("添加歌曲")}
             </button>
@@ -1404,7 +1415,7 @@ function SettingsPage() {
               <strong>{t("开启推荐")}</strong>
               <p>
                 {t(
-                  "将部分歌名和艺术家发送给 Cloudflare AI，从本地资料库推荐较少播放的歌曲。不发送音频或路径；后台生成，下次启动更新。",
+                  "将部分歌名和艺术家发送给 Cloudflare AI，从本地资料库推荐较少播放的歌曲。不发送音频或路径；后台生成，下次启动更新。关闭后仍可使用本地推荐。",
                 )}
               </p>
             </div>
