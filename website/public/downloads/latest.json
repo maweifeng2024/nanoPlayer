@@ -1,9 +1,9 @@
 {
-  "version": "0.1.40",
+  "version": "0.1.42",
   "available": true,
   "publishedAt": "2026-11-18",
-  "releaseUrl": "https://github.com/maweifeng2024/nanoPlayer/releases/tag/v0.1.40",
-  "checksumsUrl": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/SHA256SUMS.txt",
+  "releaseUrl": "https://github.com/maweifeng2024/nanoPlayer/releases/tag/v0.1.42",
+  "checksumsUrl": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/SHA256SUMS.txt",
   "signed": false,
   "platforms": {
     "macos": [
@@ -11,69 +11,69 @@
         "name": "nanoPlayer.app.tar.gz",
         "architecture": "platform-default",
         "format": "app archive",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer.app.tar.gz",
-        "sha256": "e60fe404a9e1c409127080fa4d6ea49ab0dda509f7be6de34d48ecd51eced503",
-        "size": 17877568
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer.app.tar.gz",
+        "sha256": "671576c92e5dafeea86e9ad865536966d420b95f6c232e98b9651f40b6436334",
+        "size": 17877144
       },
       {
-        "name": "nanoPlayer_0.1.40_universal.dmg",
+        "name": "nanoPlayer_0.1.42_universal.dmg",
         "architecture": "universal",
         "format": "dmg",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer_0.1.40_universal.dmg",
-        "sha256": "b2feb7f4326effa6c25cd3694498cbc761e097d5fb2bfce2ce37280c5079d79f",
-        "size": 18502473
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer_0.1.42_universal.dmg",
+        "sha256": "0835e54daca6b57e010d3e487092f07c87ea73d147d3f69669c8041f69035428",
+        "size": 18503171
       }
     ],
     "windows": [
       {
-        "name": "nanoPlayer_0.1.40_x64-setup.exe",
+        "name": "nanoPlayer_0.1.42_x64-setup.exe",
         "architecture": "x86_64",
         "format": "exe",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer_0.1.40_x64-setup.exe",
-        "sha256": "267d3a775e8eb4a438834c4257b25d24ae648b27fe43880c929ecad000449f78",
-        "size": 5948107
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer_0.1.42_x64-setup.exe",
+        "sha256": "a2e5a13a2c0043b72f04aab25ac30d8e1ef5d12437e4ceb42c8b7e74aab9d598",
+        "size": 5951936
       },
       {
-        "name": "nanoPlayer_0.1.40_x64_en-US.msi",
+        "name": "nanoPlayer_0.1.42_x64_en-US.msi",
         "architecture": "x86_64",
         "format": "msi",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer_0.1.40_x64_en-US.msi",
-        "sha256": "a28e30a5f905800b587e57111eae203d0556c5cae372ad3b1718321e8cd6307b",
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer_0.1.42_x64_en-US.msi",
+        "sha256": "1cc5f244593f1a9185f6d9fe0893609168db25cbdb15c7e66929a73390a829ba",
         "size": 8151040
       },
       {
-        "name": "nanoPlayer_0.1.40_x64_zh-CN.msi",
+        "name": "nanoPlayer_0.1.42_x64_zh-CN.msi",
         "architecture": "x86_64",
         "format": "msi",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer_0.1.40_x64_zh-CN.msi",
-        "sha256": "b7c7fcf72bd8613ed3b3364d8e95024acff571bd5417a96815b11f42f8cc7ed2",
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer_0.1.42_x64_zh-CN.msi",
+        "sha256": "6a5933e0e1bb974f1f60cb75f07fd1a332c1da5951a7c651c02c34054a0d8500",
         "size": 8146944
       }
     ],
     "linux": [
       {
-        "name": "nanoPlayer-0.1.40-1.x86_64.rpm",
+        "name": "nanoPlayer-0.1.42-1.x86_64.rpm",
         "architecture": "x86_64",
         "format": "rpm",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer-0.1.40-1.x86_64.rpm",
-        "sha256": "05e008428df1f55ca4ae2ba99df2bf52cb5d94bdea77abdb5c5295e267ffc13a",
-        "size": 8889791
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer-0.1.42-1.x86_64.rpm",
+        "sha256": "a76f39462e2f4075df664bb57dee41bd93d59d5f3051ddd6b0665b54f0746718",
+        "size": 8889767
       },
       {
-        "name": "nanoPlayer_0.1.40_amd64.AppImage",
+        "name": "nanoPlayer_0.1.42_amd64.AppImage",
         "architecture": "x86_64",
         "format": "AppImage",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer_0.1.40_amd64.AppImage",
-        "sha256": "f7329bb7d2995c5bb907b7586ffda3d02decaf9b3a0454c9f60813f4c9c40713",
-        "size": 86796792
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer_0.1.42_amd64.AppImage",
+        "sha256": "e7958476459e0e3dea46da22ca2456a1e9e767c9880bd96d0917e2ab1920adb5",
+        "size": 86788600
       },
       {
-        "name": "nanoPlayer_0.1.40_amd64.deb",
+        "name": "nanoPlayer_0.1.42_amd64.deb",
         "architecture": "x86_64",
         "format": "deb",
-        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.40/nanoPlayer_0.1.40_amd64.deb",
-        "sha256": "88d3cedabbd305080a4d449fb65ee7fa99edfcb1fe1f1d37016287ae511d2d0f",
-        "size": 8886848
+        "url": "https://github.com/maweifeng2024/nanoPlayer/releases/download/v0.1.42/nanoPlayer_0.1.42_amd64.deb",
+        "sha256": "754e12a3a163e9bc108f546a96138792124bbfd1610379ee20bf34bf0b8e2ca2",
+        "size": 8886798
       }
     ]
   }
