@@ -110,3 +110,17 @@
 - Playwright 1.55.0 项目依赖可解析，浏览器缓存缺 Chromium Headless Shell 和 FFmpeg，原安装进程运行逾 22 分钟。通过备用 CDN 下载后，安装器在解压阶段再次停滞。
 - 已停止卡住的安装，校验 ZIP 完整性并补齐 Chromium 1187、Headless Shell 1187 和 FFmpeg 1011。安装清单识别三组件。沙箱内预检被 Mach 服务拒绝，沙箱外默认 Chromium 140.0.7339.16 启动通过，推荐页面 E2E 6 项通过。
 - 本轮仅修复本机浏览器缓存。项目依赖、锁文件和运行时输入未改，未执行发布。当前验证范围为 Chromium，不包含 Firefox 和 WebKit。
+
+## 2026-11-18 15:17（Asia/Shanghai，UTC+08:00）— 恢复桌面播放队列侧栏
+
+- **桌面恢复已实现。** 对照 `1a40260^ → 1a40260`，队列全页布局曾在共享外框启用。现限定到移动端，桌面复用历史右侧栏与窄窗口浮层，保留当前页面。按 [设计规范](design/DESIGN_SYSTEM.md) 更新 [UI-1118-01 回归清单](development/REGRESSION_CHECKLIST.md)，并调整 `tests/e2e/full-player-menu.spec.ts` 的桌面入口、1440/720px 几何断言及移动全页回归。AGENTS.md 现行规则继续适用。
+- **待用户确认。** 0.1.40 的其他交互差异包括桌面正在播放隐藏搜索及收起按钮去文字、移动队列占满内容区、iPhone 单击三点用浮层而长按用底部面板、首页配色跟随当前曲目、推荐封面与播放按钮以及空歌单主按钮的变化。本轮仅恢复桌面队列。
+- **已通过。** `pnpm check`（80 Vitest、5 Worker）、最终测试修改后的 lint、Rust fmt/Clippy、26 Rust 测试（2 项默认忽略）及单独 10k 基准、19 发布脚本测试、官网构建、版本一致性及 diff 检查。
+- **待验收。** Chromium 最小启动预检被 macOS Mach 服务拒绝，自动审批因缺本轮沙箱外执行授权拒绝重试。E2E、截图与桌面原生界面待验收；获授权后先复试最小启动，再跑播放队列和跨端回归。iOS 0.1.41/build 23 模拟器归档被 `simctl list runtimes` 阻塞，尚无该版本模拟器或真机验证。未执行提交、推送、CI、标签与正式发布。
+- **Android 调试包已构建并校验。** 首次包装沿用 1041，随后补正为 1042。重试通过临时可写 Gradle 缓存和 Kotlin 进程内编译处理本机权限限制。有效包位于 `artifacts/android/v0.1.41-b1042/debug/`，arm64-v8a，ZIP、SHA-256 和 APK v2 调试签名校验通过，未安装或实机验证。1041 试包不作为交付产物。
+
+## 2026-11-18 15:29（Asia/Shanghai，UTC+08:00）— Pad 恢复独立播放队列
+
+- **UI-1118-01 已实现。** Android Pad 与 iPad 复用原有右侧抽屉，搜索与当前页面继续显示。手机仍占用播放控件上方内容区并保留底部入口。队列布局跟随现有设备标记，Android 在 599/600px 间切换时无需重新打开队列。桌面沿用上一轮恢复的侧栏；正在播放布局仍按现有设计。同步更新 [设计规范](design/DESIGN_SYSTEM.md) 和 [回归清单](development/REGRESSION_CHECKLIST.md)，AGENTS.md 现行规则继续适用。
+- **验证。** `pnpm check`、Rust 格式/Clippy/测试及 10k 基准、19 项发布脚本测试、官网构建、版本一致性及 diff 检查通过。已更新 `tests/e2e/full-player-menu.spec.ts`，覆盖桌面、Android 手机/Pad 和 iPad，包含队列打开时跨宽度切换。Chromium 最小预检被 macOS Mach 服务拒绝，浏览器回归与截图未执行；待授权后重试预检。iOS 0.1.42/build 24 模拟器归档仍被 `simctl list runtimes` 阻塞。
+- **Android 产物。** `artifacts/android/v0.1.42-b1043/debug/nanoPlayer-0.1.42-b1043-arm64-debug.apk`，arm64-v8a，ZIP、SHA-256 与 APK v2 调试签名校验通过。待实机安装检查手机和 Pad 的队列、搜索和退出路径。未执行提交、推送、CI、标签或正式发布。

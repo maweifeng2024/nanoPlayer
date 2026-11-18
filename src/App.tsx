@@ -358,10 +358,10 @@ export default function App() {
 
   const addPlaylist = () => setNewPlaylistOpen(true);
 
-  const fullPlayer = drawer === "queue" || page === "now-playing";
+  const fullQueue = drawer === "queue" && isMobile();
 
   return (
-    <div className={`app-shell ${drawer ? "has-drawer" : ""}`} data-page={page} data-full-player={fullPlayer || undefined} data-queue-open={drawer === "queue" || undefined}>
+    <div className={`app-shell ${drawer ? "has-drawer" : ""}`} data-page={page} data-full-player={page === "now-playing" || undefined} data-queue-open={fullQueue || undefined}>
       {libraryLoaded && <RecommendationLifecycle />}
       <AmbientBackground />
       {!isMobile() && <UpdateNotifier />}
@@ -450,7 +450,7 @@ export default function App() {
         />
       )}
       <main className="content">
-        {!fullPlayer && <header className="topbar" data-tauri-drag-region onMouseDown={startWindowDrag}>
+        {page !== "now-playing" && <header className="topbar" data-tauri-drag-region onMouseDown={startWindowDrag}>
           <button
             className="icon-button menu-button"
             onClick={() => setSidebarOpen(true)}

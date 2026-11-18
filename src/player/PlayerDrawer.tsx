@@ -121,7 +121,7 @@ export function PlayerDrawer() {
   const nextTrack = nextId === undefined ? undefined : trackMap.get(nextId);
   return (
     <aside
-      className={`player-drawer${state.drawer === "queue" ? " full-queue" : ""}`}
+      className={`player-drawer${state.drawer === "queue" && isMobile() ? " full-queue" : ""}`}
       aria-label={state.drawer === "queue" ? t("播放队列") : t("歌词")}
     >
       <header>

@@ -27,14 +27,31 @@ for (const [width, mobile] of [[1440, false], [390, true], [840, true]] as const
       await trackMore.click();
       await expect(trackMore).toHaveAttribute("aria-expanded", "false");
 
-      await page.evaluate(async () => {
-        const { useNanoStore } = await import("/src/store.ts");
-        useNanoStore.getState().toggleDrawer("queue");
-      });
+      if (mobile) {
+        await page.evaluate(async () => {
+          const { useNanoStore } = await import("/src/store.ts");
+          useNanoStore.getState().toggleDrawer("queue");
+        });
+      } else {
+        await page.getByRole("button", { name: "播放队列", exact: true }).click();
+      }
       const queue = page.getByRole("complementary", { name: "播放队列" });
-      await expect(search).toHaveCount(0);
       await expect(queue).toBeVisible();
-      expect((await queue.boundingBox())!.width).toBeCloseTo(width, 0);
+      if (width === 390) {
+        await expect(search).toBeHidden();
+        expect((await queue.boundingBox())!.width).toBeCloseTo(width, 0);
+      } else {
+        await expect(search).toBeVisible();
+        await expect(page.getByRole("complementary", { name: "主导航" })).toBeInViewport();
+        for (const windowWidth of mobile ? [840, 600] : [1440, 720]) {
+          await page.setViewportSize({ width: windowWidth, height: 800 });
+          const bounds = (await queue.boundingBox())!;
+          expect(bounds.width).toBeCloseTo(windowWidth <= 760 ? 360 : 320, 0);
+          expect(bounds.x + bounds.width).toBeCloseTo(windowWidth, 0);
+          await expect(page.locator(".content")).toBeVisible();
+        }
+        await page.setViewportSize({ width, height: 800 });
+      }
       const rows = queue.locator(".queue-item");
       for (const row of [rows.first(), queue.locator(".queue-item.active"), rows.last()]) {
         const title = row.locator(".queue-play strong");
@@ -110,6 +127,43 @@ for (const [width, mobile] of [[1440, false], [390, true], [840, true]] as const
         await expect(page.locator(".now-playing-art")).toBeVisible();
       }
       await page.getByRole("button", { name: "收起正在播放" }).click();
+      await expect(search).toBeVisible();
+    });
+  });
+}
+
+for (const [tablet, userAgent] of [
+  ["Android", "Mozilla/5.0 (Linux; Android 16) Chrome/140 Safari/537.36"],
+  ["iPad", "Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15"],
+] as const) {
+  test.describe(`${tablet} queue resizing`, () => {
+    test.use({ viewport: { width: 840, height: 800 }, hasTouch: true, userAgent });
+
+    test("keeps the current page and adapts an open queue to the device layout", async ({ page }) => {
+      await page.goto("/");
+      const search = page.getByRole("textbox", { name: "全局搜索" });
+      const queue = page.getByRole("complementary", { name: "播放队列" });
+      await page.getByRole("button", { name: "播放队列", exact: true }).filter({ visible: true }).click();
+      await expect(queue).toBeVisible();
+      await expect(search).toBeVisible();
+
+      await page.setViewportSize({ width: 599, height: 800 });
+      if (tablet === "Android") {
+        await expect(search).toBeHidden();
+        await expect(page.locator(".phone-navigation")).toBeVisible();
+        expect((await queue.boundingBox())!.width).toBeCloseTo(599, 0);
+      } else {
+        await expect(search).toBeVisible();
+        expect((await queue.boundingBox())!.width).toBeLessThan(599);
+      }
+
+      await page.setViewportSize({ width: 600, height: 800 });
+      await expect(search).toBeVisible();
+      const bounds = (await queue.boundingBox())!;
+      expect(bounds.width).toBeLessThan(600);
+      expect(bounds.x + bounds.width).toBeCloseTo(600, 0);
+      await queue.getByRole("button", { name: "关闭" }).click();
+      await expect(queue).toHaveCount(0);
       await expect(search).toBeVisible();
     });
   });

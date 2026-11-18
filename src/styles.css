@@ -3525,18 +3525,18 @@ html:not([data-platform="android"]) .app-shell:is([data-page="home"], [data-page
 
 /* Expanded playback views own the content area above the transport. */
 :root[data-platform] .app-shell[data-full-player][data-page],
-:root .app-shell[data-full-player][data-queue-open] {
+:root[data-device="phone"] .app-shell[data-queue-open] {
   --ambient-left: 0px;
   --ambient-right: 0px;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) var(--player-height);
 }
-:root[data-device="phone"] .app-shell[data-full-player][data-page] {
+:root[data-device="phone"] .app-shell:is([data-full-player], [data-queue-open]) {
   grid-template-rows: minmax(0, 1fr) var(--player-height) var(--navigation-height);
 }
 html[data-platform] .app-shell[data-full-player] > :is(.sidebar, .sidebar-backdrop),
-html .app-shell[data-queue-open] > :is(.sidebar, .sidebar-backdrop),
-html .app-shell[data-queue-open] > .content {
+html[data-device="phone"] .app-shell[data-queue-open] > :is(.sidebar, .sidebar-backdrop),
+html[data-device="phone"] .app-shell[data-queue-open] > .content {
   display: none;
 }
 :root[data-platform] .app-shell[data-full-player][data-page] > .content {
@@ -3545,7 +3545,7 @@ html .app-shell[data-queue-open] > .content {
 :root .app-shell[data-full-player][data-page] .page-scroll {
   height: 100%;
 }
-:root .app-shell[data-full-player][data-queue-open] > .player-drawer.full-queue {
+:root[data-device="phone"] .app-shell[data-queue-open] > .player-drawer.full-queue {
   position: relative;
   inset: auto;
   width: auto;
@@ -3556,7 +3556,7 @@ html .app-shell[data-queue-open] > .content {
   border: 0;
   box-shadow: none;
 }
-.full-queue .queue-list {
+[data-device="phone"] .full-queue .queue-list {
   min-height: 0;
   height: auto;
   flex: 1;

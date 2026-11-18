@@ -4,6 +4,14 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.42] - 2026-11-18
+
+- Android Pad 和 iPad 恢复独立播放队列抽屉。
+
+## [0.1.41] - 2026-11-18
+
+- 桌面播放队列恢复右侧栏，窄窗口使用右侧浮层。
+
 ## [0.1.40] - 2026-11-18
 
 - 桌面正在播放把内容留在左侧常驻导航右侧。
