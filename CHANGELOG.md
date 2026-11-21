@@ -4,6 +4,12 @@ All notable changes will be documented here following Keep a Changelog. Versions
 
 ## [Unreleased]
 
+## [0.1.43] - 2026-11-21
+
+- 修复 iPhone 播放队列下方黑色空白，队列填满播放器上方空间。
+- 将移动端左上角导航图标在触摸区域内居中。
+- Android Pad 和 iPad 的正在播放页保留左侧导航。
+
 ## [0.1.42] - 2026-11-18
 
 - Android Pad 和 iPad 恢复独立播放队列抽屉。

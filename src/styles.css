@@ -3524,7 +3524,7 @@ html:not([data-platform="android"]) .app-shell:is([data-page="home"], [data-page
 :root .home-page .home-track-list-body li { box-shadow: none; outline: 0; }
 
 /* Expanded playback views own the content area above the transport. */
-:root[data-platform] .app-shell[data-full-player][data-page],
+:root[data-device="phone"] .app-shell[data-full-player][data-page],
 :root[data-device="phone"] .app-shell[data-queue-open] {
   --ambient-left: 0px;
   --ambient-right: 0px;
@@ -3534,12 +3534,12 @@ html:not([data-platform="android"]) .app-shell:is([data-page="home"], [data-page
 :root[data-device="phone"] .app-shell:is([data-full-player], [data-queue-open]) {
   grid-template-rows: minmax(0, 1fr) var(--player-height) var(--navigation-height);
 }
-html[data-platform] .app-shell[data-full-player] > :is(.sidebar, .sidebar-backdrop),
+html[data-device="phone"] .app-shell[data-full-player] > :is(.sidebar, .sidebar-backdrop),
 html[data-device="phone"] .app-shell[data-queue-open] > :is(.sidebar, .sidebar-backdrop),
 html[data-device="phone"] .app-shell[data-queue-open] > .content {
   display: none;
 }
-:root[data-platform] .app-shell[data-full-player][data-page] > .content {
+:root[data-device="phone"] .app-shell[data-full-player][data-page] > .content {
   grid-column: 1;
 }
 :root .app-shell[data-full-player][data-page] .page-scroll {
@@ -3549,6 +3549,7 @@ html[data-device="phone"] .app-shell[data-queue-open] > .content {
   position: relative;
   inset: auto;
   width: auto;
+  height: auto;
   grid-column: 1;
   grid-row: 1;
   display: flex;
@@ -3573,7 +3574,7 @@ html[data-device="phone"] .app-shell[data-queue-open] > .content {
 [data-device="phone"] .now-playing-page:has([data-cover-hidden]) .immersive-lyrics {
   max-height: 45dvh;
 }
-@media (min-width: 760px) {
+@media (min-width: 900px) {
   [data-device="pad"] .app-shell[data-full-player] .now-playing-page {
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     align-items: start;

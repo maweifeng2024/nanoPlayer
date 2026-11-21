@@ -124,3 +124,29 @@
 - **UI-1118-01 已实现。** Android Pad 与 iPad 复用原有右侧抽屉，搜索与当前页面继续显示。手机仍占用播放控件上方内容区并保留底部入口。队列布局跟随现有设备标记，Android 在 599/600px 间切换时无需重新打开队列。桌面沿用上一轮恢复的侧栏；正在播放布局仍按现有设计。同步更新 [设计规范](design/DESIGN_SYSTEM.md) 和 [回归清单](development/REGRESSION_CHECKLIST.md)，AGENTS.md 现行规则继续适用。
 - **验证。** `pnpm check`、Rust 格式/Clippy/测试及 10k 基准、19 项发布脚本测试、官网构建、版本一致性及 diff 检查通过。已更新 `tests/e2e/full-player-menu.spec.ts`，覆盖桌面、Android 手机/Pad 和 iPad，包含队列打开时跨宽度切换。Chromium 最小预检被 macOS Mach 服务拒绝，浏览器回归与截图未执行；待授权后重试预检。iOS 0.1.42/build 24 模拟器归档仍被 `simctl list runtimes` 阻塞。
 - **Android 产物。** `artifacts/android/v0.1.42-b1043/debug/nanoPlayer-0.1.42-b1043-arm64-debug.apk`，arm64-v8a，ZIP、SHA-256 与 APK v2 调试签名校验通过。待实机安装检查手机和 Pad 的队列、搜索和退出路径。未执行提交、推送、CI、标签或正式发布。
+
+## 2026-11-18 15:35（Asia/Shanghai，UTC+08:00）— iPhone 安装 nanoPlayer 0.1.42
+
+- 已完成：按用户要求构建开发签名 arm64 真机归档，并原地覆盖安装到已连接的 iPhone 15 Plus。沙箱内 Xcode 查询运行时失败，沙箱外构建、安装和设备应用列表查询均成功。
+- 已验证：本地应用严格签名校验通过，归档和设备均确认版本 0.1.42/build 24，应用标识 app.nanoplayer.ios。归档位于 src-tauri/gen/apple/build/nanoplayer_iOS.xcarchive。
+- 本轮仅构建、验签和安装，未启动应用或执行真机功能回归，未另分配版本，未发布。
+
+## 2026-11-18 15:38（Asia/Shanghai，UTC+08:00）— Android 手机安装 nanoPlayer 0.1.42
+
+- 已完成：校验现有调试 APK 的 SHA-256，通过 USB 对已连接的 PKH110 手机原地覆盖安装，ADB 返回 Success。
+- 已验证：设备应用信息确认 app.nanoplayer.android 为 0.1.42、versionCode 1043、arm64-v8a。安装包位于 artifacts/android/v0.1.42-b1043/debug/。
+- 本轮仅安装和核对版本，未启动或执行真机功能测试，未分配新版本或发布。
+
+## 2026-11-21 13:54（Asia/Shanghai，UTC+08:00）— 移动播放布局 0.1.43
+
+- **UI-1121-01 已实现。** iPhone 全屏队列使用完整内容行，半屏高度上限仅适用于普通抽屉。导航按钮的触摸区域居中对齐图标。Android Pad 和 iPad 的正在播放保留左侧栏，窄 iPad 播放页使用图标侧栏。同步更新 [设计规范](design/DESIGN_SYSTEM.md) 和 [回归清单](development/REGRESSION_CHECKLIST.md)。
+- **浏览器和本地门禁。** `pnpm check` 通过（Vitest 80 项）。Chromium 在沙箱内因 Mach 服务权限退出，移到沙箱外通过预检后，完整 E2E 126 通过、1 跳过（后台推理）。Rust fmt、Clippy、26 项 Rust 测试与 10k 搜索基准、19 项发布脚本测试、官网构建、版本一致性和差异检查通过。iPhone/Pad 浏览器截图见 `artifacts/ui/v0.1.43/`。
+- **本地产物。** Android 0.1.43 / 1044 调试 APK 位于 `artifacts/android/v0.1.43-b1044/debug/`，arm64-v8a，ZIP 完整性和 APK v2 调试签名已校验，SHA-256 见同目录 `manifest.json`。首次构建遇到 Gradle 缓存写权限，沙箱外重试通过。iOS arm64 模拟器归档为 0.1.43 / build 25，位于 `src-tauri/gen/apple/build/nanoplayer_iOS.xcarchive`，iOS 16 目标 Clippy 与 Swift 原生单测在沙箱外重试通过。
+- **发布。** 本轮未提交、推送、打标签或发布，桌面发行由用户在 main 执行 `pnpm release 0.1.43`。
+- **原生回归补记。** Android 插件 JVM 任务成功，API 36 Pad 模拟器安装成功且 3 项 instrumentation 通过（`artifacts/android/tests/emulator-5560-instrumentation.txt`）。iPhone 18 Pro / iOS 27.2 的 XCUITest 通过 2 项，因模拟器资料库无预置歌曲跳过 1 项。模拟器归档为 ad hoc 签名和 iOS 16 最低目标。本轮未将应用安装到物理设备，三项布局的几何结果与截图来自浏览器，原生视觉验收仍待真机复核。
+- **13:58 原生复核完成。** Android API 36 手机模拟器安装成功，3 项 instrumentation 通过（`artifacts/android/tests/emulator-5562-instrumentation.txt`）；iPad Pro 11-inch / iOS 27.2 的 XCUITest 通过 2 项、因无预置歌曲跳过 1 项。两份 iOS XCTest 结果位于 `artifacts/ios/tests/`。最终模拟器归档主可执行文件 SHA-256 为 `dce7b0fbe9957480d89233e4b92ec69d18555f98ab02be7b2c81473ca9f32a84`。短屏 iPhone 队列强制溢出的浏览器用例复测通过。
+
+## 2026-11-21 14:00（Asia/Shanghai，UTC+08:00）— iPhone 安装 nanoPlayer 0.1.43
+
+- 通过 `pnpm ios:build:debug` 构建 arm64 真机开发签名归档，严格验签通过。主可执行文件 SHA-256 为 `40e99ec10775fee2123112727a7a7f97dc4fc9990ab34a8aded03f096bf2eaec`。真机归档位于 `src-tauri/gen/apple/build/nanoplayer_iOS.xcarchive`，前一轮模拟器归档保存在 `artifacts/ios/v0.1.43-b25/simulator.xcarchive`。
+- 通过 CoreDevice 在已连接的 iPhone 15 Plus 上原地覆盖安装。设备应用列表确认 `app.nanoplayer.ios` 为 0.1.43 / build 25。本轮完成安装与版本核对，真机启动和界面验收待验证。复用本轮版本号与构建号，未发布。

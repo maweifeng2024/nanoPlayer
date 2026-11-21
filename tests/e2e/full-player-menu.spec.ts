@@ -104,17 +104,17 @@ for (const [width, mobile] of [[1440, false], [390, true], [840, true]] as const
         useNanoStore.getState().setPage("now-playing");
       });
       await expect(search).toHaveCount(0);
-      if (!mobile) {
+      if (width !== 390) {
         const sidebar = page.getByRole("complementary", { name: "主导航" });
-        for (const windowWidth of [1440, 720]) {
+        for (const windowWidth of mobile ? [600, 840, 1024] : [1440, 720]) {
           await page.setViewportSize({ width: windowWidth, height: 800 });
           await expect(sidebar).toBeVisible();
           const navigation = (await sidebar.boundingBox())!;
           const playing = (await page.locator(".now-playing-page").boundingBox())!;
           expect(playing.x).toBeGreaterThanOrEqual(navigation.x + navigation.width);
         }
-        await page.setViewportSize({ width: 1440, height: 800 });
-        await page.screenshot({ path: test.info().outputPath("desktop-now-playing.png") });
+        await page.setViewportSize({ width, height: 800 });
+        await page.screenshot({ path: test.info().outputPath("now-playing.png") });
       }
       await expect(page.getByRole("button", { name: "收起正在播放" })).toHaveCSS("border-top-width", "0px");
       if (width === 390) {
@@ -168,3 +168,50 @@ for (const [tablet, userAgent] of [
     });
   });
 }
+
+test.describe("iPhone queue geometry", () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+  });
+
+  test("centers the navigation icon and fills the space above the player with the queue", async ({ page }) => {
+    await page.goto("/");
+    const menu = page.getByRole("button", { name: "打开导航" });
+    const button = (await menu.boundingBox())!;
+    const icon = (await menu.locator("svg").boundingBox())!;
+    expect(icon.x + icon.width / 2).toBeCloseTo(button.x + button.width / 2, 0);
+    expect(icon.y + icon.height / 2).toBeCloseTo(button.y + button.height / 2, 0);
+    await menu.click();
+    await expect(page.locator(".sidebar")).toHaveClass(/is-open/);
+    await page.getByRole("button", { name: "关闭导航" }).click();
+
+    for (const destination of ["songs", "now-playing"] as const) {
+      await page.evaluate(async (target) => {
+        const { useNanoStore } = await import("/src/store.ts");
+        const state = useNanoStore.getState();
+        state.setPage(target);
+        state.playTrack(state.tracks[0].id, state.tracks.map((track) => track.id));
+        state.toggleDrawer("queue");
+      }, destination);
+      const drawer = page.locator(".full-queue");
+      await expect(drawer).toBeVisible();
+      const queue = (await drawer.boundingBox())!;
+      const player = page.locator(".player-bar");
+      const playerTop = (await player.boundingBox())!.y;
+      const playerMargin = await player.evaluate((element) => parseFloat(getComputedStyle(element).marginTop));
+      expect(queue.y + queue.height).toBeCloseTo(playerTop - playerMargin, 0);
+      await page.setViewportSize({ width: 390, height: 680 });
+      const list = drawer.locator(".queue-list");
+      expect(await list.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+      const lastTrack = drawer.locator(".queue-item").last();
+      await lastTrack.scrollIntoViewIfNeeded();
+      await expect(lastTrack).toBeInViewport();
+      await page.screenshot({ path: test.info().outputPath(`iphone-queue-${destination}.png`) });
+      await drawer.getByRole("button", { name: "关闭" }).click();
+      await expect(page.locator(".app-shell")).toHaveAttribute("data-page", destination);
+      await page.setViewportSize({ width: 390, height: 844 });
+    }
+  });
+});

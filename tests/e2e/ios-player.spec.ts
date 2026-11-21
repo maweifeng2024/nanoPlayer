@@ -21,6 +21,13 @@ for (const device of ["phone", "pad"] as const) {
         ? [{ width: 360, height: 800 }, { width: 390, height: 844 }, { width: 844, height: 390 }]
         : [{ width: 600, height: 900 }, { width: 840, height: 900 }, { width: 1024, height: 900 }, { width: 390, height: 844 }]) {
         await page.setViewportSize(viewport);
+        if (device === "pad") {
+          const sidebar = page.locator(".sidebar");
+          await expect(sidebar).toBeInViewport();
+          const navigation = (await sidebar.boundingBox())!;
+          const content = (await page.locator(".content").boundingBox())!;
+          expect(content.x).toBeGreaterThanOrEqual(navigation.x + navigation.width);
+        }
         const player = page.getByRole("contentinfo", { name: "播放器" });
         await expect(player.getByRole("slider", { name: "播放进度" })).toBeVisible();
         await expect(player.getByRole("button", { name: "上一首", exact: true })).toBeVisible();
