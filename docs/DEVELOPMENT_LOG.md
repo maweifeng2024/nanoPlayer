@@ -150,3 +150,9 @@
 
 - 通过 `pnpm ios:build:debug` 构建 arm64 真机开发签名归档，严格验签通过。主可执行文件 SHA-256 为 `40e99ec10775fee2123112727a7a7f97dc4fc9990ab34a8aded03f096bf2eaec`。真机归档位于 `src-tauri/gen/apple/build/nanoplayer_iOS.xcarchive`，前一轮模拟器归档保存在 `artifacts/ios/v0.1.43-b25/simulator.xcarchive`。
 - 通过 CoreDevice 在已连接的 iPhone 15 Plus 上原地覆盖安装。设备应用列表确认 `app.nanoplayer.ios` 为 0.1.43 / build 25。本轮完成安装与版本核对，真机启动和界面验收待验证。复用本轮版本号与构建号，未发布。
+
+## 2026-11-21 20:50（Asia/Shanghai，UTC+08:00）— iPhone 安装 0.1.43 并刷新开发签名
+
+- 使用当前 main（8df0b4c）及既有 iOS build 25 运行 `pnpm ios:build:debug`。首次构建沿用旧描述文件，暂移该本机缓存后重建，Xcode 用既有 Apple Development 身份获取新描述文件。签发时间为 11 月 21 日 20:49:50，至 11 月 28 日 20:49:50 有效，覆盖 iPhone 15 Plus。
+- 真机 arm64 归档为 `src-tauri/gen/apple/build/nanoplayer_iOS.xcarchive`。应用严格签名验证通过，签名后主程序 SHA-256 为 `ea41c5a09035ab2fd2fa8e16157e5dcb7c3ff6385cf30b42b135f9d7a2c8f76e`。CoreDevice 已确认新签名应用覆盖安装成功。旧描述文件构建曾在解锁后启动成功，新签名构建首次启动因手机再次锁屏受阻。
+- 本轮沿用现有应用版本和构建号。未进行真机功能回归、IPA 导出、提交、推送或发布。
