@@ -54,3 +54,7 @@
 模型密钥录入后的线上排查验证上游 HTTP 状态及响应格式，诊断日志只记录状态和错误类别，使用合成曲目复测。
 
 0.1.33 线上验收：最终 Worker 使用权威 DNS 返回的地址进行 HTTPS 验证，合成曲目推理返回 200，候选 ID 校验通过。三种 Tauri Origin 的 CORS 预检通过。5 项 Worker 单测和 5 项推荐浏览器专项通过。已在三端产物验证在线配置，默认 DNS 和客户端实机安装、启动及线上请求仍待验收。上一轮完整浏览器最终 108 通过、1 跳过、6 个截图基线比较失败。详见 [任务记录](../DEVELOPMENT_LOG.md)。
+
+## 2026-11-22 模型配置同步
+
+- REC-1118 推荐请求边界：[配置](../../services/recommendations/wrangler.jsonc)、[调用](../../services/recommendations/worker.mjs)、[部署说明](../../services/recommendations/README.md)与 [Worker 测试](../../services/recommendations/worker.test.mjs)同步核对。验证外部请求使用 terra、输出预算 1024，且曲目 JSON 完整传递。移除外部地址时，Workers AI 使用 1024 输出 token；原鉴权、输入限制与候选校验继续通过。

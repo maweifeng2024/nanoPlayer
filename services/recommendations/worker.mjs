@@ -75,7 +75,7 @@ export default {
           .filter((part) => part.type === "output_text")
           .map((part) => part.text).join("");
       } else {
-        const result = await env.AI.run(env.MODEL, { messages, max_tokens: 512, temperature: 0.4 });
+        const result = await env.AI.run(env.MODEL, { messages, max_tokens: 1024, temperature: 0.4 });
         raw = result.response;
       }
       const parsed = typeof raw === "string" ? JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, "")) : raw;

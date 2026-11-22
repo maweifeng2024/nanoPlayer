@@ -13,9 +13,9 @@
 
 部署配置将独立 Worker 绑定到 `recommendations.nanodo.cc`，关闭 workers.dev 和预览 URL。客户端 CSP 已允许该域名。部署后用 HTTPS 验证路由；若更换域名，构建前同步更新 `src-tauri/tauri.conf.json` 的 `connect-src`。
 
-当前 `wrangler.jsonc` 通过文本变量 `MODEL_BASE_URL=https://api.aicodemirror.ai/v1` 和 `MODEL=gpt-6-astra` 选用 AICodeMirror Responses API。部署 Worker 后，在 Cloudflare **Workers & Pages → nanoplayer-recommendations → Settings → Variables and Secrets** 新增 `MODEL_API_KEY`（类型 Secret），填入供应商 API Key。也可在终端交互运行 `node website/node_modules/wrangler/bin/wrangler.js secret put MODEL_API_KEY --config services/recommendations/wrangler.jsonc`。模型 Key 只保存在 Worker。客户端用的 `APP_TOKEN` 是另一个独立随机令牌。
+当前 `wrangler.jsonc` 通过文本变量 `MODEL_BASE_URL=https://api.aicodemirror.ai/v1` 和 `MODEL=gpt-6.1-terra` 选用 AICodeMirror Responses API。部署 Worker 后，在 Cloudflare **Workers & Pages → nanoplayer-recommendations → Settings → Variables and Secrets** 新增 `MODEL_API_KEY`（类型 Secret），填入供应商 API Key。也可在终端交互运行 `node website/node_modules/wrangler/bin/wrangler.js secret put MODEL_API_KEY --config services/recommendations/wrangler.jsonc`。模型 Key 只保存在 Worker。客户端用的 `APP_TOKEN` 是另一个独立随机令牌。
 
-配置外部模型时，Worker 将请求里的歌曲编号、标题和艺术家转交给 AICodeMirror，并请求 `store: false`。已使用合成曲目通过线上推理。Worker 手动处理上游重定向并拒绝非 2xx 响应，避免将模型密钥转发至其他地址。若切回 Workers AI，移除 `MODEL_BASE_URL` 并将 `MODEL` 改为账户可用的 Workers AI 模型。
+配置外部模型时，Worker 将请求里的歌曲编号、标题和艺术家转交给 AICodeMirror，并请求 `store: false`。已使用合成曲目通过线上推理。Worker 手动处理上游重定向并拒绝非 2xx 响应，避免将模型密钥转发至其他地址。外部调用的 `max_output_tokens` 与 Workers AI 的 `max_tokens` 均为 1024，限制生成输出。若切回 Workers AI，移除 `MODEL_BASE_URL` 并将 `MODEL` 改为账户可用的 Workers AI 模型。
 
 在**未跟踪的** `.env.local` 配置构建参数：
 

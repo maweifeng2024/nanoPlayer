@@ -7,7 +7,7 @@
   "routes": [{ "pattern": "recommendations.nanodo.cc", "custom_domain": true }],
   "ai": { "binding": "AI" },
   "vars": {
-    "MODEL": "gpt-6-astra",
+    "MODEL": "gpt-6.1-terra",
     "MODEL_BASE_URL": "https://api.aicodemirror.ai/v1",
     "ALLOWED_ORIGINS": "tauri://localhost,http://tauri.localhost,https://tauri.localhost,http://localhost:1420"
   },

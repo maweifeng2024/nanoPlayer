@@ -156,3 +156,15 @@
 - 使用当前 main（8df0b4c）及既有 iOS build 25 运行 `pnpm ios:build:debug`。首次构建沿用旧描述文件，暂移该本机缓存后重建，Xcode 用既有 Apple Development 身份获取新描述文件。签发时间为 11 月 21 日 20:49:50，至 11 月 28 日 20:49:50 有效，覆盖 iPhone 15 Plus。
 - 真机 arm64 归档为 `src-tauri/gen/apple/build/nanoplayer_iOS.xcarchive`。应用严格签名验证通过，签名后主程序 SHA-256 为 `ea41c5a09035ab2fd2fa8e16157e5dcb7c3ff6385cf30b42b135f9d7a2c8f76e`。CoreDevice 已确认新签名应用覆盖安装成功。旧描述文件构建曾在解锁后启动成功，新签名构建首次启动因手机再次锁屏受阻。
 - 本轮沿用现有应用版本和构建号。未进行真机功能回归、IPA 导出、提交、推送或发布。
+
+## 2026-11-22 10:55（Asia/Shanghai，UTC+08:00）— 推荐 Worker 模型配置同步
+
+- 已按用户提供的后台配置同步 `services/recommendations/wrangler.jsonc` 的模型至 `gpt-6.1-terra`。Workers AI 分支的输出上限从 512 调至 1024，外部 Responses API 仍使用 1024。已同步部署说明和 [REC-1118 验收记录](development/RECOMMENDATIONS_VERIFICATION.md)。
+- Worker mock 回归 5 项通过，覆盖两条调用路径的请求参数及原有校验。Wrangler dry-run 和 `git diff --check` 通过。本轮改动仅涉及独立 Worker，未构建客户端或部署。线上 terra 推理质量和实际输出长度待用合成曲目验证。
+
+## 2026-11-22 10:58（Asia/Shanghai，UTC+08:00）— 推荐 Worker 生产部署
+
+- 用户授权部署。Wrangler 缺少非交互认证，改用已连接的 Cloudflare API 上传独立 Worker。版本 `594ab8ef-edd0-4026-a84c-aa03f8e194f3` 已承接 100% 流量。
+- 回读确认模型 `gpt-6.1-terra`、AICodeMirror 地址、两个 Secret 绑定及两条推理路径的 1024 输出上限。公开路由未认证 POST 返回预期 401。未执行付费推理、Git 推送或客户端发布。
+
+- 线上合成曲目验收：用 1 首近期曲目与 8 首候选实际调用生产推荐接口，HTTP 200，耗时 6.59 秒，返回 6 个有效且不重复的候选 ID，歌单名「雨夜爵士漫游」。

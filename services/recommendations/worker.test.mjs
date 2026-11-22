@@ -13,7 +13,17 @@ test("auth, origin and rate limits precede paid inference", async () => {
   assert.equal((await worker.fetch(req, env)).status, 403);
 });
 test("only distinct candidate IDs can leave the Worker", async () => {
-  const response = await worker.fetch(request(), env);
+  const response = await worker.fetch(request(), {
+    ...env,
+    AI: {
+      run: async (model, options) => {
+        assert.equal(model, env.MODEL);
+        assert.equal(options.max_tokens, 1024);
+        assert.deepEqual(JSON.parse(options.messages[1].content), payload);
+        return env.AI.run();
+      },
+    },
+  });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { ids: [2], title: "", description: "" });
   assert.equal(response.headers.get("Cache-Control"), "no-store");
@@ -24,15 +34,16 @@ test("rejects invalid/oversized input and model failure", async () => {
   assert.equal((await worker.fetch(request(), { ...env, AI: { run: async () => { throw new Error("secret"); } } })).status, 502);
 });
 test("external Responses API receives bounded input and keeps output filtering", async (t) => {
-  const external = { ...env, MODEL: "gpt-6-astra", MODEL_BASE_URL: "https://api.aicodemirror.ai/v1/" };
+  const external = { ...env, MODEL: "gpt-6.1-terra", MODEL_BASE_URL: "https://api.aicodemirror.ai/v1/" };
   const mock = t.mock.method(globalThis, "fetch", async (url, options) => {
     assert.equal(url.href, "https://api.aicodemirror.ai/v1/responses");
     assert.equal(options.headers.Authorization, "Bearer mock-key");
     assert.equal(options.redirect, "manual");
     assert.ok(options.signal instanceof AbortSignal);
     const body = JSON.parse(options.body);
-    assert.equal(body.model, "gpt-6-astra");
+    assert.equal(body.model, "gpt-6.1-terra");
     assert.equal(body.store, false);
+    assert.equal(body.max_output_tokens, 1024);
     assert.deepEqual(JSON.parse(body.input[1].content), payload);
     return Response.json({ output: [
       { type: "reasoning" },
